@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retrodon '84</title>
+  <meta name="color-scheme" content="dark" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">RD</span>
+        <div>
+          <h1>Retrodon <em>'84</em></h1>
+          <p class="instance" id="instance-label">fediverse2.blackneon.net</p>
+        </div>
+      </div>
+      <div class="top-actions" id="top-actions">
+        <button type="button" class="ghost" id="btn-search" hidden>Suche</button>
+        <button type="button" class="ghost" id="btn-profile" hidden>Profil</button>
+        <button type="button" class="primary" id="btn-compose" hidden>Compose</button>
+        <button type="button" class="ghost" id="btn-login">Anmelden</button>
+        <button type="button" class="ghost danger" id="btn-logout" hidden>Logout</button>
+      </div>
+    </header>
+
+    <section id="login-panel" class="login-panel">
+      <div class="login-card">
+        <h2>Connect to the grid</h2>
+        <p>Feste Instanz: <strong>fediverse2.blackneon.net</strong> (GoToSocial). Anmeldung per OAuth — der Code wird nach der Freigabe hier eingefügt.</p>
+        <div class="row">
+          <button type="button" class="primary" id="btn-oauth">1. Autorisieren</button>
+        </div>
+        <label>
+          Authorization Code
+          <input id="oauth-code" type="text" autocomplete="off" placeholder="Code aus dem Browser-Tab einfügen" />
+        </label>
+        <div class="row">
+          <button type="button" class="primary" id="btn-token">2. Token holen</button>
+        </div>
+        <p class="hint" id="login-status"></p>
+      </div>
+    </section>
+
+    <main class="columns" id="columns" hidden>
+      <section class="col" data-col="home">
+        <header class="col-head home">
+          <h2>Home</h2>
+          <button type="button" class="icon-btn" data-refresh="home" title="Aktualisieren">↻</button>
+        </header>
+        <div class="col-body" id="home-body"></div>
+      </section>
+      <section class="col" data-col="local">
+        <header class="col-head local">
+          <h2>Local</h2>
+          <button type="button" class="icon-btn" data-refresh="local" title="Aktualisieren">↻</button>
+        </header>
+        <div class="col-body" id="local-body"></div>
+      </section>
+      <section class="col" data-col="notifications">
+        <header class="col-head notes">
+          <h2>Notifications</h2>
+          <button type="button" class="icon-btn" data-refresh="notifications" title="Aktualisieren">↻</button>
+        </header>
+        <div class="col-body" id="notifications-body"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="compose-dialog">
+    <form id="compose-form" method="dialog">
+      <header>
+        <h2>Neuer Post</h2>
+        <button type="button" class="icon-btn" id="compose-close">×</button>
+      </header>
+      <input id="compose-spoiler" type="text" placeholder="Content Warning (optional)" maxlength="200" />
+      <textarea id="compose-text" maxlength="5000" placeholder="Was geht ab im Neon-Grid?" required></textarea>
+      <div class="compose-meta">
+        <span id="compose-count">5000</span>
+        <select id="compose-vis">
+          <option value="public">Public</option>
+          <option value="unlisted">Unlisted</option>
+          <option value="private">Followers</option>
+          <option value="direct">Direct</option>
+        </select>
+      </div>
+      <footer>
+        <button type="button" class="ghost" id="compose-cancel">Abbrechen</button>
+        <button type="submit" class="primary">Senden</button>
+      </footer>
+      <p class="hint" id="compose-status"></p>
+    </form>
+  </dialog>
+
+  <dialog id="overlay-dialog">
+    <div class="overlay-head">
+      <h2 id="overlay-title">Overlay</h2>
+      <button type="button" class="icon-btn" id="overlay-close">×</button>
+    </div>
+    <div id="overlay-body"></div>
+  </dialog>
+
+  <script src="js/app.js" defer></script>
+</body>
+</html>
