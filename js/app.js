@@ -52,6 +52,7 @@
     $("btn-compose").hidden = !on;
     $("btn-search").hidden = !on;
     $("btn-profile").hidden = !on;
+    $("app").classList.toggle("is-logged-in", on);
   }
 
   async function ensureApp() {
