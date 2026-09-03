@@ -18,6 +18,7 @@
       notifications: { items: [], maxId: null, loading: false, done: false },
     },
     replyTo: null,
+    expandedCol: null,
   };
 
   function api(path, opts = {}) {
@@ -140,6 +141,7 @@
     state.me = null;
     localStorage.removeItem(LS.token);
     localStorage.removeItem(LS.me);
+    setColumnExpanded(null);
     setLoggedIn(false);
   }
 
@@ -329,6 +331,23 @@
     });
   }
 
+  function setColumnExpanded(name) {
+    const next = name && name === state.expandedCol ? null : name || null;
+    state.expandedCol = next;
+    $("columns").classList.toggle("is-expanded", Boolean(next));
+    document.querySelectorAll(".col").forEach((col) => {
+      const id = col.getAttribute("data-col");
+      const on = Boolean(next) && id === next;
+      col.classList.toggle("is-expanded", on);
+      const btn = col.querySelector("[data-expand]");
+      if (!btn) return;
+      btn.setAttribute("aria-pressed", String(on));
+      btn.title = on ? "Verkleinern" : "Vollbild";
+      btn.setAttribute("aria-label", on ? id + " verkleinern" : id + " auf Vollbild");
+      btn.textContent = on ? "⤡" : "⤢";
+    });
+  }
+
   async function actOnStatus(id, act, btn) {
     try {
       if (act === "fav") {
@@ -369,6 +388,11 @@
         return;
       }
       actOnStatus(article.getAttribute("data-id"), act, btn);
+      return;
+    }
+    const expand = ev.target.closest("[data-expand]");
+    if (expand) {
+      setColumnExpanded(expand.getAttribute("data-expand"));
       return;
     }
     const refresh = ev.target.closest("[data-refresh]");
@@ -520,6 +544,11 @@
   $("btn-search").addEventListener("click", openSearch);
   $("btn-profile").addEventListener("click", () => state.me && openProfile(state.me.id));
   $("overlay-close").addEventListener("click", () => $("overlay-dialog").close());
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape") return;
+    if (document.querySelector("dialog[open]")) return;
+    if (state.expandedCol) setColumnExpanded(null);
+  });
 
   bindColumnScroll("home");
   bindColumnScroll("local");

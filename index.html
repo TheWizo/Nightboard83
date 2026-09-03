@@ -48,21 +48,30 @@
       <section class="col" data-col="home">
         <header class="col-head home">
           <h2>Home</h2>
-          <button type="button" class="icon-btn" data-refresh="home" title="Aktualisieren">↻</button>
+          <div class="col-head-actions">
+            <button type="button" class="icon-btn" data-expand="home" title="Vollbild" aria-pressed="false" aria-label="Home auf Vollbild">⤢</button>
+            <button type="button" class="icon-btn" data-refresh="home" title="Aktualisieren">↻</button>
+          </div>
         </header>
         <div class="col-body" id="home-body"></div>
       </section>
       <section class="col" data-col="local">
         <header class="col-head local">
           <h2>Local</h2>
-          <button type="button" class="icon-btn" data-refresh="local" title="Aktualisieren">↻</button>
+          <div class="col-head-actions">
+            <button type="button" class="icon-btn" data-expand="local" title="Vollbild" aria-pressed="false" aria-label="Local auf Vollbild">⤢</button>
+            <button type="button" class="icon-btn" data-refresh="local" title="Aktualisieren">↻</button>
+          </div>
         </header>
         <div class="col-body" id="local-body"></div>
       </section>
       <section class="col" data-col="notifications">
         <header class="col-head notes">
           <h2>Notifications</h2>
-          <button type="button" class="icon-btn" data-refresh="notifications" title="Aktualisieren">↻</button>
+          <div class="col-head-actions">
+            <button type="button" class="icon-btn" data-expand="notifications" title="Vollbild" aria-pressed="false" aria-label="Notifications auf Vollbild">⤢</button>
+            <button type="button" class="icon-btn" data-refresh="notifications" title="Aktualisieren">↻</button>
+          </div>
         </header>
         <div class="col-body" id="notifications-body"></div>
       </section>
