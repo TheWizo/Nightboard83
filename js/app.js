@@ -22,6 +22,7 @@
     threadRootId: null,
     threadReplyTo: null,
     threadById: new Map(),
+    pollTimer: null,
   };
 
   function api(path, opts = {}) {
@@ -147,6 +148,7 @@
     localStorage.removeItem(LS.me);
     setColumnExpanded(null);
     closeThread();
+    stopPolling();
     setLoggedIn(false);
   }
 
@@ -270,31 +272,31 @@
     });
   }
 
+  function noticeHtml(n) {
+    const kind = {
+      follow: "folgt dir",
+      follow_request: "möchte folgen",
+      mention: "hat dich erwähnt",
+      reblog: "hat geboostet",
+      favourite: "hat favorisiert",
+      poll: "Umfrage beendet",
+      status: "neuer Post",
+      update: "Post bearbeitet",
+    }[n.type] || n.type;
+    const status = n.status ? statusHtml(n.status) : "";
+    return `<div class="notice" data-acct="${escapeHtml(n.account.id)}">
+      <div class="notif-kind">${escapeHtml(n.account.acct)} ${kind}</div>
+      <div class="status-head">${accountLine(n.account)}</div>
+      ${status}
+    </div>`;
+  }
+
   function renderNotifications(el, items) {
     if (!items.length) {
       el.innerHTML = `<div class="empty">Keine Notifications.</div>`;
       return;
     }
-    el.innerHTML = items
-      .map((n) => {
-        const kind = {
-          follow: "folgt dir",
-          follow_request: "möchte folgen",
-          mention: "hat dich erwähnt",
-          reblog: "hat geboostet",
-          favourite: "hat favorisiert",
-          poll: "Umfrage beendet",
-          status: "neuer Post",
-          update: "Post bearbeitet",
-        }[n.type] || n.type;
-        const status = n.status ? statusHtml(n.status) : "";
-        return `<div class="notice" data-acct="${escapeHtml(n.account.id)}">
-          <div class="notif-kind">${escapeHtml(n.account.acct)} ${kind}</div>
-          <div class="status-head">${accountLine(n.account)}</div>
-          ${status}
-        </div>`;
-      })
-      .join("");
+    el.innerHTML = items.map((n) => noticeHtml(n)).join("");
     [...el.children].forEach((node, i) => paintTime(node, items[i].created_at));
   }
 
@@ -335,6 +337,91 @@
     el.addEventListener("scroll", () => {
       if (el.scrollTop + el.clientHeight > el.scrollHeight - 200) loadTimeline(name, false);
     });
+  }
+
+  function detailWindowOpen() {
+    const thread = $("thread-dialog");
+    const overlay = $("overlay-dialog");
+    return (thread && thread.open) || (overlay && overlay.open);
+  }
+
+  function timelinePath(name, extra) {
+    let path;
+    if (name === "home") path = "/api/v1/timelines/home?limit=30";
+    else if (name === "local") path = "/api/v1/timelines/public?local=true&limit=30";
+    else path = "/api/v1/notifications?limit=30";
+    if (extra) path += extra;
+    return path;
+  }
+
+  function prependTicker(name, fresh) {
+    const el = $(name + "-body");
+    if (!el) return;
+    const placeholder = el.querySelector(".empty, .error");
+    if (placeholder) placeholder.remove();
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pinScroll = el.scrollTop > 24;
+    const prevHeight = el.scrollHeight;
+    const nodes = fresh.map((item) => {
+      const wrap = document.createElement("div");
+      if (name === "notifications") wrap.innerHTML = noticeHtml(item);
+      else wrap.innerHTML = statusHtml(item);
+      const node = wrap.firstElementChild;
+      const timed = item.reblog || item;
+      paintTime(node, timed.created_at);
+      return node;
+    });
+    nodes.slice().reverse().forEach((node, revI) => {
+      if (!reduce) {
+        node.classList.add("is-ticker");
+        node.style.animationDelay = revI * 0.16 + "s";
+        node.addEventListener(
+          "animationend",
+          () => {
+            node.classList.remove("is-ticker");
+            node.style.animationDelay = "";
+          },
+          { once: true }
+        );
+      }
+      el.insertBefore(node, el.firstChild);
+    });
+    if (pinScroll) el.scrollTop = el.scrollHeight - prevHeight + el.scrollTop;
+  }
+
+  async function fetchNewer(name) {
+    const t = state.timelines[name];
+    if (!t || t.loading || !t.items.length) return;
+    const sinceId = t.items[0] && t.items[0].id;
+    if (!sinceId) return;
+    try {
+      const batch = await api(timelinePath(name, "&since_id=" + encodeURIComponent(sinceId)));
+      if (!Array.isArray(batch) || !batch.length) return;
+      const known = new Set(t.items.map((s) => s.id));
+      const fresh = batch.filter((s) => s && s.id && !known.has(s.id));
+      if (!fresh.length) return;
+      t.items = fresh.concat(t.items);
+      prependTicker(name, fresh);
+    } catch {
+      /* keep current list */
+    }
+  }
+
+  async function pollNewPosts() {
+    if (!state.token || detailWindowOpen() || document.hidden) return;
+    await Promise.all([fetchNewer("home"), fetchNewer("local"), fetchNewer("notifications")]);
+  }
+
+  function startPolling() {
+    stopPolling();
+    state.pollTimer = setInterval(pollNewPosts, 5 * 60 * 1000);
+  }
+
+  function stopPolling() {
+    if (state.pollTimer) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
   }
 
   function setColumnExpanded(name) {
@@ -858,6 +945,7 @@
     loadTimeline("home", true);
     loadTimeline("local", true);
     loadTimeline("notifications", true);
+    startPolling();
   }
 
   $("btn-oauth").addEventListener("click", startOAuth);
