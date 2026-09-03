@@ -111,6 +111,39 @@
     <div id="overlay-body"></div>
   </dialog>
 
+  <dialog id="thread-dialog">
+    <div class="overlay-head">
+      <h2 id="thread-title">Thread</h2>
+      <button type="button" class="icon-btn" id="thread-close" title="Schließen" aria-label="Thread schließen">×</button>
+    </div>
+    <div id="thread-body" class="thread-body"></div>
+    <form id="thread-reply-form" class="thread-reply" hidden>
+      <div class="thread-reply-head">
+        <p class="thread-reply-to" id="thread-reply-to"></p>
+        <button type="button" class="icon-btn" id="thread-reply-close" title="Schließen" aria-label="Antwortfeld schließen">×</button>
+      </div>
+      <textarea id="thread-reply-text" maxlength="5000" placeholder="Antwort schreiben…"></textarea>
+      <div class="thread-reply-meta">
+        <span id="thread-reply-count">noch 5000</span>
+        <button type="submit" class="primary">Senden</button>
+      </div>
+      <p class="hint" id="thread-reply-status"></p>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog">
+    <div class="overlay-head">
+      <h2>Antwort verwerfen?</h2>
+    </div>
+    <div class="confirm-body">
+      <p>Die angefangene Antwort geht verloren.</p>
+      <footer>
+        <button type="button" class="ghost" id="confirm-no">Weiter schreiben</button>
+        <button type="button" class="primary" id="confirm-yes">Verwerfen</button>
+      </footer>
+    </div>
+  </dialog>
+
   <script src="js/app.js" defer></script>
 </body>
 </html>

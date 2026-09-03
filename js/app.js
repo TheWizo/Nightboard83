@@ -19,6 +19,9 @@
     },
     replyTo: null,
     expandedCol: null,
+    threadRootId: null,
+    threadReplyTo: null,
+    threadById: new Map(),
   };
 
   function api(path, opts = {}) {
@@ -143,6 +146,7 @@
     localStorage.removeItem(LS.token);
     localStorage.removeItem(LS.me);
     setColumnExpanded(null);
+    closeThread();
     setLoggedIn(false);
   }
 
@@ -235,7 +239,8 @@
     const boostLine = boosted
       ? `<div class="boost-line">↻ ${escapeHtml(boosted.account.display_name || boosted.account.username)} boosted</div>`
       : "";
-    return `<article class="status" data-id="${escapeHtml(s.id)}" data-acct="${escapeHtml(s.account.id)}">
+    const extraClass = opts.root ? " is-thread-root" : "";
+    return `<article class="status${extraClass}" data-id="${escapeHtml(s.id)}" data-acct="${escapeHtml(s.account.id)}">
       ${boostLine}
       <div class="status-head">${accountLine(s.account)}</div>
       ${cw}${body}${mediaBlock(s)}
@@ -349,6 +354,322 @@
     });
   }
 
+  function unwrapStatus(status) {
+    return status && status.reblog ? status.reblog : status;
+  }
+
+  function asStatusList(value) {
+    if (!value) return [];
+    const list = Array.isArray(value) ? value : [];
+    return list.map(unwrapStatus).filter((s) => s && s.id && s.account);
+  }
+
+  function collectTimelineReplies(rootId) {
+    const byId = new Map();
+    const add = (s) => {
+      const inner = unwrapStatus(s);
+      if (inner && inner.id && inner.account) byId.set(inner.id, inner);
+    };
+    Object.keys(state.timelines).forEach((name) => {
+      (state.timelines[name].items || []).forEach((item) => {
+        if (item && item.type && item.account) add(item.status);
+        else add(item);
+      });
+    });
+    const out = [];
+    byId.forEach((s) => {
+      if (s.id === rootId) return;
+      let pid = s.in_reply_to_id;
+      const seen = new Set();
+      while (pid && !seen.has(pid)) {
+        seen.add(pid);
+        if (pid === rootId) {
+          out.push(s);
+          return;
+        }
+        const parent = byId.get(pid);
+        pid = parent && parent.in_reply_to_id;
+      }
+    });
+    return out;
+  }
+
+  function mergeStatuses(base, extra) {
+    const byId = new Map();
+    asStatusList(base).concat(asStatusList(extra)).forEach((s) => byId.set(s.id, s));
+    return [...byId.values()];
+  }
+
+  function replyDepth(status, byId, rootId) {
+    let depth = 0;
+    let pid = status.in_reply_to_id;
+    const seen = new Set();
+    while (pid && pid !== rootId && !seen.has(pid) && depth < 12) {
+      seen.add(pid);
+      depth += 1;
+      const parent = byId.get(pid);
+      if (!parent) break;
+      pid = parent.in_reply_to_id;
+    }
+    return depth;
+  }
+
+  function paintThreadTimes(root, statuses) {
+    const byId = new Map(statuses.map((s) => [s.id, s]));
+    [...root.querySelectorAll(".status")].forEach((node) => {
+      const s = byId.get(node.getAttribute("data-id"));
+      if (s) paintTime(node, s.created_at);
+    });
+  }
+
+  function isSelfAcct(acct) {
+    if (!state.me || !acct) return false;
+    const a = String(acct).toLowerCase();
+    const me = String(state.me.acct || "").toLowerCase();
+    const user = String(state.me.username || "").toLowerCase();
+    if (a === me || a === user) return true;
+    let host = "";
+    try { host = new URL(INSTANCE).host.toLowerCase(); } catch { host = ""; }
+    if (host && (a === user + "@" + host || a === me + "@" + host)) return true;
+    return false;
+  }
+
+  function replyMentionAccts(status) {
+    const accts = [];
+    const seen = new Set();
+    const add = (acct) => {
+      if (!acct || isSelfAcct(acct)) return;
+      const key = String(acct).toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      accts.push(acct);
+    };
+    if (status && status.account) add(status.account.acct);
+    (status && status.mentions ? status.mentions : []).forEach((m) => add(m.acct || m.username));
+    return accts;
+  }
+
+  function mentionPrefix(status) {
+    const accts = replyMentionAccts(status);
+    return accts.length ? accts.map((a) => "@" + a).join(" ") : "";
+  }
+
+  function textHasMention(text, acct) {
+    const tokens = (String(text).toLowerCase().match(/@[^\s]+/g) || []).map((t) => t.slice(1));
+    const want = String(acct).toLowerCase();
+    if (tokens.indexOf(want) !== -1) return true;
+    const local = want.split("@")[0];
+    let host = "";
+    try { host = new URL(INSTANCE).host.toLowerCase(); } catch { host = ""; }
+    if (host && want === local + "@" + host && tokens.indexOf(local) !== -1) return true;
+    if (host && want.indexOf("@") === -1 && tokens.indexOf(want + "@" + host) !== -1) return true;
+    return false;
+  }
+
+  function ensureReplyMentions(text, status) {
+    const accts = replyMentionAccts(status);
+    const missing = accts.filter((acct) => !textHasMention(text, acct));
+    if (!missing.length) return text;
+    return missing.map((a) => "@" + a).join(" ") + " " + text;
+  }
+
+  function selectThreadReply(id) {
+    const s = state.threadById.get(id);
+    if (!s) return;
+    const prev = state.threadReplyTo;
+    state.threadReplyTo = s;
+    const prefix = mentionPrefix(s);
+    $("thread-reply-to").textContent = prefix
+      ? "Antwort an " + prefix
+      : "Antwort an @" + (s.account.acct || s.account.username);
+    document.querySelectorAll("#thread-body .status").forEach((n) => {
+      n.classList.toggle("is-reply-target", n.getAttribute("data-id") === id);
+    });
+    const ta = $("thread-reply-text");
+    const mention = prefix ? prefix + " " : "";
+    const prevMention = prev ? mentionPrefix(prev) : "";
+    const trimmed = ta.value.trim();
+    if (!trimmed || trimmed === prevMention) ta.value = mention;
+    $("thread-reply-count").textContent = "noch " + (5000 - ta.value.length);
+  }
+
+  function renderThreadView(status, context) {
+    const root = unwrapStatus(status);
+    const ancestors = asStatusList(context && context.ancestors);
+    const descendants = mergeStatuses(context && context.descendants, collectTimelineReplies(root.id));
+    state.threadById = new Map();
+    ancestors.forEach((s) => state.threadById.set(s.id, s));
+    state.threadById.set(root.id, root);
+    descendants.forEach((s) => state.threadById.set(s.id, s));
+    const ancestorHtml = ancestors.length
+      ? `<div class="thread-ancestors">${ancestors.map((s) => statusHtml(s)).join("")}</div>`
+      : "";
+    let repliesHtml;
+    if (descendants.length) {
+      repliesHtml =
+        `<div class="thread-replies">` +
+        descendants
+          .map((s) => {
+            const depth = replyDepth(s, state.threadById, root.id);
+            return `<div class="thread-branch" style="margin-left:${depth * 14}px">${statusHtml(s)}</div>`;
+          })
+          .join("") +
+        `</div>`;
+    } else {
+      const n = root.replies_count || 0;
+      const remote = root.url
+        ? ` <a href="${escapeHtml(root.url)}" target="_blank" rel="noopener noreferrer">Original öffnen</a>`
+        : "";
+      repliesHtml =
+        n > 0
+          ? `<div class="thread-replies-empty">Lokal keine Antworten geladen (${n} gemeldet).${remote}</div>`
+          : `<div class="thread-replies-empty">Noch keine Antworten.</div>`;
+    }
+    $("thread-body").innerHTML =
+      ancestorHtml +
+      `<div class="thread-root">${statusHtml(root, { root: true })}</div>` +
+      repliesHtml;
+    paintThreadTimes($("thread-body"), ancestors.concat([root], descendants));
+    $("thread-title").textContent = "Thread · " + (root.account.acct || "Post");
+    if (!$("thread-reply-form").hidden) {
+      const keepId = (state.threadReplyTo && state.threadById.has(state.threadReplyTo.id) && state.threadReplyTo.id) || root.id;
+      selectThreadReply(keepId);
+    }
+  }
+
+  async function loadThreadContext(id) {
+    const path = "/api/v1/statuses/" + encodeURIComponent(id);
+    const status = unwrapStatus(await api(path));
+    let context = { ancestors: [], descendants: [] };
+    try {
+      context = (await api(path + "/context")) || context;
+    } catch {
+      context = { ancestors: [], descendants: [] };
+    }
+    context.ancestors = asStatusList(context.ancestors);
+    context.descendants = asStatusList(context.descendants);
+    const needsRemote =
+      !context.descendants.length && (status.replies_count || 0) > 0 && status.url;
+    if (needsRemote) {
+      try {
+        await api("/api/v2/search?q=" + encodeURIComponent(status.url) + "&resolve=true");
+        const again = await api(path + "/context");
+        context.ancestors = asStatusList(again && again.ancestors);
+        context.descendants = asStatusList(again && again.descendants);
+      } catch {
+        /* keep first context */
+      }
+    }
+    return { status, context };
+  }
+
+  async function openThread(id, opts = {}) {
+    if ($("thread-dialog").open && threadDraftPending() && id !== state.threadRootId) {
+      const discard = await askDiscardReply();
+      if (!discard) return;
+    }
+    const dlg = $("thread-dialog");
+    state.threadRootId = id;
+    $("thread-title").textContent = "Thread";
+    $("thread-body").innerHTML = "<p class='hint'>Lade Thread…</p>";
+    $("thread-reply-status").textContent = "";
+    if (!opts.keepDraft) {
+      if (opts.focusReply) {
+        $("thread-reply-text").value = "";
+        $("thread-reply-count").textContent = "noch 5000";
+        $("thread-reply-status").textContent = "";
+        state.threadReplyTo = null;
+      } else {
+        hideReplyComposer();
+      }
+    }
+    if (!dlg.open) dlg.showModal();
+    try {
+      const { status, context } = await loadThreadContext(id);
+      renderThreadView(status, context);
+      if (opts.focusReply) openReplyComposer(id);
+    } catch (err) {
+      $("thread-body").innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function threadDraftPending() {
+    const raw = $("thread-reply-text").value.trim();
+    if (!raw) return false;
+    const expected = state.threadReplyTo ? mentionPrefix(state.threadReplyTo) : "";
+    if (expected && raw === expected) return false;
+    return true;
+  }
+
+  function askDiscardReply() {
+    return new Promise((resolve) => {
+      const dlg = $("confirm-dialog");
+      const finish = (yes) => {
+        $("confirm-yes").onclick = null;
+        $("confirm-no").onclick = null;
+        dlg.oncancel = null;
+        if (dlg.open) dlg.close();
+        resolve(yes);
+      };
+      $("confirm-yes").onclick = () => finish(true);
+      $("confirm-no").onclick = () => finish(false);
+      dlg.oncancel = (ev) => {
+        ev.preventDefault();
+        finish(false);
+      };
+      dlg.showModal();
+    });
+  }
+
+  function hideReplyComposer() {
+    $("thread-reply-form").hidden = true;
+    $("thread-reply-text").value = "";
+    $("thread-reply-status").textContent = "";
+    $("thread-reply-count").textContent = "noch 5000";
+    $("thread-reply-to").textContent = "";
+    document.querySelectorAll("#thread-body .status").forEach((n) => {
+      n.classList.remove("is-reply-target");
+    });
+    state.threadReplyTo = null;
+  }
+
+  function openReplyComposer(id) {
+    $("thread-reply-form").hidden = false;
+    selectThreadReply(id);
+    $("thread-reply-text").focus();
+  }
+
+  async function requestCloseReplyComposer() {
+    if (threadDraftPending()) {
+      const discard = await askDiscardReply();
+      if (!discard) {
+        $("thread-reply-text").focus();
+        return false;
+      }
+    }
+    hideReplyComposer();
+    return true;
+  }
+
+  function closeThread() {
+    hideReplyComposer();
+    state.threadRootId = null;
+    state.threadById = new Map();
+    if ($("confirm-dialog").open) $("confirm-dialog").close();
+    if ($("thread-dialog").open) $("thread-dialog").close();
+  }
+
+  async function requestCloseThread() {
+    if (threadDraftPending()) {
+      const discard = await askDiscardReply();
+      if (!discard) {
+        $("thread-reply-text").focus();
+        return;
+      }
+    }
+    closeThread();
+  }
+
   async function actOnStatus(id, act, btn) {
     try {
       if (act === "fav") {
@@ -362,11 +683,11 @@
         btn.classList.toggle("on-boost", s.reblogged);
         btn.textContent = "↻ " + (s.reblogs_count || 0);
       } else if (act === "reply") {
-        const s = await api("/api/v1/statuses/" + id);
-        state.replyTo = s;
-        $("compose-text").value = "@" + s.account.acct + " ";
-        $("compose-dialog").showModal();
-        $("compose-text").focus();
+        if ($("thread-dialog").open && state.threadById.has(id)) {
+          openReplyComposer(id);
+          return;
+        }
+        openThread(id, { focusReply: true });
       }
     } catch (err) {
       alert(err.message);
@@ -390,6 +711,16 @@
       }
       actOnStatus(article.getAttribute("data-id"), act, btn);
       return;
+    }
+    if (!ev.target.closest("a, button, input, textarea, select, video, label")) {
+      const article = ev.target.closest(".status");
+      if (article) {
+        const id = article.getAttribute("data-id");
+        if (article.closest("#thread-dialog")) {
+          if (!$("thread-reply-form").hidden) selectThreadReply(id);
+        } else openThread(id);
+        return;
+      }
     }
     const expand = ev.target.closest("[data-expand]");
     if (expand) {
@@ -545,6 +876,39 @@
   $("btn-search").addEventListener("click", openSearch);
   $("btn-profile").addEventListener("click", () => state.me && openProfile(state.me.id));
   $("overlay-close").addEventListener("click", () => $("overlay-dialog").close());
+  $("thread-close").addEventListener("click", () => requestCloseThread());
+  $("thread-reply-close").addEventListener("click", () => requestCloseReplyComposer());
+  $("thread-dialog").addEventListener("cancel", (ev) => {
+    ev.preventDefault();
+    requestCloseThread();
+  });
+  $("thread-reply-text").addEventListener("input", () => {
+    $("thread-reply-count").textContent = "noch " + (5000 - $("thread-reply-text").value.length);
+  });
+  $("thread-reply-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const raw = $("thread-reply-text").value.trim();
+    if (!raw || !state.threadReplyTo) return;
+    const text = ensureReplyMentions(raw, state.threadReplyTo);
+    $("thread-reply-status").textContent = "Sende…";
+    try {
+      await api("/api/v1/statuses", {
+        method: "POST",
+        body: {
+          status: text,
+          in_reply_to_id: state.threadReplyTo.id,
+          visibility: state.threadReplyTo.visibility || "public",
+        },
+      });
+      const rootId = state.threadRootId;
+      hideReplyComposer();
+      await openThread(rootId);
+      loadTimeline("home", true);
+      loadTimeline("local", true);
+    } catch (err) {
+      $("thread-reply-status").textContent = err.message;
+    }
+  });
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
     if (document.querySelector("dialog[open]")) return;
