@@ -254,6 +254,7 @@
       <button type="button" class="icon-btn" id="media-close" title="Schließen" aria-label="Medien schließen">×</button>
     </div>
     <div id="media-stage" class="media-stage"></div>
+    <p id="media-alt" class="media-alt-view" hidden></p>
     <footer class="media-bar">
       <button type="button" class="primary" id="media-download">Herunterladen</button>
     </footer>
@@ -300,10 +301,10 @@
 
   <dialog id="confirm-dialog">
     <div class="overlay-head">
-      <h2>Antwort verwerfen?</h2>
+      <h2 id="confirm-title">Antwort verwerfen?</h2>
     </div>
     <div class="confirm-body">
-      <p>Die angefangene Antwort geht verloren.</p>
+      <p id="confirm-message">Die angefangene Antwort geht verloren.</p>
       <footer>
         <button type="button" class="ghost" id="confirm-no">Weiter schreiben</button>
         <button type="button" class="primary" id="confirm-yes">Verwerfen</button>

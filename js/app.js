@@ -282,10 +282,11 @@
     if (!el) return;
     el.innerHTML = (list || [])
       .map((item, i) => {
+        const alt = escapeHtml(item.alt || "");
         const media = item.kind === "video"
           ? `<video src="${escapeHtml(item.preview)}" muted></video>`
-          : `<img alt="" src="${escapeHtml(item.preview)}" />`;
-        return `<div class="attach-item">${media}<button type="button" class="attach-remove" data-attach-rm="${which}:${i}" aria-label="Anhang entfernen">×</button></div>`;
+          : `<img alt="${alt}" src="${escapeHtml(item.preview)}" />`;
+        return `<div class="attach-item">${media}<label class="attach-alt"><span>Alt-Text</span><textarea data-attach-alt="${which}:${i}" maxlength="1500" rows="2" placeholder="Beschreibung für Screenreader…">${alt}</textarea></label><button type="button" class="attach-remove" data-attach-rm="${which}:${i}" aria-label="Anhang entfernen">×</button></div>`;
       })
       .join("");
   }
@@ -293,19 +294,27 @@
   function addAttachFiles(which, fileList) {
     const list = which === "thread" ? state.threadAttach : state.composeAttach;
     const statusId = which === "thread" ? "thread-reply-status" : "compose-status";
+    const elId = which === "thread" ? "thread-attach-list" : "compose-attach-list";
+    let firstNew = -1;
     [...(fileList || [])].forEach((file) => {
       const err = canAddAttach(list, file);
       if (err) {
         if ($(statusId)) $(statusId).textContent = err;
         return;
       }
+      if (firstNew < 0) firstNew = list.length;
       list.push({
         file,
         kind: attachKind(file),
         preview: URL.createObjectURL(file),
+        alt: "",
       });
     });
-    paintAttachList(which === "thread" ? "thread-attach-list" : "compose-attach-list", list, which);
+    paintAttachList(elId, list, which);
+    if (firstNew >= 0) {
+      const ta = document.querySelector(`[data-attach-alt="${which}:${firstNew}"]`);
+      if (ta) ta.focus();
+    }
   }
 
   function removeAttach(which, index) {
@@ -394,10 +403,15 @@
       file: item.file,
       kind: item.kind === "video" ? "video" : "image",
       preview: URL.createObjectURL(item.file),
+      alt: item.alt || "",
     }));
     paintAttachList("compose-attach-list", state.composeAttach, "compose");
     if ($("drafts-dialog").open) $("drafts-dialog").close();
     if (!$("compose-dialog").open) $("compose-dialog").showModal();
+  }
+
+  function attachAltMissing(list) {
+    return (list || []).some((item) => !String(item.alt || "").trim());
   }
 
   async function uploadAttachList(list) {
@@ -405,8 +419,18 @@
     for (const item of list || []) {
       const body = new FormData();
       body.append("file", item.file);
+      const alt = String(item.alt || "").trim();
+      if (alt) body.append("description", alt);
       const media = await api("/api/v1/media", { method: "POST", body });
       if (!media || !media.id) throw new Error("Medien-Upload fehlgeschlagen");
+      if (alt && String(media.description || "").trim() !== alt) {
+        try {
+          await api("/api/v1/media/" + encodeURIComponent(media.id), {
+            method: "PUT",
+            body: { description: alt },
+          });
+        } catch { /* Instanz erlaubt kein Update */ }
+      }
       ids.push(media.id);
     }
     return ids;
@@ -710,7 +734,8 @@
           const img = preview && type !== "audio"
             ? `<img alt="${escapeHtml(alt)}" loading="lazy" src="${escapeHtml(preview)}" />`
             : `<span class="media-thumb-fallback" aria-hidden="true">${type === "audio" ? "♪" : "▣"}</span>`;
-          return `<button type="button" class="media-thumb" data-media-open title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" data-media-url="${escapeHtml(full)}" data-media-preview="${escapeHtml(preview)}" data-media-type="${escapeHtml(type)}" data-media-alt="${escapeHtml(alt)}">${img}${play ? `<span class="media-play" aria-hidden="true">▶</span>` : ""}</button>`;
+          const caption = alt ? `<p class="media-alt">${escapeHtml(alt)}</p>` : "";
+          return `<div class="media-cell"><button type="button" class="media-thumb" data-media-open title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" data-media-url="${escapeHtml(full)}" data-media-preview="${escapeHtml(preview)}" data-media-type="${escapeHtml(type)}" data-media-alt="${escapeHtml(alt)}">${img}${play ? `<span class="media-play" aria-hidden="true">▶</span>` : ""}</button>${caption}</div>`;
         })
         .join("") +
       `</div>`
@@ -1490,23 +1515,49 @@
     return true;
   }
 
-  function askDiscardReply() {
+  function askConfirm({ title, message, noLabel, yesLabel }) {
     return new Promise((resolve) => {
       const dlg = $("confirm-dialog");
+      const titleEl = $("confirm-title");
+      const msgEl = $("confirm-message");
+      const noBtn = $("confirm-no");
+      const yesBtn = $("confirm-yes");
+      if (titleEl) titleEl.textContent = title;
+      if (msgEl) msgEl.textContent = message;
+      if (noBtn) noBtn.textContent = noLabel;
+      if (yesBtn) yesBtn.textContent = yesLabel;
       const finish = (yes) => {
-        $("confirm-yes").onclick = null;
-        $("confirm-no").onclick = null;
+        yesBtn.onclick = null;
+        noBtn.onclick = null;
         dlg.oncancel = null;
         if (dlg.open) dlg.close();
         resolve(yes);
       };
-      $("confirm-yes").onclick = () => finish(true);
-      $("confirm-no").onclick = () => finish(false);
+      yesBtn.onclick = () => finish(true);
+      noBtn.onclick = () => finish(false);
       dlg.oncancel = (ev) => {
         ev.preventDefault();
         finish(false);
       };
       dlg.showModal();
+    });
+  }
+
+  function askDiscardReply() {
+    return askConfirm({
+      title: "Antwort verwerfen?",
+      message: "Die angefangene Antwort geht verloren.",
+      noLabel: "Weiter schreiben",
+      yesLabel: "Verwerfen",
+    });
+  }
+
+  function askMissingAlt() {
+    return askConfirm({
+      title: "Kein Alt-Text",
+      message: "Mindestens ein Bild oder Video hat keine Beschreibung. Du kannst zurück und Alt-Text ergänzen, oder den Post trotzdem senden.",
+      noLabel: "Zurück",
+      yesLabel: "Trotzdem senden",
     });
   }
 
@@ -1651,6 +1702,11 @@
     }
     stage.innerHTML = "";
     state.mediaView = null;
+    const cap = $("media-alt");
+    if (cap) {
+      cap.hidden = true;
+      cap.textContent = "";
+    }
   }
 
   function closeMedia() {
@@ -1676,6 +1732,16 @@
       stage.innerHTML = `<audio controls autoplay src="${escapeHtml(url)}"></audio>`;
     } else {
       stage.innerHTML = `<img alt="${escapeHtml(alt)}" src="${escapeHtml(url)}" />`;
+    }
+    const cap = $("media-alt");
+    if (cap) {
+      if (alt) {
+        cap.hidden = false;
+        cap.textContent = alt;
+      } else {
+        cap.hidden = true;
+        cap.textContent = "";
+      }
     }
     const dlg = $("media-dialog");
     if (!dlg.open) dlg.showModal();
@@ -1704,6 +1770,14 @@
     if (mediaOpen) {
       openMediaFromEl(mediaOpen);
       return;
+    }
+    const mediaAlt = ev.target.closest(".media-alt");
+    if (mediaAlt) {
+      const thumb = mediaAlt.closest(".media-cell") && mediaAlt.closest(".media-cell").querySelector("[data-media-open]");
+      if (thumb) {
+        openMediaFromEl(thumb);
+        return;
+      }
     }
     const acctOpen = ev.target.closest("[data-acct-open]");
     if (acctOpen) {
@@ -1947,6 +2021,16 @@
       $("compose-status").textContent = "Text oder Anhang fehlt.";
       return;
     }
+    if (state.composeAttach.length && attachAltMissing(state.composeAttach)) {
+      const sendAnyway = await askMissingAlt();
+      if (!sendAnyway) {
+        const empty = document.querySelector("#compose-attach-list [data-attach-alt]");
+        const missing = [...document.querySelectorAll("#compose-attach-list [data-attach-alt]")]
+          .find((ta) => !ta.value.trim());
+        (missing || empty || $("compose-text")).focus();
+        return;
+      }
+    }
     $("compose-status").textContent = "Sende…";
     try {
       const payload = {
@@ -2017,6 +2101,14 @@
     addAttachFiles("compose", ev.target.files);
     ev.target.value = "";
   });
+  document.addEventListener("input", (ev) => {
+    const ta = ev.target && ev.target.closest && ev.target.closest("[data-attach-alt]");
+    if (!ta) return;
+    const parts = String(ta.getAttribute("data-attach-alt") || "").split(":");
+    const list = parts[0] === "thread" ? state.threadAttach : state.composeAttach;
+    const item = list[Number(parts[1])];
+    if (item) item.alt = ta.value;
+  });
   $("compose-draft").addEventListener("click", () => saveCurrentDraft());
   $("btn-drafts").addEventListener("click", () => openDrafts());
   $("drafts-close").addEventListener("click", () => $("drafts-dialog").close());
@@ -2058,6 +2150,15 @@
     ev.preventDefault();
     const raw = $("thread-reply-text").value.trim();
     if ((!raw && !state.threadAttach.length) || !state.threadReplyTo) return;
+    if (state.threadAttach.length && attachAltMissing(state.threadAttach)) {
+      const sendAnyway = await askMissingAlt();
+      if (!sendAnyway) {
+        const missing = [...document.querySelectorAll("#thread-attach-list [data-attach-alt]")]
+          .find((ta) => !ta.value.trim());
+        (missing || $("thread-reply-text")).focus();
+        return;
+      }
+    }
     const text = raw ? ensureReplyMentions(raw, state.threadReplyTo) : ensureReplyMentions("", state.threadReplyTo);
     $("thread-reply-status").textContent = "Sende…";
     try {

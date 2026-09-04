@@ -728,8 +728,22 @@ button.acct-open-inline:hover {
 .media {
   margin: 8px 0 0 50px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.media-cell { min-width: 0; }
+.media-alt {
+  margin: 4px 2px 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.25;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+  cursor: pointer;
 }
 button.media-thumb {
   position: relative;
@@ -802,6 +816,18 @@ button.media-thumb:hover { border-color: var(--cyan); }
   background: #000;
 }
 .media-stage audio { width: min(100%, 480px); }
+.media-alt-view {
+  margin: 0;
+  padding: 8px 14px 10px;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  max-height: 7em;
+  overflow: auto;
+  flex-shrink: 0;
+  border-top: 1px solid var(--line);
+}
 .media-bar {
   display: flex;
   justify-content: flex-end;
@@ -887,7 +913,7 @@ dialog[open] { display: flex; flex-direction: column; }
   color: var(--cyan);
   text-shadow: 1px 0 0 #ff7edb55, 0 0 10px #03edf966;
 }
-#compose-form input, #compose-form textarea {
+#compose-form > input, #compose-form > textarea {
   margin: 10px 14px 0;
   width: calc(100% - 28px);
   background: #191621;
@@ -895,32 +921,62 @@ dialog[open] { display: flex; flex-direction: column; }
   border-radius: 6px;
   padding: 10px;
 }
-#compose-form textarea { min-height: 160px; resize: vertical; }
+#compose-form > textarea { min-height: 160px; resize: vertical; }
 .attach-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
-  padding: 0 14px 8px;
+  padding: 10px 14px 8px;
 }
 .attach-item {
   position: relative;
-  width: 72px;
-  height: 72px;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  padding-right: 18px;
 }
 .attach-item img,
 .attach-item video {
-  width: 100%;
-  height: 100%;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
   object-fit: cover;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #000;
   display: block;
 }
+.attach-alt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.attach-alt span {
+  font-family: var(--font-ui);
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.attach-alt textarea {
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  resize: vertical;
+  background: #191621;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--fg);
+  font: inherit;
+  line-height: 1.2;
+}
 .attach-item .attach-remove {
   position: absolute;
   top: -6px;
-  right: -6px;
+  right: -2px;
   width: 22px;
   height: 22px;
   padding: 0;
@@ -1017,7 +1073,7 @@ dialog[open] { display: flex; flex-direction: column; }
   min-width: 0;
   flex: 1;
 }
-.thread-reply textarea {
+#thread-reply-text {
   width: 100%;
   min-height: 88px;
   resize: vertical;
@@ -1026,6 +1082,7 @@ dialog[open] { display: flex; flex-direction: column; }
   border-radius: 6px;
   padding: 10px;
 }
+.thread-reply .attach-list { padding: 8px 0 0; }
 .thread-reply-meta {
   display: flex;
   justify-content: space-between;

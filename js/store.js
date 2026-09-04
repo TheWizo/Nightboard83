@@ -204,7 +204,7 @@ window.RetroDB = (() => {
       const type = file.type || item.type || "application/octet-stream";
       const name = file.name || item.name || key;
       atts[key] = { content_type: type, data: file };
-      meta.push({ key, name, type });
+      meta.push({ key, name, type, alt: String(item.alt || "").trim() });
     });
     return { atts, meta };
   }
@@ -219,7 +219,7 @@ window.RetroDB = (() => {
         const info = meta.find((m) => m.key === key) || {};
         const blob = att.data instanceof Blob ? att.data : new Blob([att.data], { type: att.content_type || info.type || "application/octet-stream" });
         const file = new File([blob], info.name || key, { type: blob.type });
-        return { file, kind: (file.type.split("/")[0] || "file") };
+        return { file, kind: (file.type.split("/")[0] || "file"), alt: info.alt || "" };
       });
   }
 
