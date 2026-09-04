@@ -98,7 +98,7 @@ Tokens and the registered app credentials stay in `localStorage` on that browser
 
 ## Progressive Web App
 
-`manifest.webmanifest` and `sw.js` enable install-to-homescreen. Icons are round chrome discs meant to sit next to 1980s icon packs (e.g. Rad Pack). On Android, the maskable 512×512 asset is used for adaptive icons.
+`manifest.webmanifest` and `sw.js` enable install-to-homescreen. The `any` icons are a transparent neon-pink **NB** glyph so icon packs such as Rad Pack / Rad Walls can keep their chrome disc and place the logo in the well. The maskable 512×512 asset is a circular dark well with the same glyph (transparent corners, not a square) for Android adaptive icons.
 
 Install from the browser’s install prompt (Chrome: the install icon in the address bar, or the menu). On iOS Safari: Share → Add to Home Screen.
 
