@@ -5,6 +5,7 @@ window.RetroDB = (() => {
   const outbox = ready ? new PouchDB("nightboard83-outbox") : null;
   const drafts = ready ? new PouchDB("nightboard83-drafts") : null;
   const blobUrls = new Map();
+  const BLOB_URL_MAX = 80;
   let mediaQueue = Promise.resolve();
 
   function mediaId(url) {
@@ -42,7 +43,7 @@ window.RetroDB = (() => {
       }
       (s.media_attachments || []).forEach((m) => {
         if (m.preview_url) urls.push(m.preview_url);
-        if (m.url) urls.push(m.url);
+        else if (m.type === "image" && m.url) urls.push(m.url);
       });
     };
     if (item && item.type && item.account && item.status !== undefined) {
@@ -147,16 +148,31 @@ window.RetroDB = (() => {
     collectUrls(item).forEach(cacheMedia);
   }
 
+  function rememberBlob(url, obj) {
+    if (blobUrls.has(url)) blobUrls.delete(url);
+    blobUrls.set(url, obj);
+    while (blobUrls.size > BLOB_URL_MAX) {
+      const oldest = blobUrls.keys().next().value;
+      const prev = blobUrls.get(oldest);
+      blobUrls.delete(oldest);
+      if (prev && String(prev).indexOf("blob:") === 0) URL.revokeObjectURL(prev);
+    }
+  }
+
   async function mediaSrc(url) {
     if (!media || !url) return url;
-    if (blobUrls.has(url)) return blobUrls.get(url);
+    if (blobUrls.has(url)) {
+      const hit = blobUrls.get(url);
+      rememberBlob(url, hit);
+      return hit;
+    }
     try {
       const doc = await media.get(mediaId(url), { attachments: true, binary: true });
       const att = doc._attachments && doc._attachments.file;
       if (!att || !att.data) return url;
       const blob = att.data instanceof Blob ? att.data : new Blob([att.data], { type: att.content_type });
       const obj = URL.createObjectURL(blob);
-      blobUrls.set(url, obj);
+      rememberBlob(url, obj);
       return obj;
     } catch {
       return url;

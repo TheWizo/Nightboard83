@@ -4,6 +4,7 @@
   const SCOPES = "read write follow push";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
   const COLS = ["home", "local", "notifications"];
+  const TIMELINE_CAP = 300;
   const LS = {
     app: "nightboard83.app",
     token: "nightboard83.token",
@@ -772,7 +773,7 @@
     }[n.type] || n.type;
     const status = n.status ? statusHtml(n.status) : "";
     return `<div class="notice" data-acct="${escapeHtml(n.account.id)}">
-      <div class="notif-kind"><button type="button" class="acct-open-inline" data-acct-open="${escapeHtml(n.account.id)}">${escapeHtml(n.account.acct)}</button> ${kind}</div>
+      <div class="notif-kind"><button type="button" class="acct-open-inline" data-acct-open="${escapeHtml(n.account.id)}">${escapeHtml(n.account.acct)}</button> ${escapeHtml(kind)}</div>
       <div class="status-head">${accountLine(n.account)}</div>
       ${status}
     </div>`;
@@ -788,10 +789,70 @@
     if (window.RetroDB) RetroDB.hydrateMedia(el);
   }
 
+  function cacheTimelineItems(items) {
+    if (!window.RetroDB || !items || !items.length) return;
+    items.forEach((it) => {
+      RetroDB.cacheItemMedia(it);
+      const inner = it.reblog || it;
+      if (inner && inner.id && !it.type) RetroDB.saveStatus(inner);
+      if (it.status) RetroDB.saveStatus(it.status);
+    });
+  }
+
+  function paintTimelineItem(name, item) {
+    const wrap = document.createElement("div");
+    wrap.innerHTML = name === "notifications" ? noticeHtml(item) : statusHtml(item);
+    const node = wrap.firstElementChild;
+    if (!node) return null;
+    const timed = item.reblog || item;
+    if (timed && timed.created_at) paintTime(node, timed.created_at);
+    return node;
+  }
+
+  function hydrateNodes(nodes) {
+    if (!window.RetroDB || !nodes || !nodes.length) return;
+    nodes.forEach((node) => RetroDB.hydrateMedia(node));
+  }
+
+  function trimTimeline(name) {
+    const t = state.timelines[name];
+    const el = $(name + "-body");
+    if (!t || t.items.length <= TIMELINE_CAP) return;
+    const drop = t.items.length - TIMELINE_CAP;
+    t.items.splice(TIMELINE_CAP, drop);
+    if (el) {
+      const nodes = [...el.children].filter((n) => n.classList.contains("status") || n.classList.contains("notice"));
+      for (let i = 0; i < drop; i++) {
+        const node = nodes[nodes.length - 1 - i];
+        if (node) node.remove();
+      }
+    }
+    t.maxId = t.items.length ? t.items[t.items.length - 1].id : null;
+    t.done = false;
+  }
+
+  function appendTimelineNodes(name, fresh) {
+    const el = $(name + "-body");
+    if (!el || !fresh.length) return;
+    const placeholder = el.querySelector(":scope > .empty, :scope > .error");
+    if (placeholder) placeholder.remove();
+    const nodes = fresh.map((item) => paintTimelineItem(name, item)).filter(Boolean);
+    nodes.forEach((node) => el.appendChild(node));
+    hydrateNodes(nodes);
+  }
+
+  function renderTimeline(name, el) {
+    const t = state.timelines[name];
+    if (name === "notifications") renderNotifications(el, t.items);
+    else renderStatusList(el, t.items, "Noch keine Posts.");
+  }
+
   async function loadTimeline(name, reset) {
     const t = state.timelines[name];
-    if (t.loading || (t.done && !reset)) return;
+    if ((t.loading && !reset) || (t.done && !reset)) return;
     t.loading = true;
+    t.seq = (t.seq || 0) + 1;
+    const seq = t.seq;
     const el = $(name + "-body");
     if (reset) {
       t.items = [];
@@ -800,43 +861,41 @@
       el.innerHTML = `<div class="empty">Lade…</div>`;
     }
     try {
-      let path;
-      if (name === "home") path = "/api/v1/timelines/home?limit=30";
-      else if (name === "local") path = "/api/v1/timelines/public?local=true&limit=30";
-      else path = "/api/v1/notifications?limit=30";
+      let path = timelinePath(name);
       if (t.maxId) path += "&max_id=" + encodeURIComponent(t.maxId);
       const batch = await api(path);
-      if (!batch.length) t.done = true;
-      else {
+      if (seq !== t.seq) return;
+      if (!batch.length) {
+        t.done = true;
+        if (!t.items.length) renderTimeline(name, el);
+      } else {
+        const incremental = t.items.length > 0 && !reset;
         t.items = t.items.concat(batch);
         t.maxId = batch[batch.length - 1].id;
+        if (incremental) appendTimelineNodes(name, batch);
+        else renderTimeline(name, el);
+        trimTimeline(name);
       }
-      if (name === "notifications") renderNotifications(el, t.items);
-      else renderStatusList(el, t.items, "Noch keine Posts.");
       if (window.RetroDB) {
         RetroDB.saveTimeline(name, t.items);
-        t.items.forEach((it) => {
-          RetroDB.cacheItemMedia(it);
-          const inner = it.reblog || it;
-          if (inner && inner.id && !it.type) RetroDB.saveStatus(inner);
-          if (it.status) RetroDB.saveStatus(it.status);
-        });
+        cacheTimelineItems(reset ? t.items : batch);
       }
     } catch (err) {
+      if (seq !== t.seq) return;
       if (window.RetroDB) {
         const cached = await RetroDB.loadTimeline(name);
+        if (seq !== t.seq) return;
         if (cached.length) {
           t.items = cached;
           t.maxId = cached[cached.length - 1].id;
           t.done = false;
-          if (name === "notifications") renderNotifications(el, t.items);
-          else renderStatusList(el, t.items, "Noch keine Posts.");
+          renderTimeline(name, el);
           return;
         }
       }
       el.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
     } finally {
-      t.loading = false;
+      if (seq === t.seq) t.loading = false;
     }
   }
 
@@ -872,15 +931,7 @@
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const pinScroll = el.scrollTop > 24;
     const prevHeight = el.scrollHeight;
-    const nodes = fresh.map((item) => {
-      const wrap = document.createElement("div");
-      if (name === "notifications") wrap.innerHTML = noticeHtml(item);
-      else wrap.innerHTML = statusHtml(item);
-      const node = wrap.firstElementChild;
-      const timed = item.reblog || item;
-      paintTime(node, timed.created_at);
-      return node;
-    });
+    const nodes = fresh.map((item) => paintTimelineItem(name, item)).filter(Boolean);
     nodes.slice().reverse().forEach((node, revI) => {
       if (!reduce) {
         node.classList.add("is-ticker");
@@ -897,7 +948,8 @@
       el.insertBefore(node, el.firstChild);
     });
     if (pinScroll) el.scrollTop = el.scrollHeight - prevHeight + el.scrollTop;
-    if (window.RetroDB) RetroDB.hydrateMedia(el);
+    hydrateNodes(nodes);
+    trimTimeline(name);
   }
 
   async function fetchNewer(name) {
@@ -915,12 +967,7 @@
       prependTicker(name, fresh);
       if (window.RetroDB) {
         RetroDB.saveTimeline(name, t.items);
-        fresh.forEach((it) => {
-          RetroDB.cacheItemMedia(it);
-          const inner = it.reblog || it;
-          if (inner && inner.id && !it.type) RetroDB.saveStatus(inner);
-          if (it.status) RetroDB.saveStatus(it.status);
-        });
+        cacheTimelineItems(fresh);
       }
     } catch {
       /* keep current list */
@@ -1556,8 +1603,17 @@
     return "Bild";
   }
 
+  function isSafeMediaUrl(url) {
+    try {
+      const u = new URL(url, location.href);
+      return u.protocol === "https:" || u.protocol === "http:" || u.protocol === "blob:";
+    } catch {
+      return false;
+    }
+  }
+
   async function downloadMedia(url, filename) {
-    if (!url) return;
+    if (!url || !isSafeMediaUrl(url)) return;
     let href = url;
     let revoke = "";
     try {
@@ -1572,7 +1628,7 @@
         revoke = href;
       }
     } catch {
-      window.open(url, "_blank", "noopener");
+      if (isSafeMediaUrl(url)) window.open(url, "_blank", "noopener");
       return;
     }
     const a = document.createElement("a");
@@ -1606,10 +1662,11 @@
 
   function openMediaFromEl(el) {
     const url = el.getAttribute("data-media-url") || "";
-    if (!url) return;
+    if (!url || !isSafeMediaUrl(url)) return;
     const type = el.getAttribute("data-media-type") || "image";
     const alt = el.getAttribute("data-media-alt") || "";
-    const preview = el.getAttribute("data-media-preview") || "";
+    const previewRaw = el.getAttribute("data-media-preview") || "";
+    const preview = isSafeMediaUrl(previewRaw) ? previewRaw : "";
     state.mediaView = { url, type, alt, preview };
     $("media-title").textContent = mediaTitle(type);
     const stage = $("media-stage");
@@ -1775,7 +1832,7 @@
       btn.addEventListener("click", async () => {
         btn.disabled = true;
         try {
-          const next = await api("/api/v1/accounts/" + id + "/" + pathOf(), { method: "POST" });
+          const next = await api("/api/v1/accounts/" + encodeURIComponent(id) + "/" + pathOf(), { method: "POST" });
           Object.assign(rel, next);
         } catch (err) {
           alert(err.message);
@@ -1792,10 +1849,10 @@
     $("overlay-body").innerHTML = "<p class='hint'>Lade Profil…</p>";
     dlg.showModal();
     try {
-      const acc = await api("/api/v1/accounts/" + id);
+      const acc = await api("/api/v1/accounts/" + encodeURIComponent(id));
       const rels = await api("/api/v1/accounts/relationships?id[]=" + encodeURIComponent(id)).catch(() => []);
       const rel = (rels && rels[0]) || {};
-      const statuses = await api("/api/v1/accounts/" + id + "/statuses?limit=20");
+      const statuses = await api("/api/v1/accounts/" + encodeURIComponent(id) + "/statuses?limit=20");
       const isSelf = Boolean(state.me && state.me.id === acc.id);
       $("overlay-title").textContent = acc.display_name || acc.username;
       $("overlay-body").innerHTML = `
@@ -1829,6 +1886,38 @@
     }
   }
 
+  async function runSearch() {
+    const qEl = $("search-q");
+    const box = $("search-results");
+    if (!qEl || !box) return;
+    const q = qEl.value.trim();
+    if (!q) return;
+    box.innerHTML = "<p class='hint'>Suche…</p>";
+    try {
+      const res = await api("/api/v2/search?q=" + encodeURIComponent(q) + "&resolve=true");
+      const accounts = (res.accounts || [])
+        .map(
+          (a) =>
+            `<div class="search-hit" data-acct-open="${escapeHtml(a.id)}">
+              <strong>${escapeHtml(a.display_name || a.username)}</strong>
+              <div class="acct">@${escapeHtml(a.acct)}</div>
+            </div>`
+        )
+        .join("");
+      const statuses = (res.statuses || []).map((s) => statusHtml(s)).join("");
+      const tags = (res.hashtags || [])
+        .map((t) => `<div class="search-hit">#${escapeHtml(t.name)}</div>`)
+        .join("");
+      box.innerHTML =
+        (accounts ? "<h3>Accounts</h3>" + accounts : "") +
+        (tags ? "<h3>Tags</h3>" + tags : "") +
+        (statuses ? "<h3>Posts</h3>" + statuses : "") ||
+        "<p class='empty'>Nichts gefunden.</p>";
+    } catch (err) {
+      box.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
   function openSearch() {
     $("overlay-title").textContent = "Suche";
     $("overlay-body").innerHTML = `
@@ -1838,39 +1927,6 @@
       </div>
       <div id="search-results"></div>`;
     $("overlay-dialog").showModal();
-    const run = async () => {
-      const q = $("search-q").value.trim();
-      const box = $("search-results");
-      if (!q) return;
-      box.innerHTML = "<p class='hint'>Suche…</p>";
-      try {
-        const res = await api("/api/v2/search?q=" + encodeURIComponent(q) + "&resolve=true");
-        const accounts = (res.accounts || [])
-          .map(
-            (a) =>
-              `<div class="search-hit" data-acct-open="${escapeHtml(a.id)}">
-                <strong>${escapeHtml(a.display_name || a.username)}</strong>
-                <div class="acct">@${escapeHtml(a.acct)}</div>
-              </div>`
-          )
-          .join("");
-        const statuses = (res.statuses || []).map((s) => statusHtml(s)).join("");
-        const tags = (res.hashtags || [])
-          .map((t) => `<div class="search-hit">#${escapeHtml(t.name)}</div>`)
-          .join("");
-        box.innerHTML =
-          (accounts ? "<h3>Accounts</h3>" + accounts : "") +
-          (tags ? "<h3>Tags</h3>" + tags : "") +
-          (statuses ? "<h3>Posts</h3>" + statuses : "") ||
-          "<p class='empty'>Nichts gefunden.</p>";
-      } catch (err) {
-        box.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
-      }
-    };
-    $("search-go").addEventListener("click", run);
-    $("search-q").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") run();
-    });
     $("search-q").focus();
   }
 
@@ -1961,6 +2017,15 @@
     ev.target.value = "";
   });
   $("btn-search").addEventListener("click", openSearch);
+  $("overlay-body").addEventListener("click", (ev) => {
+    if (ev.target.closest("#search-go")) runSearch();
+  });
+  $("overlay-body").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && ev.target && ev.target.id === "search-q") {
+      ev.preventDefault();
+      runSearch();
+    }
+  });
   $("btn-profile").addEventListener("click", () => state.me && openProfile(state.me.id));
   $("overlay-close").addEventListener("click", () => $("overlay-dialog").close());
   $("media-close").addEventListener("click", closeMedia);
