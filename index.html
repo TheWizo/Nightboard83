@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Retrodon '84</title>
   <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#241b2f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Retrodon" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="css/app.css" />
 </head>
 <body class="crt">
@@ -14,13 +22,25 @@
         <span class="logo">RD</span>
         <div>
           <h1>Retrodon <em>'84</em></h1>
-          <p class="instance" id="instance-label">fediverse2.blackneon.net</p>
+          <p class="instance"><span id="instance-label">fediverse2.blackneon.net</span><span id="conn-status" class="conn-status"></span></p>
         </div>
       </div>
       <div class="top-actions" id="top-actions">
         <button type="button" class="ghost" id="btn-search" hidden>Suche</button>
         <button type="button" class="ghost" id="btn-profile" hidden>Profil</button>
         <button type="button" class="primary" id="btn-compose" hidden>Compose</button>
+        <button type="button" class="outbox-btn" id="btn-outbox" hidden title="Postausgang" aria-label="Postausgang">
+          <svg class="outbox-glyph" viewBox="0 0 16 16" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true">
+            <rect x="1" y="9" width="14" height="6" fill="#72f1b8"/>
+            <rect x="0" y="8" width="16" height="2" fill="#03edf9"/>
+            <rect x="7" y="1" width="2" height="8" fill="#fede5d"/>
+            <rect x="5" y="3" width="2" height="2" fill="#fede5d"/>
+            <rect x="9" y="3" width="2" height="2" fill="#fede5d"/>
+            <rect x="3" y="5" width="2" height="2" fill="#fede5d"/>
+            <rect x="11" y="5" width="2" height="2" fill="#fede5d"/>
+          </svg>
+          <span class="outbox-count" id="outbox-count">0</span>
+        </button>
         <button type="button" class="ghost" id="btn-login">Anmelden</button>
         <button type="button" class="ghost danger" id="btn-logout" hidden>Logout</button>
       </div>
@@ -131,6 +151,14 @@
     </form>
   </dialog>
 
+  <dialog id="outbox-dialog">
+    <div class="overlay-head">
+      <h2>Postausgang</h2>
+      <button type="button" class="icon-btn" id="outbox-close" title="Schließen" aria-label="Postausgang schließen">×</button>
+    </div>
+    <div id="outbox-body" class="outbox-body"></div>
+  </dialog>
+
   <dialog id="confirm-dialog">
     <div class="overlay-head">
       <h2>Antwort verwerfen?</h2>
@@ -144,6 +172,15 @@
     </div>
   </dialog>
 
+  <script src="js/pouchdb.min.js"></script>
+  <script src="js/store.js"></script>
   <script src="js/app.js" defer></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js");
+      });
+    }
+  </script>
 </body>
 </html>

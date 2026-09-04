@@ -23,6 +23,9 @@
     threadReplyTo: null,
     threadById: new Map(),
     pollTimer: null,
+    conn: "unknown",
+    carrierTimer: null,
+    flushing: false,
   };
 
   function api(path, opts = {}) {
@@ -32,16 +35,205 @@
       headers["Content-Type"] = "application/json";
       opts = Object.assign({}, opts, { body: JSON.stringify(opts.body) });
     }
-    return fetch(INSTANCE + path, Object.assign({ headers }, opts)).then(async (res) => {
-      const text = await res.text();
-      let data = null;
-      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-      if (!res.ok) {
-        const msg = (data && (data.error || data.error_description)) || res.statusText;
-        throw new Error(msg);
+    return fetch(INSTANCE + path, Object.assign({ headers }, opts)).then(
+      async (res) => {
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+        if (!res.ok) {
+          const msg = (data && (data.error || data.error_description)) || res.statusText;
+          throw new Error(msg);
+        }
+        return data;
+      },
+      (err) => {
+        const wrap = err instanceof Error ? err : new Error(String(err || "Failed to fetch"));
+        wrap.network = true;
+        throw wrap;
       }
-      return data;
-    });
+    );
+  }
+
+  function isNetworkError(err) {
+    if (!err) return false;
+    if (err.network) return true;
+    const msg = String(err.message || err);
+    return /failed to fetch|networkerror|load failed|offline|abort/i.test(msg);
+  }
+
+  function statusSnapshot(status) {
+    if (!status) return null;
+    const s = status.reblog || status;
+    return {
+      id: s.id,
+      created_at: s.created_at,
+      content: s.content,
+      spoiler_text: s.spoiler_text,
+      account: s.account,
+      media_attachments: s.media_attachments || [],
+      mentions: s.mentions || [],
+      url: s.url,
+      visibility: s.visibility,
+      replies_count: s.replies_count,
+    };
+  }
+
+  function paintConn(kind, text) {
+    const el = $("conn-status");
+    if (!el) return;
+    el.textContent = text;
+    el.className = "conn-status " + kind;
+  }
+
+  function finishCarrierLost() {
+    state.carrierTimer = null;
+    if (state.conn !== "carrier-lost") return;
+    state.conn = "offline";
+    paintConn("is-offline", " - not connected");
+  }
+
+  function setConn(next) {
+    if (next === "offline" && state.conn === "online") {
+      state.conn = "carrier-lost";
+      paintConn("is-carrier-lost", " - §$%&?$ CARRIER LOST");
+      if (state.carrierTimer) clearTimeout(state.carrierTimer);
+      state.carrierTimer = setTimeout(finishCarrierLost, 30000);
+      return;
+    }
+    if (next === "offline" && state.conn === "carrier-lost") return;
+    if (next === state.conn) return;
+    if (next === "online") {
+      if (state.carrierTimer) {
+        clearTimeout(state.carrierTimer);
+        state.carrierTimer = null;
+      }
+      state.conn = "online";
+      paintConn("is-connected", " - connected");
+      tryFlushOutbox();
+      return;
+    }
+    if (next === "offline") {
+      if (state.carrierTimer) {
+        clearTimeout(state.carrierTimer);
+        state.carrierTimer = null;
+      }
+      state.conn = "offline";
+      paintConn("is-offline", " - not connected");
+    }
+  }
+
+  async function probeConn() {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 4000);
+      const res = await fetch(INSTANCE + "/api/v1/instance", { signal: ctrl.signal, cache: "no-store" });
+      clearTimeout(timer);
+      setConn(res.ok ? "online" : "offline");
+    } catch {
+      setConn("offline");
+    }
+  }
+
+  function startConnWatch() {
+    window.addEventListener("online", () => probeConn());
+    window.addEventListener("offline", () => setConn("offline"));
+    setInterval(probeConn, 20000);
+    if (navigator.onLine) setConn("online");
+    else setConn("offline");
+    probeConn();
+  }
+
+  async function refreshOutboxBadge() {
+    const btn = $("btn-outbox");
+    if (!btn) return;
+    if (!state.token || !window.RetroDB) {
+      btn.hidden = true;
+      return;
+    }
+    const list = await RetroDB.listOutbox();
+    const n = list.length;
+    $("outbox-count").textContent = String(n);
+    btn.hidden = n === 0;
+    btn.setAttribute("aria-label", "Postausgang (" + n + ")");
+  }
+
+  async function publishStatus(payload, context) {
+    if (state.conn === "online") {
+      try {
+        return await api("/api/v1/statuses", { method: "POST", body: payload });
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+        setConn("offline");
+      }
+    }
+    if (!window.RetroDB) throw new Error("Offline-Speicher nicht verfügbar");
+    await RetroDB.enqueue({ payload, context: context || null });
+    await refreshOutboxBadge();
+    return { queued: true };
+  }
+
+  async function tryFlushOutbox() {
+    if (state.flushing || state.conn !== "online" || !state.token || !window.RetroDB) return;
+    state.flushing = true;
+    let sent = 0;
+    try {
+      const docs = await RetroDB.listOutbox();
+      for (const doc of docs) {
+        try {
+          await api("/api/v1/statuses", { method: "POST", body: doc.payload });
+          await RetroDB.removeOutbox(doc._id);
+          sent += 1;
+        } catch (err) {
+          if (isNetworkError(err)) {
+            setConn("offline");
+            break;
+          }
+          await RetroDB.updateOutbox(doc._id, { error: err.message });
+        }
+      }
+    } finally {
+      state.flushing = false;
+      await refreshOutboxBadge();
+      if ($("outbox-dialog").open) openOutbox();
+      if (sent) {
+        loadTimeline("home", true);
+        loadTimeline("local", true);
+      }
+    }
+  }
+
+  function renderOutboxList(docs) {
+    if (!docs.length) return "<p class='empty'>Postausgang leer.</p>";
+    return docs
+      .map((doc) => {
+        const ctx = doc.context && doc.context.status;
+        const isReply = Boolean(doc.payload && doc.payload.in_reply_to_id);
+        const contextHtml =
+          isReply && ctx
+            ? `<div class="outbox-context"><p class="hint">Antwort auf</p>${statusHtml(ctx, { hideActions: true })}</div>`
+            : isReply
+              ? `<p class="hint">Antwort auf Post ${escapeHtml(doc.payload.in_reply_to_id)}</p>`
+              : `<p class="hint">Neuer Post</p>`;
+        return `<article class="outbox-item" data-outbox-id="${escapeHtml(doc._id)}">
+          ${contextHtml}
+          <textarea class="outbox-edit" maxlength="5000">${escapeHtml(doc.payload.status || "")}</textarea>
+          <div class="outbox-actions">
+            <button type="button" data-outbox-save="${escapeHtml(doc._id)}">Speichern</button>
+            <button type="button" class="danger" data-outbox-del="${escapeHtml(doc._id)}">Löschen</button>
+          </div>
+          ${doc.error ? `<p class="error">${escapeHtml(doc.error)}</p>` : `<p class="hint">Wartet auf Versand</p>`}
+        </article>`;
+      })
+      .join("");
+  }
+
+  async function openOutbox() {
+    const dlg = $("outbox-dialog");
+    $("outbox-body").innerHTML = "<p class='hint'>Lade Postausgang…</p>";
+    if (!dlg.open) dlg.showModal();
+    const docs = window.RetroDB ? await RetroDB.listOutbox() : [];
+    $("outbox-body").innerHTML = renderOutboxList(docs);
+    if (window.RetroDB) RetroDB.hydrateMedia($("outbox-body"));
   }
 
   function loadMeCached() {
@@ -57,6 +249,7 @@
     $("btn-search").hidden = !on;
     $("btn-profile").hidden = !on;
     $("app").classList.toggle("is-logged-in", on);
+    refreshOutboxBadge();
   }
 
   async function ensureApp() {
@@ -270,6 +463,7 @@
       const s = items[i].reblog || items[i];
       paintTime(node, s.created_at);
     });
+    if (window.RetroDB) RetroDB.hydrateMedia(el);
   }
 
   function noticeHtml(n) {
@@ -298,6 +492,7 @@
     }
     el.innerHTML = items.map((n) => noticeHtml(n)).join("");
     [...el.children].forEach((node, i) => paintTime(node, items[i].created_at));
+    if (window.RetroDB) RetroDB.hydrateMedia(el);
   }
 
   async function loadTimeline(name, reset) {
@@ -325,7 +520,27 @@
       }
       if (name === "notifications") renderNotifications(el, t.items);
       else renderStatusList(el, t.items, "Noch keine Posts.");
+      if (window.RetroDB) {
+        RetroDB.saveTimeline(name, t.items);
+        t.items.forEach((it) => {
+          RetroDB.cacheItemMedia(it);
+          const inner = it.reblog || it;
+          if (inner && inner.id && !it.type) RetroDB.saveStatus(inner);
+          if (it.status) RetroDB.saveStatus(it.status);
+        });
+      }
     } catch (err) {
+      if (window.RetroDB) {
+        const cached = await RetroDB.loadTimeline(name);
+        if (cached.length) {
+          t.items = cached;
+          t.maxId = cached[cached.length - 1].id;
+          t.done = false;
+          if (name === "notifications") renderNotifications(el, t.items);
+          else renderStatusList(el, t.items, "Noch keine Posts.");
+          return;
+        }
+      }
       el.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
     } finally {
       t.loading = false;
@@ -342,7 +557,8 @@
   function detailWindowOpen() {
     const thread = $("thread-dialog");
     const overlay = $("overlay-dialog");
-    return (thread && thread.open) || (overlay && overlay.open);
+    const outbox = $("outbox-dialog");
+    return (thread && thread.open) || (overlay && overlay.open) || (outbox && outbox.open);
   }
 
   function timelinePath(name, extra) {
@@ -387,6 +603,7 @@
       el.insertBefore(node, el.firstChild);
     });
     if (pinScroll) el.scrollTop = el.scrollHeight - prevHeight + el.scrollTop;
+    if (window.RetroDB) RetroDB.hydrateMedia(el);
   }
 
   async function fetchNewer(name) {
@@ -402,6 +619,15 @@
       if (!fresh.length) return;
       t.items = fresh.concat(t.items);
       prependTicker(name, fresh);
+      if (window.RetroDB) {
+        RetroDB.saveTimeline(name, t.items);
+        fresh.forEach((it) => {
+          RetroDB.cacheItemMedia(it);
+          const inner = it.reblog || it;
+          if (inner && inner.id && !it.type) RetroDB.saveStatus(inner);
+          if (it.status) RetroDB.saveStatus(it.status);
+        });
+      }
     } catch {
       /* keep current list */
     }
@@ -617,6 +843,13 @@
       `<div class="thread-root">${statusHtml(root, { root: true })}</div>` +
       repliesHtml;
     paintThreadTimes($("thread-body"), ancestors.concat([root], descendants));
+    if (window.RetroDB) {
+      RetroDB.hydrateMedia($("thread-body"));
+      [root].concat(ancestors, descendants).forEach((s) => {
+        RetroDB.saveStatus(s);
+        RetroDB.cacheItemMedia(s);
+      });
+    }
     $("thread-title").textContent = "Thread · " + (root.account.acct || "Post");
     if (!$("thread-reply-form").hidden) {
       const keepId = (state.threadReplyTo && state.threadById.has(state.threadReplyTo.id) && state.threadReplyTo.id) || root.id;
@@ -624,30 +857,73 @@
     }
   }
 
+  async function cachedThreadContext(id) {
+    if (!window.RetroDB) return null;
+    const status = unwrapStatus(await RetroDB.loadStatus(id));
+    if (!status) return null;
+    const all = await RetroDB.allCachedStatuses();
+    const byId = new Map();
+    all.forEach((s) => {
+      const inner = unwrapStatus(s);
+      if (inner && inner.id) byId.set(inner.id, inner);
+    });
+    const ancestors = [];
+    let pid = status.in_reply_to_id;
+    const seen = new Set();
+    while (pid && !seen.has(pid) && byId.has(pid)) {
+      seen.add(pid);
+      const parent = byId.get(pid);
+      ancestors.unshift(parent);
+      pid = parent.in_reply_to_id;
+    }
+    const descendants = [];
+    byId.forEach((s) => {
+      if (s.id === status.id) return;
+      let p = s.in_reply_to_id;
+      const hop = new Set();
+      while (p && !hop.has(p)) {
+        hop.add(p);
+        if (p === status.id) {
+          descendants.push(s);
+          return;
+        }
+        const parent = byId.get(p);
+        p = parent && parent.in_reply_to_id;
+      }
+    });
+    return { status, context: { ancestors, descendants } };
+  }
+
   async function loadThreadContext(id) {
     const path = "/api/v1/statuses/" + encodeURIComponent(id);
-    const status = unwrapStatus(await api(path));
-    let context = { ancestors: [], descendants: [] };
     try {
-      context = (await api(path + "/context")) || context;
-    } catch {
-      context = { ancestors: [], descendants: [] };
-    }
-    context.ancestors = asStatusList(context.ancestors);
-    context.descendants = asStatusList(context.descendants);
-    const needsRemote =
-      !context.descendants.length && (status.replies_count || 0) > 0 && status.url;
-    if (needsRemote) {
+      const status = unwrapStatus(await api(path));
+      let context = { ancestors: [], descendants: [] };
       try {
-        await api("/api/v2/search?q=" + encodeURIComponent(status.url) + "&resolve=true");
-        const again = await api(path + "/context");
-        context.ancestors = asStatusList(again && again.ancestors);
-        context.descendants = asStatusList(again && again.descendants);
+        context = (await api(path + "/context")) || context;
       } catch {
-        /* keep first context */
+        context = { ancestors: [], descendants: [] };
       }
+      context.ancestors = asStatusList(context.ancestors);
+      context.descendants = asStatusList(context.descendants);
+      const needsRemote =
+        !context.descendants.length && (status.replies_count || 0) > 0 && status.url;
+      if (needsRemote && state.conn === "online") {
+        try {
+          await api("/api/v2/search?q=" + encodeURIComponent(status.url) + "&resolve=true");
+          const again = await api(path + "/context");
+          context.ancestors = asStatusList(again && again.ancestors);
+          context.descendants = asStatusList(again && again.descendants);
+        } catch {
+          /* keep first context */
+        }
+      }
+      return { status, context };
+    } catch (err) {
+      const cached = await cachedThreadContext(id);
+      if (cached) return cached;
+      throw err;
     }
-    return { status, context };
   }
 
   async function openThread(id, opts = {}) {
@@ -818,6 +1094,30 @@
     if (refresh) loadTimeline(refresh.getAttribute("data-refresh"), true);
     const hit = ev.target.closest("[data-acct-open]");
     if (hit) openProfile(hit.getAttribute("data-acct-open"));
+    const save = ev.target.closest("[data-outbox-save]");
+    if (save) {
+      const id = save.getAttribute("data-outbox-save");
+      const item = save.closest(".outbox-item");
+      const ta = item && item.querySelector(".outbox-edit");
+      if (id && ta && window.RetroDB) {
+        RetroDB.getOutbox(id).then((doc) => {
+          if (!doc) return;
+          const payload = Object.assign({}, doc.payload, { status: ta.value });
+          return RetroDB.updateOutbox(id, { payload, error: null });
+        }).then(() => openOutbox());
+      }
+      return;
+    }
+    const del = ev.target.closest("[data-outbox-del]");
+    if (del) {
+      const id = del.getAttribute("data-outbox-del");
+      if (id && window.RetroDB) {
+        RetroDB.removeOutbox(id).then(() => {
+          refreshOutboxBadge();
+          openOutbox();
+        });
+      }
+    }
   });
 
   async function openProfile(id) {
@@ -923,14 +1223,18 @@
         spoiler_text: $("compose-spoiler").value.trim() || undefined,
       };
       if (state.replyTo) payload.in_reply_to_id = state.replyTo.id;
-      await api("/api/v1/statuses", { method: "POST", body: payload });
+      const result = await publishStatus(payload, state.replyTo ? { status: statusSnapshot(state.replyTo) } : null);
       $("compose-status").textContent = "";
       $("compose-text").value = "";
       $("compose-spoiler").value = "";
       state.replyTo = null;
       $("compose-dialog").close();
-      loadTimeline("home", true);
-      loadTimeline("local", true);
+      if (result && result.queued) {
+        openOutbox();
+      } else {
+        loadTimeline("home", true);
+        loadTimeline("local", true);
+      }
     } catch (err) {
       $("compose-status").textContent = err.message;
     }
@@ -946,6 +1250,8 @@
     loadTimeline("local", true);
     loadTimeline("notifications", true);
     startPolling();
+    refreshOutboxBadge();
+    tryFlushOutbox();
   }
 
   $("btn-oauth").addEventListener("click", startOAuth);
@@ -964,6 +1270,8 @@
   $("btn-search").addEventListener("click", openSearch);
   $("btn-profile").addEventListener("click", () => state.me && openProfile(state.me.id));
   $("overlay-close").addEventListener("click", () => $("overlay-dialog").close());
+  $("btn-outbox").addEventListener("click", () => openOutbox());
+  $("outbox-close").addEventListener("click", () => $("outbox-dialog").close());
   $("thread-close").addEventListener("click", () => requestCloseThread());
   $("thread-reply-close").addEventListener("click", () => requestCloseReplyComposer());
   $("thread-dialog").addEventListener("cancel", (ev) => {
@@ -980,19 +1288,22 @@
     const text = ensureReplyMentions(raw, state.threadReplyTo);
     $("thread-reply-status").textContent = "Sende…";
     try {
-      await api("/api/v1/statuses", {
-        method: "POST",
-        body: {
-          status: text,
-          in_reply_to_id: state.threadReplyTo.id,
-          visibility: state.threadReplyTo.visibility || "public",
-        },
-      });
+      const payload = {
+        status: text,
+        in_reply_to_id: state.threadReplyTo.id,
+        visibility: state.threadReplyTo.visibility || "public",
+      };
+      const result = await publishStatus(payload, { status: statusSnapshot(state.threadReplyTo) });
       const rootId = state.threadRootId;
       hideReplyComposer();
-      await openThread(rootId);
-      loadTimeline("home", true);
-      loadTimeline("local", true);
+      if (result && result.queued) {
+        $("thread-dialog").close();
+        openOutbox();
+      } else {
+        await openThread(rootId);
+        loadTimeline("home", true);
+        loadTimeline("local", true);
+      }
     } catch (err) {
       $("thread-reply-status").textContent = err.message;
     }
@@ -1007,14 +1318,19 @@
   bindColumnScroll("local");
   bindColumnScroll("notifications");
 
+  startConnWatch();
   loadMeCached();
   if (state.token) {
     setLoggedIn(true);
     refreshMe()
       .then(bootApp)
-      .catch(() => {
-        logout();
-        $("login-status").textContent = "Session ungültig — bitte neu anmelden.";
+      .catch((err) => {
+        if (isNetworkError(err) && state.me) {
+          bootApp();
+        } else {
+          logout();
+          $("login-status").textContent = "Session ungültig — bitte neu anmelden.";
+        }
       });
   } else {
     setLoggedIn(false);
