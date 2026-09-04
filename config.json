@@ -1,3 +1,4 @@
 {
-  "instance": "fediverse2.blackneon.net"
+  "instance": "fediverse2.blackneon.net",
+  "poll_minutes": 2
 }

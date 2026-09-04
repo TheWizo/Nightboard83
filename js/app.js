@@ -1,5 +1,6 @@
 (() => {
   let INSTANCE = "";
+  let POLL_MS = 2 * 60 * 1000;
   const SCOPES = "read write follow push";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
   const COLS = ["home", "local", "notifications"];
@@ -65,11 +66,20 @@
     }
   }
 
+  function pollIntervalMs(cfg) {
+    const raw = cfg && (cfg.poll_minutes ?? cfg.pollMinutes ?? cfg.polling_minutes ?? cfg.poll);
+    const minutes = Number(raw);
+    if (!Number.isFinite(minutes) || minutes <= 0) return 2 * 60 * 1000;
+    const clamped = Math.min(1440, Math.max(0.25, minutes));
+    return Math.round(clamped * 60 * 1000);
+  }
+
   async function initInstance() {
     const cfg = await loadConfig();
     const fromLs = normalizeInstance(localStorage.getItem(LS.instance) || "");
     const fromCfg = normalizeInstance(cfg.instance || cfg.url || cfg.host || "");
     setInstance(fromLs || fromCfg, Boolean(fromLs));
+    POLL_MS = pollIntervalMs(cfg);
   }
   const state = {
     token: localStorage.getItem(LS.token) || "",
@@ -741,7 +751,7 @@
 
   function startPolling() {
     stopPolling();
-    state.pollTimer = setInterval(pollNewPosts, 5 * 60 * 1000);
+    state.pollTimer = setInterval(pollNewPosts, POLL_MS);
   }
 
   function stopPolling() {

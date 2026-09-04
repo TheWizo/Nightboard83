@@ -1,5 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#191621"/>
-  <rect x="28" y="28" width="456" height="456" fill="none" stroke="#ff7edb" stroke-width="14"/>
-  <text x="256" y="318" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" font-size="168" fill="#03edf9" letter-spacing="4">NB</text>
+  <defs>
+    <radialGradient id="chrome" cx="32%" cy="24%" r="78%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="10%" stop-color="#f7f9fc"/>
+      <stop offset="26%" stop-color="#c2ccd8"/>
+      <stop offset="40%" stop-color="#7e8b99"/>
+      <stop offset="50%" stop-color="#eef3f8"/>
+      <stop offset="62%" stop-color="#667280"/>
+      <stop offset="76%" stop-color="#cfd7e1"/>
+      <stop offset="90%" stop-color="#3e4752"/>
+      <stop offset="100%" stop-color="#1c2229"/>
+    </radialGradient>
+    <radialGradient id="well" cx="48%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#2c333c"/>
+      <stop offset="60%" stop-color="#14181d"/>
+      <stop offset="100%" stop-color="#07090c"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="22%" stop-color="#d5dee8"/>
+      <stop offset="48%" stop-color="#8b97a6"/>
+      <stop offset="78%" stop-color="#ff3eb5"/>
+      <stop offset="100%" stop-color="#6b1548"/>
+    </linearGradient>
+    <filter id="pinkglow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="1.4"/></filter>
+  </defs>
+  <circle cx="256" cy="266" r="228" fill="#ff009f" opacity="0.22" filter="url(#soft)"/>
+  <circle cx="256" cy="256" r="230" fill="url(#chrome)"/>
+  <circle cx="256" cy="256" r="230" fill="none" stroke="url(#rim)" stroke-width="20"/>
+  <circle cx="256" cy="256" r="182" fill="url(#well)"/>
+  <circle cx="256" cy="256" r="182" fill="none" stroke="#101318" stroke-width="7"/>
+  <g fill="#ff2eb0" filter="url(#pinkglow)">
+    <rect x="128" y="172" width="40" height="168"/>
+    <rect x="212" y="172" width="40" height="168"/>
+    <polygon points="168,172 212,172 252,340 212,340"/>
+    <rect x="274" y="172" width="40" height="168"/>
+    <path d="M314 172 h56 c32 0 54 18 54 44 0 20-12 34-32 40 24 6 40 24 40 46 0 28-24 42-58 42 h-60 z"/>
+    <path fill="#14181d" d="M314 204 h42 c14 0 24-8 24-18s-10-18-24-18 h-42 z"/>
+    <path fill="#14181d" d="M314 292 h48 c16 0 28-8 28-22s-12-22-28-22 h-48 z"/>
+  </g>
+  <path d="M120 150 A170 170 0 0 1 392 128" fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" opacity="0.45"/>
+  <ellipse cx="168" cy="132" rx="28" ry="10" fill="#ffffff" opacity="0.85"/>
 </svg>
