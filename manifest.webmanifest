@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Retrodon '84",
-  "short_name": "Retrodon",
+  "name": "Nightboard '83",
+  "short_name": "Nightboard",
   "description": "Retro-CRT Client für GoToSocial",
   "start_url": "./",
   "scope": "./",

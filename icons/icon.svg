@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="#191621"/>
   <rect x="28" y="28" width="456" height="456" fill="none" stroke="#ff7edb" stroke-width="14"/>
-  <text x="256" y="318" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" font-size="168" fill="#03edf9" letter-spacing="4">RD</text>
+  <text x="256" y="318" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" font-size="168" fill="#03edf9" letter-spacing="4">NB</text>
 </svg>

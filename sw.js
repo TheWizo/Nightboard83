@@ -1,4 +1,4 @@
-const CACHE = "retrodon84-v2";
+const CACHE = "nightboard83-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -11,6 +11,7 @@ const ASSETS = [
   "./fonts/PressStart2P-latin-ext.woff2",
   "./fonts/VT323.woff2",
   "./fonts/VT323-latin-ext.woff2",
+  "./fonts/Caveat.woff2",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",

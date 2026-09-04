@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Retrodon '84</title>
+  <title>Nightboard '83</title>
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#241b2f" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Retrodon" />
+  <meta name="apple-mobile-web-app-title" content="Nightboard" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
@@ -19,9 +19,9 @@
   <div id="app">
     <header class="topbar">
       <div class="brand">
-        <span class="logo">RD</span>
+        <span class="logo">NB</span>
         <div>
-          <h1>Retrodon <em>'84</em></h1>
+          <h1>Nightboard <em>'83</em></h1>
           <p class="instance"><span id="instance-label">fediverse2.blackneon.net</span><span id="conn-status" class="conn-status"></span></p>
         </div>
       </div>
@@ -47,6 +47,8 @@
     </header>
 
     <section id="login-panel" class="login-panel">
+      <div class="login-stack">
+      <h1 class="login-wordmark"><span class="login-name">Nightboard</span><span class="login-year">'83</span></h1>
       <div class="login-card">
         <h2>Connect to the grid</h2>
         <p>Feste Instanz: <strong>fediverse2.blackneon.net</strong> (GoToSocial). Anmeldung per OAuth — der Code wird nach der Freigabe hier eingefügt.</p>
@@ -61,6 +63,7 @@
           <button type="button" class="primary" id="btn-token">2. Token holen</button>
         </div>
         <p class="hint" id="login-status"></p>
+      </div>
       </div>
     </section>
 

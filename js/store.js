@@ -1,8 +1,8 @@
 window.RetroDB = (() => {
   const ready = typeof PouchDB === "function";
-  const cache = ready ? new PouchDB("retrodon84-cache") : null;
-  const media = ready ? new PouchDB("retrodon84-media") : null;
-  const outbox = ready ? new PouchDB("retrodon84-outbox") : null;
+  const cache = ready ? new PouchDB("nightboard83-cache") : null;
+  const media = ready ? new PouchDB("nightboard83-media") : null;
+  const outbox = ready ? new PouchDB("nightboard83-outbox") : null;
   const blobUrls = new Map();
   let mediaQueue = Promise.resolve();
 

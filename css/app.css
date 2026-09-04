@@ -30,6 +30,13 @@
   src: url("../fonts/VT323.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+@font-face {
+  font-family: "Caveat";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/Caveat.woff2") format("woff2");
+}
 
 :root {
   --bg0: #191621;
@@ -284,8 +291,8 @@ body.crt::before {
   height: min(860px, calc(100vh - 24px));
   min-height: 0;
 }
-#app.is-logged-in .logo,
-#app.is-logged-in .brand h1 { display: none; }
+.topbar .logo,
+.topbar .brand h1 { display: none; }
 .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 button, select, input, textarea {
@@ -329,8 +336,97 @@ button:disabled { opacity: 0.5; cursor: default; }
   place-items: center;
   padding: 24px;
 }
+.login-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(640px, 100%);
+}
+.login-wordmark {
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
+  margin: 0 0 28px;
+  padding: 0.22em 1.7em 0.12em 0;
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  text-align: center;
+}
+.login-name {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  font-family: var(--font-ui);
+  font-size: 1em;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transform: skewX(-10deg);
+  background-image:
+    linear-gradient(
+      185deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.35) 16%,
+      rgba(255, 255, 255, 0) 28%
+    ),
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f4f8ff 6%,
+      #c5d0e0 12%,
+      #7e8ea3 18%,
+      #eef3fa 24%,
+      #9aa8ba 32%,
+      #ffffff 38%,
+      #d9e0ea 44%,
+      #b7c2d0 50%,
+      #ffd4f2 58%,
+      #ff9ae4 68%,
+      #ff7edb 78%,
+      #ff4ec4 90%,
+      #c22e86 100%
+    );
+  background-blend-mode: screen, normal;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 2px #160c22;
+  paint-order: stroke fill;
+  filter:
+    drop-shadow(0 -1px 0 #ffffffcc)
+    drop-shadow(2px 0 0 #160c22)
+    drop-shadow(-2px 0 0 #160c22)
+    drop-shadow(0 2px 0 #160c22)
+    drop-shadow(0 -2px 0 #160c22)
+    drop-shadow(2px 3px 0 #3a1840)
+    drop-shadow(0 0 14px #ffe6f888)
+    drop-shadow(0 0 22px #ff7edb77);
+}
+.login-year {
+  position: absolute;
+  right: -0.06em;
+  top: -0.04em;
+  z-index: 0;
+  margin: 0;
+  font-family: "Caveat", "Comic Sans MS", cursive;
+  font-size: 1.4em;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #ff3eb5;
+  transform: rotate(-12deg);
+  transform-origin: 10% 60%;
+  opacity: 0.94;
+  text-shadow:
+    0 1px 0 #9a1868,
+    0 0 10px #ff7edb99;
+  pointer-events: none;
+}
 .login-card {
-  width: min(520px, 100%);
+  width: 100%;
   background: #241b2fcc;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -667,7 +763,8 @@ dialog[open] { display: flex; flex-direction: column; }
 
 @media (max-width: 960px) {
   body { padding: 6px; }
-  .brand h1 { font-size: 13px; }
+  .login-wordmark { font-size: 32px; padding-right: 1.9em; }
+  .login-year { font-size: 1.56em; }
   #thread-dialog,
   #outbox-dialog {
     width: 100vw;
@@ -685,4 +782,8 @@ dialog[open] { display: flex; flex-direction: column; }
   .col { border-right: 0; border-bottom: 1px solid var(--line); }
   .columns.is-expanded .col.is-expanded { border-bottom: 0; }
   .content, .cw, .media, .actions { margin-left: 0; }
+}
+@media (max-width: 600px) {
+  .login-wordmark { font-size: 24px; padding-right: 2.3em; }
+  .login-year { font-size: 1.95em; }
 }

@@ -3,9 +3,9 @@
   const SCOPES = "read write follow push";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
   const LS = {
-    app: "retrodon84.app",
-    token: "retrodon84.token",
-    me: "retrodon84.me",
+    app: "nightboard83.app",
+    token: "nightboard83.token",
+    me: "nightboard83.me",
   };
 
   const $ = (id) => document.getElementById(id);
@@ -256,7 +256,7 @@
     const cached = localStorage.getItem(LS.app);
     if (cached) return JSON.parse(cached);
     const body = new URLSearchParams({
-      client_name: "Retrodon '84",
+      client_name: "Nightboard '83",
       redirect_uris: OOB,
       scopes: SCOPES,
       website: INSTANCE,
