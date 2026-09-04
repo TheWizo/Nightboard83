@@ -1,4 +1,4 @@
-const CACHE = "nightboard83-v19";
+const CACHE = "nightboard83-v20";
 const ASSETS = [
   "./",
   "./index.html",

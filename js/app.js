@@ -106,6 +106,8 @@
     threadAttach: [],
     editingDraftId: null,
     composeClosing: false,
+    carrierWanted: true,
+    unread: { home: false, local: false, notifications: false },
   };
 
   function api(path, opts = {}) {
@@ -158,11 +160,45 @@
     };
   }
 
+  function paintCarrierBtn() {
+    const btn = $("btn-carrier");
+    if (!btn) return;
+    const on = state.conn === "online";
+    btn.classList.toggle("is-online", on);
+    btn.classList.toggle("is-offline", !on);
+    btn.setAttribute("aria-pressed", String(on));
+    btn.title = on ? "Verbindung trennen" : "Verbinden";
+    btn.setAttribute("aria-label", on ? "Verbindung trennen" : "Verbindung herstellen");
+  }
+
+  function hangUp() {
+    state.carrierWanted = false;
+    stopPolling();
+    if (state.carrierTimer) {
+      clearTimeout(state.carrierTimer);
+      state.carrierTimer = null;
+    }
+    state.conn = "offline";
+    paintConn("is-offline", "not connected");
+  }
+
+  function pickUp() {
+    state.carrierWanted = true;
+    probeConn();
+    if (state.token) startPolling();
+  }
+
+  function toggleCarrier() {
+    if (state.conn === "online") hangUp();
+    else pickUp();
+  }
+
   function paintConn(kind, text) {
     const el = $("conn-status");
     if (!el) return;
     el.textContent = text;
     el.className = "conn-status " + kind;
+    paintCarrierBtn();
   }
 
   function finishCarrierLost() {
@@ -203,6 +239,13 @@
   }
 
   async function probeConn() {
+    if (!state.carrierWanted) {
+      if (state.conn !== "offline") {
+        state.conn = "offline";
+        paintConn("is-offline", "not connected");
+      }
+      return;
+    }
     if (!INSTANCE) {
       setConn("offline");
       return;
@@ -219,10 +262,12 @@
   }
 
   function startConnWatch() {
-    window.addEventListener("online", () => probeConn());
+    window.addEventListener("online", () => {
+      if (state.carrierWanted) probeConn();
+    });
     window.addEventListener("offline", () => setConn("offline"));
     setInterval(probeConn, 20000);
-    if (navigator.onLine) setConn("online");
+    if (navigator.onLine && state.carrierWanted) setConn("online");
     else setConn("offline");
     probeConn();
   }
@@ -1033,6 +1078,10 @@
       if (!fresh.length) return;
       t.items = fresh.concat(t.items);
       prependTicker(name, fresh);
+      if (state.collapsed[name]) {
+        state.unread[name] = true;
+        paintUnread();
+      }
       if (window.RetroDB) {
         RetroDB.saveTimeline(name, t.items);
         cacheTimelineItems(fresh);
@@ -1043,7 +1092,7 @@
   }
 
   async function pollNewPosts() {
-    if (!state.token || detailWindowOpen() || document.hidden) return;
+    if (!state.carrierWanted || !state.token || detailWindowOpen() || document.hidden) return;
     await Promise.all([fetchNewer("home"), fetchNewer("local"), fetchNewer("notifications")]);
   }
 
@@ -1112,6 +1161,13 @@
     return document.querySelector('.dock-icon[data-restore="' + name + '"]');
   }
 
+  function paintUnread() {
+    COLS.forEach((id) => {
+      const btn = dockBtn(id);
+      if (btn) btn.classList.toggle("has-unread", Boolean(state.unread[id]));
+    });
+  }
+
   function paintCollapsed() {
     const logged = $("app").classList.contains("is-logged-in");
     const visible = COLS.filter((id) => !state.collapsed[id]);
@@ -1136,6 +1192,7 @@
         if (btn) btn.hidden = !state.collapsed[id];
       });
     }
+    paintUnread();
   }
 
   function asRect(r) {
@@ -1232,6 +1289,7 @@
       saveCollapsed();
       if (btn) btn.style.visibility = "";
       paintCollapsed();
+      paintUnread();
     } finally {
       state.colBusy = false;
     }
@@ -1245,7 +1303,9 @@
       const from = btn ? btn.getBoundingClientRect() : null;
       const wasEmpty = COLS.every((id) => state.collapsed[id]);
       state.collapsed[name] = false;
+      state.unread[name] = false;
       paintCollapsed();
+      paintUnread();
       const logo = $("desktop-logo");
       if (wasEmpty && logo) logo.hidden = false;
       const col = colEl(name);
@@ -2108,7 +2168,7 @@
     loadTimeline("home", true);
     loadTimeline("local", true);
     loadTimeline("notifications", true);
-    startPolling();
+    if (state.carrierWanted) startPolling();
     refreshOutboxBadge();
     refreshDraftsBadge();
     tryFlushOutbox();
@@ -2128,6 +2188,7 @@
     setLoggedIn(false);
     $("login-panel").hidden = false;
   });
+  $("btn-carrier").addEventListener("click", () => toggleCarrier());
   $("btn-compose").addEventListener("click", () => {
     resetCompose();
     $("compose-dialog").showModal();

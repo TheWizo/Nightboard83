@@ -1,22 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Glyph only: Rad Pack / Rad Walls stamps this onto their chrome disc.
-       Transparent canvas so the disc is not covered by a square. -->
+  <!-- Chrome NB + pink '83, transparent canvas for Rad Pack chrome discs. -->
   <defs>
-    <filter id="pinkglow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
+    <linearGradient id="chrome" x1="0.12" y1="0" x2="0.82" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="8%" stop-color="#f4f8ff"/>
+      <stop offset="16%" stop-color="#c5d0e0"/>
+      <stop offset="24%" stop-color="#7e8ea3"/>
+      <stop offset="32%" stop-color="#eef3fa"/>
+      <stop offset="42%" stop-color="#9aa8ba"/>
+      <stop offset="52%" stop-color="#ffffff"/>
+      <stop offset="62%" stop-color="#d9e0ea"/>
+      <stop offset="72%" stop-color="#ffd4f2"/>
+      <stop offset="82%" stop-color="#ff7edb"/>
+      <stop offset="100%" stop-color="#c22e86"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0.2" y1="0" x2="0.55" y2="0.6">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="35%" stop-color="#ffffff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="nbstroke">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="d"/>
+      <feFlood flood-color="#160c22" result="c"/>
+      <feComposite in="c" in2="d" operator="in" result="s"/>
       <feMerge>
-        <feMergeNode in="b"/>
+        <feMergeNode in="s"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
   </defs>
-  <g fill="#ff2eb0" filter="url(#pinkglow)" transform="translate(256 256) scale(0.82) translate(-276 -256)">
-    <rect x="128" y="172" width="40" height="168"/>
-    <rect x="212" y="172" width="40" height="168"/>
-    <polygon points="168,172 212,172 252,340 212,340"/>
-    <rect x="274" y="172" width="40" height="168"/>
-    <path d="M314 172h56c32 0 54 18 54 44 0 20-12 34-32 40 24 6 40 24 40 46 0 28-24 42-58 42h-60z"/>
-    <path fill="#07090c" d="M314 204h42c14 0 24-8 24-18s-10-18-24-18h-42z"/>
-    <path fill="#07090c" d="M314 292h48c16 0 28-8 28-22s-12-22-28-22h-48z"/>
+  <g filter="url(#nbstroke)" transform="translate(210 268) scale(0.78) translate(-276 -256)">
+    <g fill="url(#chrome)">
+      <rect x="128" y="172" width="40" height="168"/>
+      <rect x="212" y="172" width="40" height="168"/>
+      <polygon points="168,172 212,172 252,340 212,340"/>
+      <rect x="274" y="172" width="40" height="168"/>
+      <path fill-rule="evenodd" d="M314 172h56c32 0 54 18 54 44 0 20-12 34-32 40 24 6 40 24 40 46 0 28-24 42-58 42h-60zM314 204h42c14 0 24-8 24-18s-10-18-24-18h-42zM314 292h48c16 0 28-8 28-22s-12-22-28-22h-48z"/>
+    </g>
+    <g fill="url(#sheen)">
+      <rect x="128" y="172" width="40" height="168"/>
+      <rect x="212" y="172" width="40" height="168"/>
+      <polygon points="168,172 212,172 252,340 212,340"/>
+      <rect x="274" y="172" width="40" height="168"/>
+      <path fill-rule="evenodd" d="M314 172h56c32 0 54 18 54 44 0 20-12 34-32 40 24 6 40 24 40 46 0 28-24 42-58 42h-60zM314 204h42c14 0 24-8 24-18s-10-18-24-18h-42zM314 292h48c16 0 28-8 28-22s-12-22-28-22h-48z"/>
+    </g>
   </g>
 </svg>

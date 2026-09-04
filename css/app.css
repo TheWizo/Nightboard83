@@ -176,6 +176,7 @@ body.crt::before {
   body.crt::after { animation: none; }
   .is-ticker { animation: none !important; }
   .conn-status.is-connected { animation: none; opacity: 1; }
+  .dock-icon.has-unread svg { animation: none; }
   .tos-zoom { display: none !important; }
 }
 
@@ -294,18 +295,27 @@ body.crt::before {
   height: min(860px, calc(100vh - 24px));
   min-height: 0;
 }
-.topbar .logo,
-.topbar .brand h1 { display: none; }
+.topbar .brand { display: none; }
 .top-actions {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   flex-wrap: nowrap;
   flex-shrink: 0;
   align-items: center;
 }
+.top-actions .outbox-btn {
+  min-width: 48px;
+  width: 48px;
+  height: 48px;
+  padding: 6px;
+}
+.top-actions .outbox-glyph {
+  width: 28px;
+  height: 28px;
+}
 .top-actions .outbox-btn.primary {
-  min-width: 40px;
-  padding: 4px;
+  min-width: 48px;
+  padding: 6px;
 }
 
 button, select, input, textarea {
@@ -523,7 +533,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   display: flex;
   flex-direction: row;
   flex: 1;
-  gap: 4px;
+  gap: 8px;
   align-items: center;
   min-width: 0;
   padding: 0 8px;
@@ -535,7 +545,8 @@ button:disabled { opacity: 0.5; cursor: default; }
   align-items: center;
   gap: 2px;
   width: 56px;
-  padding: 2px 4px;
+  min-height: 48px;
+  padding: 4px;
   background: transparent;
   border: 1px dotted transparent;
   border-radius: 0;
@@ -547,43 +558,49 @@ button:disabled { opacity: 0.5; cursor: default; }
   image-rendering: pixelated;
 }
 .dock-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 36px;
+  height: 36px;
   display: block;
   image-rendering: pixelated;
+  filter: none;
 }
-.dock-icon.is-home {
-  color: #ffd6f4;
+.dock-icon.is-home { color: #ffd6f4; }
+.dock-icon.is-local { color: #d6fbff; }
+.dock-icon.is-notes { color: #e4ffe8; }
+.dock-icon.has-unread.is-home {
   text-shadow: 0 0 4px #fff, 0 0 8px #ff7edb, 0 0 16px #ff7edb, 0 0 28px #ff7edbee;
 }
-.dock-icon.is-local {
-  color: #d6fbff;
+.dock-icon.has-unread.is-local {
   text-shadow: 0 0 4px #fff, 0 0 8px #03edf9, 0 0 16px #03edf9, 0 0 28px #03edf9ee;
 }
-.dock-icon.is-notes {
-  color: #e4ffe8;
+.dock-icon.has-unread.is-notes {
   text-shadow: 0 0 4px #fff, 0 0 8px #72f1b8, 0 0 16px #72f1b8, 0 0 28px #72f1b8ee;
 }
-.dock-icon.is-home svg {
+.dock-icon.has-unread.is-home svg {
   filter:
     drop-shadow(0 0 2px #fff)
     drop-shadow(0 0 5px #ffb3ec)
     drop-shadow(0 0 12px #ff7edb)
     drop-shadow(0 0 22px #ff7edb);
 }
-.dock-icon.is-local svg {
+.dock-icon.has-unread.is-local svg {
   filter:
     drop-shadow(0 0 2px #fff)
     drop-shadow(0 0 5px #9af7ff)
     drop-shadow(0 0 12px #03edf9)
     drop-shadow(0 0 22px #03edf9);
 }
-.dock-icon.is-notes svg {
+.dock-icon.has-unread.is-notes svg {
   filter:
     drop-shadow(0 0 2px #fff)
     drop-shadow(0 0 5px #b6ffd4)
     drop-shadow(0 0 12px #72f1b8)
     drop-shadow(0 0 22px #72f1b8);
+}
+.dock-icon.has-unread svg { animation: unread-pulse 1.6s ease-in-out infinite; }
+@keyframes unread-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 .dock-icon:hover,
 .dock-icon:focus-visible {
@@ -595,7 +612,45 @@ button:disabled { opacity: 0.5; cursor: default; }
 .dock-icon:hover svg,
 .dock-icon:focus-visible svg {
   filter: none;
+  animation: none;
 }
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
+  background: #241b2fd9;
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  z-index: 5;
+}
+.statusbar .instance {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 21px;
+}
+.carrier-btn {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  padding: 6px;
+  display: inline-grid;
+  place-items: center;
+  background: transparent;
+  image-rendering: pixelated;
+}
+.carrier-btn svg { display: block; image-rendering: pixelated; width: 32px; height: 32px; }
+.carrier-btn .phone-up { display: none; }
+.carrier-btn .phone-down { display: block; }
+.carrier-btn.is-online .phone-up { display: block; }
+.carrier-btn.is-online .phone-down { display: none; }
+.carrier-btn.is-offline { border-color: var(--red); }
+.carrier-btn.is-online { border-color: var(--mint); }
 
 .tos-zoom {
   position: absolute;
@@ -1137,30 +1192,18 @@ dialog[open] { display: flex; flex-direction: column; }
   .topbar {
     flex-wrap: nowrap;
     gap: 6px;
-    padding: 8px 8px;
+    padding: 6px 6px;
   }
-  .brand {
-    flex: 1 1 120px;
-    min-width: 96px;
-    align-items: flex-start;
+  .statusbar {
+    gap: 8px;
+    padding: 4px 8px;
   }
-  .brand > div {
-    min-width: 0;
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-  }
-  .instance {
+  .statusbar .instance {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 1px;
-    width: 100%;
-    min-width: 0;
     font-size: 16px;
-    max-width: none;
-    overflow: visible;
-    white-space: normal;
     line-height: 1.15;
   }
   #instance-label {
@@ -1185,21 +1228,27 @@ dialog[open] { display: flex; flex-direction: column; }
   }
   .conn-status.is-carrier-lost { font-size: 13px; }
   .conn-status::before { content: none; }
+  .carrier-btn {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
   .col-dock {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     padding: 0;
-    gap: 0;
+    gap: 4px;
   }
-  .dock-icon { width: 30px; padding: 2px 0; }
+  .dock-icon { width: 48px; min-height: 44px; padding: 2px 0; }
   .dock-icon span { display: none; }
-  .dock-icon svg { width: 18px; height: 18px; }
-  .top-actions { gap: 1px; }
+  .dock-icon svg { width: 32px; height: 32px; }
+  .top-actions { gap: 4px; }
   .top-actions .outbox-btn {
-    min-width: 32px;
-    height: 32px;
-    padding: 2px;
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 4px;
   }
-  .top-actions .outbox-glyph { width: 18px; height: 18px; }
+  .top-actions .outbox-glyph { width: 26px; height: 26px; }
   #compose-form footer {
     justify-content: space-evenly;
     gap: 20px;

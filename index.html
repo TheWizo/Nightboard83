@@ -22,7 +22,6 @@
         <span class="logo">NB</span>
         <div>
           <h1>Nightboard <em>'83</em></h1>
-          <p class="instance"><span id="instance-label"></span><span id="conn-status" class="conn-status"></span></p>
         </div>
       </div>
       <nav id="col-dock" class="col-dock" hidden aria-label="Eingeklappte Spalten">
@@ -204,6 +203,35 @@
       </section>
     </main>
     <canvas id="tos-zoom" class="tos-zoom" aria-hidden="true"></canvas>
+    <footer class="statusbar" id="statusbar">
+      <p class="instance"><span id="instance-label"></span><span id="conn-status" class="conn-status"></span></p>
+      <button type="button" class="carrier-btn is-offline" id="btn-carrier" title="Verbinden" aria-label="Verbindung herstellen" aria-pressed="false">
+        <svg class="phone-down" viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="0" y="0" width="5" height="5" fill="#ffd0d4"/>
+          <rect x="11" y="0" width="5" height="5" fill="#ffd0d4"/>
+          <rect x="2" y="2" width="12" height="2" fill="#ffe6e8"/>
+          <rect x="3" y="5" width="10" height="11" fill="#fe4450"/>
+          <rect x="5" y="8" width="2" height="2" fill="#191621"/>
+          <rect x="7" y="8" width="2" height="2" fill="#191621"/>
+          <rect x="9" y="8" width="2" height="2" fill="#191621"/>
+          <rect x="5" y="11" width="2" height="2" fill="#191621"/>
+          <rect x="7" y="11" width="2" height="2" fill="#191621"/>
+          <rect x="9" y="11" width="2" height="2" fill="#191621"/>
+        </svg>
+        <svg class="phone-up" viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="0" y="0" width="5" height="4" fill="#d8ffe8"/>
+          <rect x="11" y="0" width="5" height="4" fill="#d8ffe8"/>
+          <rect x="2" y="1" width="12" height="2" fill="#ffffff"/>
+          <rect x="3" y="7" width="10" height="9" fill="#3d3158"/>
+          <rect x="5" y="9" width="2" height="2" fill="#72f1b8"/>
+          <rect x="7" y="9" width="2" height="2" fill="#72f1b8"/>
+          <rect x="9" y="9" width="2" height="2" fill="#72f1b8"/>
+          <rect x="5" y="12" width="2" height="2" fill="#72f1b8"/>
+          <rect x="7" y="12" width="2" height="2" fill="#72f1b8"/>
+          <rect x="9" y="12" width="2" height="2" fill="#72f1b8"/>
+        </svg>
+      </button>
+    </footer>
   </div>
 
   <dialog id="compose-dialog">
