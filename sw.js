@@ -1,4 +1,4 @@
-const CACHE = "nightboard83-v3";
+const CACHE = "nightboard83-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -39,6 +39,21 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  const isConfig = /\/config\.json$/i.test(url.pathname);
+  if (isConfig) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" })
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetched = fetch(event.request)

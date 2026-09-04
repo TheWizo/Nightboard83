@@ -22,7 +22,7 @@
         <span class="logo">NB</span>
         <div>
           <h1>Nightboard <em>'83</em></h1>
-          <p class="instance"><span id="instance-label">fediverse2.blackneon.net</span><span id="conn-status" class="conn-status"></span></p>
+          <p class="instance"><span id="instance-label"></span><span id="conn-status" class="conn-status"></span></p>
         </div>
       </div>
       <div class="top-actions" id="top-actions">
@@ -51,7 +51,11 @@
       <h1 class="login-wordmark"><span class="login-name">Nightboard</span><span class="login-year">'83</span></h1>
       <div class="login-card">
         <h2>Connect to the grid</h2>
-        <p>Feste Instanz: <strong>fediverse2.blackneon.net</strong> (GoToSocial). Anmeldung per OAuth — der Code wird nach der Freigabe hier eingefügt.</p>
+        <label>
+          Instanz
+          <input id="instance-input" type="text" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="mastodon.example" />
+        </label>
+        <p>Anmeldung per OAuth — den Code nach der Freigabe hier einfügen.</p>
         <div class="row">
           <button type="button" class="primary" id="btn-oauth">1. Autorisieren</button>
         </div>

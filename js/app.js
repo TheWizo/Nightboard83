@@ -1,14 +1,74 @@
 (() => {
-  const INSTANCE = "https://fediverse2.blackneon.net";
+  let INSTANCE = "";
   const SCOPES = "read write follow push";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
   const LS = {
     app: "nightboard83.app",
     token: "nightboard83.token",
     me: "nightboard83.me",
+    instance: "nightboard83.instance",
   };
 
   const $ = (id) => document.getElementById(id);
+
+  function instanceHost(url) {
+    try { return new URL(url).host; } catch { return ""; }
+  }
+
+  function normalizeInstance(raw) {
+    let v = String(raw || "").trim();
+    if (!v) return "";
+    v = v.replace(/\/+$/, "");
+    if (!/^https?:\/\//i.test(v)) v = "https://" + v;
+    try {
+      const u = new URL(v);
+      if (!u.hostname) return "";
+      return u.origin;
+    } catch {
+      return "";
+    }
+  }
+
+  function paintInstanceLabel(host) {
+    const el = $("instance-label");
+    if (el) el.textContent = host || "";
+  }
+
+  function setInstance(url, persist) {
+    INSTANCE = url || "";
+    const host = instanceHost(INSTANCE);
+    paintInstanceLabel(host);
+    const input = $("instance-input");
+    if (input && host && document.activeElement !== input) input.value = host;
+    if (persist && INSTANCE) localStorage.setItem(LS.instance, INSTANCE);
+  }
+
+  function applyInstanceFromInput() {
+    const url = normalizeInstance($("instance-input") ? $("instance-input").value : "");
+    if (!url) return "";
+    const prev = localStorage.getItem(LS.instance) || "";
+    if (prev && prev !== url) localStorage.removeItem(LS.app);
+    setInstance(url, true);
+    return url;
+  }
+
+  async function loadConfig() {
+    try {
+      const res = await fetch("./config.json", { cache: "no-store" });
+      if (!res.ok) return {};
+      const data = await res.json();
+      return data && typeof data === "object" ? data : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async function initInstance() {
+    const cfg = await loadConfig();
+    const fromLs = normalizeInstance(localStorage.getItem(LS.instance) || "");
+    const fromCfg = normalizeInstance(cfg.instance || cfg.url || cfg.host || "");
+    setInstance(fromLs || fromCfg, Boolean(fromLs));
+  }
   const state = {
     token: localStorage.getItem(LS.token) || "",
     me: null,
@@ -123,6 +183,10 @@
   }
 
   async function probeConn() {
+    if (!INSTANCE) {
+      setConn("offline");
+      return;
+    }
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 4000);
@@ -254,7 +318,12 @@
 
   async function ensureApp() {
     const cached = localStorage.getItem(LS.app);
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      try {
+        const app = JSON.parse(cached);
+        if (app && app.client_id && app._instance === INSTANCE) return app;
+      } catch { /* re-register */ }
+    }
     const body = new URLSearchParams({
       client_name: "Nightboard '83",
       redirect_uris: OOB,
@@ -270,12 +339,17 @@
       if (!r.ok) throw new Error(data.error || "App-Registrierung fehlgeschlagen");
       return data;
     });
+    app._instance = INSTANCE;
     localStorage.setItem(LS.app, JSON.stringify(app));
     return app;
   }
 
   async function startOAuth() {
     try {
+      if (!applyInstanceFromInput()) {
+        $("login-status").textContent = "Bitte eine gültige Instanz eintragen.";
+        return;
+      }
       $("login-status").textContent = "App wird registriert…";
       const app = await ensureApp();
       const url =
@@ -301,6 +375,10 @@
       return;
     }
     try {
+      if (!applyInstanceFromInput()) {
+        $("login-status").textContent = "Bitte eine gültige Instanz eintragen.";
+        return;
+      }
       const app = await ensureApp();
       const body = new URLSearchParams({
         grant_type: "authorization_code",
@@ -1254,6 +1332,14 @@
     tryFlushOutbox();
   }
 
+  $("instance-input").addEventListener("input", () => {
+    const url = normalizeInstance($("instance-input").value);
+    paintInstanceLabel(url ? instanceHost(url) : $("instance-input").value.trim());
+  });
+  $("instance-input").addEventListener("change", () => {
+    const url = normalizeInstance($("instance-input").value);
+    if (url) $("instance-input").value = instanceHost(url);
+  });
   $("btn-oauth").addEventListener("click", startOAuth);
   $("btn-token").addEventListener("click", exchangeCode);
   $("btn-login").addEventListener("click", () => {
@@ -1318,21 +1404,24 @@
   bindColumnScroll("local");
   bindColumnScroll("notifications");
 
-  startConnWatch();
-  loadMeCached();
-  if (state.token) {
-    setLoggedIn(true);
-    refreshMe()
-      .then(bootApp)
-      .catch((err) => {
-        if (isNetworkError(err) && state.me) {
-          bootApp();
-        } else {
-          logout();
-          $("login-status").textContent = "Session ungültig — bitte neu anmelden.";
-        }
-      });
-  } else {
-    setLoggedIn(false);
-  }
+  (async () => {
+    await initInstance();
+    startConnWatch();
+    loadMeCached();
+    if (state.token) {
+      setLoggedIn(true);
+      refreshMe()
+        .then(bootApp)
+        .catch((err) => {
+          if (isNetworkError(err) && state.me) {
+            bootApp();
+          } else {
+            logout();
+            $("login-status").textContent = "Session ungültig — bitte neu anmelden.";
+          }
+        });
+    } else {
+      setLoggedIn(false);
+    }
+  })();
 })();
