@@ -81,7 +81,7 @@
     },
     replyTo: null,
     expandedCol: null,
-    collapsed: { home: false, local: false, notifications: false },
+    collapsed: { home: true, local: true, notifications: true },
     colBusy: false,
     threadRootId: null,
     threadReplyTo: null,
@@ -90,6 +90,7 @@
     conn: "unknown",
     carrierTimer: null,
     flushing: false,
+    mediaView: null,
   };
 
   function api(path, opts = {}) {
@@ -489,12 +490,15 @@
   }
 
   function accountLine(acct) {
+    const id = escapeHtml(acct.id);
     return (
+      `<button type="button" class="acct-open" data-acct-open="${id}">` +
       `<img class="avatar" alt="" src="${escapeHtml(acct.avatar_static || acct.avatar || "")}" />` +
       `<div class="who">` +
       `<div class="display">${escapeHtml(acct.display_name || acct.username)}</div>` +
       `<div class="acct">@${escapeHtml(acct.acct)} · <span class="time"></span></div>` +
-      `</div>`
+      `</div>` +
+      `</button>`
     );
   }
 
@@ -505,11 +509,16 @@
       `<div class="media">` +
       atts
         .map((m) => {
-          if (m.type === "video" || m.type === "gifv") {
-            return `<video controls preload="metadata" src="${escapeHtml(m.url)}"></video>`;
-          }
-          const src = m.preview_url || m.url;
-          return `<a href="${escapeHtml(m.url)}" target="_blank" rel="noopener"><img alt="${escapeHtml(m.description || "")}" loading="lazy" src="${escapeHtml(src)}" /></a>`;
+          const type = m.type || "image";
+          const preview = m.preview_url || m.url || "";
+          const full = m.url || m.remote_url || preview;
+          const alt = m.description || "";
+          const play = type === "video" || type === "gifv" || type === "audio";
+          const label = type === "video" || type === "gifv" ? "Video anzeigen" : type === "audio" ? "Audio anzeigen" : "Bild anzeigen";
+          const img = preview && type !== "audio"
+            ? `<img alt="${escapeHtml(alt)}" loading="lazy" src="${escapeHtml(preview)}" />`
+            : `<span class="media-thumb-fallback" aria-hidden="true">${type === "audio" ? "♪" : "▣"}</span>`;
+          return `<button type="button" class="media-thumb" data-media-open title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" data-media-url="${escapeHtml(full)}" data-media-preview="${escapeHtml(preview)}" data-media-type="${escapeHtml(type)}" data-media-alt="${escapeHtml(alt)}">${img}${play ? `<span class="media-play" aria-hidden="true">▶</span>` : ""}</button>`;
         })
         .join("") +
       `</div>`
@@ -524,7 +533,7 @@
       : "";
     const body = `<div class="content"${s.spoiler_text ? " hidden" : ""}>${sanitize(s.content)}</div>`;
     const boostLine = boosted
-      ? `<div class="boost-line">↻ ${escapeHtml(boosted.account.display_name || boosted.account.username)} boosted</div>`
+      ? `<div class="boost-line">↻ <button type="button" class="acct-open-inline" data-acct-open="${escapeHtml(boosted.account.id)}">${escapeHtml(boosted.account.display_name || boosted.account.username)}</button> boosted</div>`
       : "";
     const extraClass = opts.root ? " is-thread-root" : "";
     return `<article class="status${extraClass}" data-id="${escapeHtml(s.id)}" data-acct="${escapeHtml(s.account.id)}">
@@ -571,7 +580,7 @@
     }[n.type] || n.type;
     const status = n.status ? statusHtml(n.status) : "";
     return `<div class="notice" data-acct="${escapeHtml(n.account.id)}">
-      <div class="notif-kind">${escapeHtml(n.account.acct)} ${kind}</div>
+      <div class="notif-kind"><button type="button" class="acct-open-inline" data-acct-open="${escapeHtml(n.account.id)}">${escapeHtml(n.account.acct)}</button> ${kind}</div>
       <div class="status-head">${accountLine(n.account)}</div>
       ${status}
     </div>`;
@@ -760,17 +769,27 @@
     });
   }
 
+  function allCollapsed() {
+    return { home: true, local: true, notifications: true };
+  }
+
   function readCollapsed() {
+    const raw = localStorage.getItem(LS.collapsed);
+    if (raw == null) {
+      localStorage.setItem(LS.collapsed, JSON.stringify(COLS));
+      return allCollapsed();
+    }
     const out = { home: false, local: false, notifications: false };
     try {
-      const raw = JSON.parse(localStorage.getItem(LS.collapsed) || "[]");
-      if (Array.isArray(raw)) {
-        raw.forEach((id) => {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((id) => {
           if (id in out) out[id] = true;
         });
+        return out;
       }
-    } catch { /* keep defaults */ }
-    return out;
+    } catch { /* default all minimized */ }
+    return allCollapsed();
   }
 
   function saveCollapsed() {
@@ -1324,6 +1343,92 @@
     }
   }
 
+  function mediaFilename(url, type) {
+    try {
+      const path = new URL(url, location.href).pathname;
+      const base = decodeURIComponent(path.split("/").filter(Boolean).pop() || "");
+      if (base && /\.[a-z0-9]{2,5}$/i.test(base)) return base;
+    } catch { /* ignore */ }
+    const ext = type === "video" || type === "gifv" ? "mp4" : type === "audio" ? "mp3" : "jpg";
+    return "nightboard-media." + ext;
+  }
+
+  function mediaTitle(type) {
+    if (type === "video" || type === "gifv") return "Video";
+    if (type === "audio") return "Audio";
+    return "Bild";
+  }
+
+  async function downloadMedia(url, filename) {
+    if (!url) return;
+    let href = url;
+    let revoke = "";
+    try {
+      const local = window.RetroDB ? await RetroDB.mediaSrc(url) : "";
+      if (local && local.indexOf("blob:") === 0) {
+        href = local;
+      } else {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Download fehlgeschlagen");
+        const blob = await res.blob();
+        href = URL.createObjectURL(blob);
+        revoke = href;
+      }
+    } catch {
+      window.open(url, "_blank", "noopener");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = filename || "media";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if (revoke) setTimeout(() => URL.revokeObjectURL(revoke), 2500);
+  }
+
+  function stopMediaPlayback() {
+    const stage = $("media-stage");
+    if (!stage) return;
+    const av = stage.querySelector("video, audio");
+    if (av) {
+      av.pause();
+      av.removeAttribute("src");
+      av.load();
+    }
+    stage.innerHTML = "";
+    state.mediaView = null;
+  }
+
+  function closeMedia() {
+    const dlg = $("media-dialog");
+    if (dlg && dlg.open) dlg.close();
+    else stopMediaPlayback();
+  }
+
+  function openMediaFromEl(el) {
+    const url = el.getAttribute("data-media-url") || "";
+    if (!url) return;
+    const type = el.getAttribute("data-media-type") || "image";
+    const alt = el.getAttribute("data-media-alt") || "";
+    const preview = el.getAttribute("data-media-preview") || "";
+    state.mediaView = { url, type, alt, preview };
+    $("media-title").textContent = mediaTitle(type);
+    const stage = $("media-stage");
+    if (type === "video" || type === "gifv") {
+      const loop = type === "gifv" ? " loop muted" : "";
+      stage.innerHTML = `<video controls autoplay playsinline${loop} src="${escapeHtml(url)}"${preview ? ` poster="${escapeHtml(preview)}"` : ""}></video>`;
+    } else if (type === "audio") {
+      stage.innerHTML = `<audio controls autoplay src="${escapeHtml(url)}"></audio>`;
+    } else {
+      stage.innerHTML = `<img alt="${escapeHtml(alt)}" src="${escapeHtml(url)}" />`;
+    }
+    const dlg = $("media-dialog");
+    if (!dlg.open) dlg.showModal();
+    if (window.RetroDB) RetroDB.hydrateMedia(stage);
+  }
+
   document.addEventListener("click", (ev) => {
     const btn = ev.target.closest("button[data-act]");
     if (btn) {
@@ -1340,6 +1445,16 @@
         return;
       }
       actOnStatus(article.getAttribute("data-id"), act, btn);
+      return;
+    }
+    const mediaOpen = ev.target.closest("[data-media-open]");
+    if (mediaOpen) {
+      openMediaFromEl(mediaOpen);
+      return;
+    }
+    const acctOpen = ev.target.closest("[data-acct-open]");
+    if (acctOpen) {
+      openProfile(acctOpen.getAttribute("data-acct-open"));
       return;
     }
     if (!ev.target.closest("a, button, input, textarea, select, video, label")) {
@@ -1369,8 +1484,6 @@
     }
     const refresh = ev.target.closest("[data-refresh]");
     if (refresh) loadTimeline(refresh.getAttribute("data-refresh"), true);
-    const hit = ev.target.closest("[data-acct-open]");
-    if (hit) openProfile(hit.getAttribute("data-acct-open"));
     const save = ev.target.closest("[data-outbox-save]");
     if (save) {
       const id = save.getAttribute("data-outbox-save");
@@ -1397,7 +1510,64 @@
     }
   });
 
+  function followLabel(rel) {
+    if (rel.requested) return "Angefragt";
+    if (rel.following) return "Abo beenden";
+    return "Abonnieren";
+  }
+
+  function muteLabel(rel) {
+    return rel.muting ? "Mute aufheben" : "Muten";
+  }
+
+  function blockLabel(rel) {
+    return rel.blocking ? "Block aufheben" : "Blocken";
+  }
+
+  function paintRelButtons(rel) {
+    const followBtn = $("follow-btn");
+    const muteBtn = $("mute-btn");
+    const blockBtn = $("block-btn");
+    if (followBtn) {
+      followBtn.textContent = followLabel(rel);
+      followBtn.classList.toggle("is-on", Boolean(rel.following || rel.requested));
+      followBtn.disabled = Boolean(rel.blocking || rel.blocked_by);
+    }
+    if (muteBtn) {
+      muteBtn.textContent = muteLabel(rel);
+      muteBtn.classList.toggle("is-on", Boolean(rel.muting));
+      muteBtn.disabled = Boolean(rel.blocking);
+    }
+    if (blockBtn) {
+      blockBtn.textContent = blockLabel(rel);
+      blockBtn.classList.toggle("is-block", Boolean(rel.blocking));
+    }
+  }
+
+  function bindProfileActions(id, rel) {
+    const actions = [
+      ["follow-btn", () => (rel.following || rel.requested ? "unfollow" : "follow")],
+      ["mute-btn", () => (rel.muting ? "unmute" : "mute")],
+      ["block-btn", () => (rel.blocking ? "unblock" : "block")],
+    ];
+    actions.forEach(([bid, pathOf]) => {
+      const btn = $(bid);
+      if (!btn) return;
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        try {
+          const next = await api("/api/v1/accounts/" + id + "/" + pathOf(), { method: "POST" });
+          Object.assign(rel, next);
+        } catch (err) {
+          alert(err.message);
+        }
+        paintRelButtons(rel);
+      });
+    });
+  }
+
   async function openProfile(id) {
+    if (!id) return;
     const dlg = $("overlay-dialog");
     $("overlay-title").textContent = "Profil";
     $("overlay-body").innerHTML = "<p class='hint'>Lade Profil…</p>";
@@ -1407,6 +1577,7 @@
       const rels = await api("/api/v1/accounts/relationships?id[]=" + encodeURIComponent(id)).catch(() => []);
       const rel = (rels && rels[0]) || {};
       const statuses = await api("/api/v1/accounts/" + id + "/statuses?limit=20");
+      const isSelf = Boolean(state.me && state.me.id === acc.id);
       $("overlay-title").textContent = acc.display_name || acc.username;
       $("overlay-body").innerHTML = `
         <div class="profile-head">
@@ -1414,7 +1585,12 @@
           <div>
             <div class="display">${escapeHtml(acc.display_name || acc.username)}</div>
             <div class="acct">@${escapeHtml(acc.acct)}</div>
-            ${state.me && state.me.id !== acc.id ? `<p><button type="button" class="primary" id="follow-btn">${rel.following ? "Entfolgen" : "Folgen"}</button></p>` : ""}
+            ${isSelf ? `<p class="hint">Das bist du.</p>` : `<div class="profile-actions">
+              <button type="button" class="primary" id="follow-btn">Abonnieren</button>
+              <button type="button" id="mute-btn">Muten</button>
+              <button type="button" class="danger" id="block-btn">Blocken</button>
+            </div>`}
+            ${!isSelf && rel.blocked_by ? `<p class="hint">Dieser Account hat dich blockiert.</p>` : ""}
           </div>
         </div>
         <div class="profile-note">${sanitize(acc.note || "")}</div>
@@ -1425,18 +1601,9 @@
         </div>
         <div id="profile-statuses"></div>`;
       renderStatusList($("profile-statuses"), statuses, "Keine Posts.");
-      const followBtn = $("follow-btn");
-      if (followBtn) {
-        followBtn.addEventListener("click", async () => {
-          try {
-            const path = rel.following ? `/api/v1/accounts/${id}/unfollow` : `/api/v1/accounts/${id}/follow`;
-            const next = await api(path, { method: "POST" });
-            rel.following = next.following;
-            followBtn.textContent = rel.following ? "Entfolgen" : "Folgen";
-          } catch (err) {
-            alert(err.message);
-          }
-        });
+      if (!isSelf) {
+        paintRelButtons(rel);
+        bindProfileActions(id, rel);
       }
     } catch (err) {
       $("overlay-body").innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
@@ -1555,6 +1722,12 @@
   $("btn-search").addEventListener("click", openSearch);
   $("btn-profile").addEventListener("click", () => state.me && openProfile(state.me.id));
   $("overlay-close").addEventListener("click", () => $("overlay-dialog").close());
+  $("media-close").addEventListener("click", closeMedia);
+  $("media-dialog").addEventListener("close", stopMediaPlayback);
+  $("media-download").addEventListener("click", () => {
+    if (!state.mediaView) return;
+    downloadMedia(state.mediaView.url, mediaFilename(state.mediaView.url, state.mediaView.type));
+  });
   $("btn-outbox").addEventListener("click", () => openOutbox());
   $("outbox-close").addEventListener("click", () => $("outbox-dialog").close());
   $("thread-close").addEventListener("click", () => requestCloseThread());

@@ -164,15 +164,17 @@ window.RetroDB = (() => {
 
   async function hydrateMedia(root) {
     if (!root) return;
-    const els = root.querySelectorAll("img[src], video[src]");
-    await Promise.all(
-      [...els].map(async (el) => {
-        const orig = el.getAttribute("src");
-        if (!orig || orig.indexOf("blob:") === 0) return;
-        const local = await mediaSrc(orig);
-        if (local !== orig) el.src = local;
-      })
-    );
+    const jobs = [];
+    const swap = async (el, attr) => {
+      const orig = el.getAttribute(attr);
+      if (!orig || orig.indexOf("blob:") === 0) return;
+      const local = await mediaSrc(orig);
+      if (local !== orig) el.setAttribute(attr, local);
+    };
+    root.querySelectorAll("img[src]").forEach((el) => jobs.push(swap(el, "src")));
+    root.querySelectorAll("video[src]").forEach((el) => jobs.push(swap(el, "src")));
+    root.querySelectorAll("video[poster]").forEach((el) => jobs.push(swap(el, "poster")));
+    await Promise.all(jobs);
   }
 
   async function enqueue(entry) {
