@@ -3,6 +3,7 @@ window.RetroDB = (() => {
   const cache = ready ? new PouchDB("nightboard83-cache") : null;
   const media = ready ? new PouchDB("nightboard83-media") : null;
   const outbox = ready ? new PouchDB("nightboard83-outbox") : null;
+  const drafts = ready ? new PouchDB("nightboard83-drafts") : null;
   const blobUrls = new Map();
   let mediaQueue = Promise.resolve();
 
@@ -177,10 +178,49 @@ window.RetroDB = (() => {
     await Promise.all(jobs);
   }
 
+  function filesToAttachments(files) {
+    const atts = {};
+    const meta = [];
+    (files || []).forEach((item, i) => {
+      const file = item.file || item.blob || item;
+      if (!file) return;
+      const key = "f" + i;
+      const type = file.type || item.type || "application/octet-stream";
+      const name = file.name || item.name || key;
+      atts[key] = { content_type: type, data: file };
+      meta.push({ key, name, type });
+    });
+    return { atts, meta };
+  }
+
+  function attachmentsToFiles(doc) {
+    const atts = (doc && doc._attachments) || {};
+    const meta = (doc && doc.filesMeta) || [];
+    return Object.keys(atts)
+      .sort()
+      .map((key) => {
+        const att = atts[key];
+        const info = meta.find((m) => m.key === key) || {};
+        const blob = att.data instanceof Blob ? att.data : new Blob([att.data], { type: att.content_type || info.type || "application/octet-stream" });
+        const file = new File([blob], info.name || key, { type: blob.type });
+        return { file, kind: (file.type.split("/")[0] || "file") };
+      });
+  }
+
   async function enqueue(entry) {
     if (!outbox) throw new Error("Offline-Speicher nicht verfügbar");
     const id = "outbox:" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-    const doc = Object.assign({ _id: id, createdAt: Date.now(), error: null }, entry);
+    const files = entry.files || [];
+    const packed = filesToAttachments(files);
+    const doc = {
+      _id: id,
+      createdAt: Date.now(),
+      error: null,
+      payload: entry.payload,
+      context: entry.context || null,
+      filesMeta: packed.meta,
+    };
+    if (Object.keys(packed.atts).length) doc._attachments = packed.atts;
     await outbox.put(doc);
     return doc;
   }
@@ -194,10 +234,10 @@ window.RetroDB = (() => {
       .sort((a, b) => a.createdAt - b.createdAt);
   }
 
-  async function getOutbox(id) {
+  async function getOutbox(id, withFiles) {
     if (!outbox) return null;
     try {
-      return await outbox.get(id);
+      return withFiles ? await outbox.get(id, { attachments: true, binary: true }) : await outbox.get(id);
     } catch {
       return null;
     }
@@ -216,6 +256,53 @@ window.RetroDB = (() => {
     await outbox.remove(doc);
   }
 
+  async function saveDraft(entry, files) {
+    if (!drafts) throw new Error("Offline-Speicher nicht verfügbar");
+    const packed = filesToAttachments(files);
+    const now = Date.now();
+    const id = entry._id || "draft:" + now + "-" + Math.random().toString(36).slice(2, 8);
+    let doc;
+    try {
+      doc = await drafts.get(id);
+    } catch {
+      doc = { _id: id, createdAt: now };
+    }
+    doc.updatedAt = now;
+    doc.text = entry.text || "";
+    doc.spoiler = entry.spoiler || "";
+    doc.visibility = entry.visibility || "public";
+    doc.in_reply_to_id = entry.in_reply_to_id || null;
+    doc.filesMeta = packed.meta;
+    if (Object.keys(packed.atts).length) doc._attachments = packed.atts;
+    else delete doc._attachments;
+    await drafts.put(doc);
+    return doc;
+  }
+
+  async function listDrafts() {
+    if (!drafts) return [];
+    const res = await drafts.allDocs({ include_docs: true });
+    return res.rows
+      .map((r) => r.doc)
+      .filter((d) => d && d._id && d._id.indexOf("draft:") === 0)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
+
+  async function getDraft(id) {
+    if (!drafts || !id) return null;
+    try {
+      return await drafts.get(id, { attachments: true, binary: true });
+    } catch {
+      return null;
+    }
+  }
+
+  async function removeDraft(id) {
+    if (!drafts || !id) return;
+    const doc = await drafts.get(id);
+    await drafts.remove(doc);
+  }
+
   return {
     ready,
     saveTimeline,
@@ -230,5 +317,10 @@ window.RetroDB = (() => {
     getOutbox,
     updateOutbox,
     removeOutbox,
+    attachmentsToFiles,
+    saveDraft,
+    listDrafts,
+    getDraft,
+    removeDraft,
   };
 })();

@@ -101,6 +101,9 @@
     carrierTimer: null,
     flushing: false,
     mediaView: null,
+    composeAttach: [],
+    threadAttach: [],
+    editingDraftId: null,
   };
 
   function api(path, opts = {}) {
@@ -236,9 +239,183 @@
     btn.setAttribute("aria-label", "Postausgang (" + n + ")");
   }
 
-  async function publishStatus(payload, context) {
+  async function refreshDraftsBadge() {
+    const btn = $("btn-drafts");
+    if (!btn) return;
+    if (!state.token || !window.RetroDB) {
+      btn.hidden = true;
+      return;
+    }
+    const list = await RetroDB.listDrafts();
+    const n = list.length;
+    $("drafts-count").textContent = String(n);
+    btn.hidden = n === 0;
+    btn.setAttribute("aria-label", "Entwürfe (" + n + ")");
+  }
+
+  function revokeAttach(list) {
+    (list || []).forEach((item) => {
+      if (item.preview && String(item.preview).indexOf("blob:") === 0) URL.revokeObjectURL(item.preview);
+    });
+  }
+
+  function attachKind(file) {
+    return file && String(file.type || "").indexOf("video/") === 0 ? "video" : "image";
+  }
+
+  function canAddAttach(list, file) {
+    if (!file) return "Ungültige Datei.";
+    if (list.length >= 4) return "Maximal 4 Anhänge.";
+    const kind = attachKind(file);
+    if (kind !== "image" && kind !== "video") return "Nur Bilder oder Videos.";
+    if (!/^image\//.test(file.type) && !/^video\//.test(file.type)) return "Nur Bilder oder Videos.";
+    const hasVid = list.some((x) => x.kind === "video");
+    const hasImg = list.some((x) => x.kind === "image");
+    if (kind === "video" && (hasVid || hasImg)) return "Nur ein Video, nicht zusammen mit Bildern.";
+    if (kind === "image" && hasVid) return "Bilder nicht zusammen mit einem Video.";
+    return "";
+  }
+
+  function paintAttachList(elId, list, which) {
+    const el = $(elId);
+    if (!el) return;
+    el.innerHTML = (list || [])
+      .map((item, i) => {
+        const media = item.kind === "video"
+          ? `<video src="${escapeHtml(item.preview)}" muted></video>`
+          : `<img alt="" src="${escapeHtml(item.preview)}" />`;
+        return `<div class="attach-item">${media}<button type="button" class="attach-remove" data-attach-rm="${which}:${i}" aria-label="Anhang entfernen">×</button></div>`;
+      })
+      .join("");
+  }
+
+  function addAttachFiles(which, fileList) {
+    const list = which === "thread" ? state.threadAttach : state.composeAttach;
+    const statusId = which === "thread" ? "thread-reply-status" : "compose-status";
+    [...(fileList || [])].forEach((file) => {
+      const err = canAddAttach(list, file);
+      if (err) {
+        if ($(statusId)) $(statusId).textContent = err;
+        return;
+      }
+      list.push({
+        file,
+        kind: attachKind(file),
+        preview: URL.createObjectURL(file),
+      });
+    });
+    paintAttachList(which === "thread" ? "thread-attach-list" : "compose-attach-list", list, which);
+  }
+
+  function removeAttach(which, index) {
+    const list = which === "thread" ? state.threadAttach : state.composeAttach;
+    const item = list[index];
+    if (!item) return;
+    if (item.preview && String(item.preview).indexOf("blob:") === 0) URL.revokeObjectURL(item.preview);
+    list.splice(index, 1);
+    paintAttachList(which === "thread" ? "thread-attach-list" : "compose-attach-list", list, which);
+  }
+
+  function resetCompose() {
+    if ($("compose-text")) $("compose-text").value = "";
+    if ($("compose-spoiler")) $("compose-spoiler").value = "";
+    if ($("compose-vis")) $("compose-vis").value = "public";
+    if ($("compose-count")) $("compose-count").textContent = "5000";
+    if ($("compose-status")) $("compose-status").textContent = "";
+    revokeAttach(state.composeAttach);
+    state.composeAttach = [];
+    state.editingDraftId = null;
+    state.replyTo = null;
+    paintAttachList("compose-attach-list", state.composeAttach, "compose");
+  }
+
+  async function saveCurrentDraft() {
+    const text = $("compose-text").value;
+    if (!text.trim() && !state.composeAttach.length) {
+      $("compose-status").textContent = "Nichts zu speichern.";
+      return;
+    }
+    if (!window.RetroDB) {
+      $("compose-status").textContent = "Speicher nicht verfügbar.";
+      return;
+    }
+    try {
+      const doc = await RetroDB.saveDraft({
+        _id: state.editingDraftId || undefined,
+        text,
+        spoiler: $("compose-spoiler").value.trim(),
+        visibility: $("compose-vis").value,
+        in_reply_to_id: state.replyTo ? state.replyTo.id : null,
+      }, state.composeAttach);
+      state.editingDraftId = doc._id;
+      $("compose-status").textContent = "Entwurf gespeichert.";
+      await refreshDraftsBadge();
+    } catch (err) {
+      $("compose-status").textContent = err.message;
+    }
+  }
+
+  async function openDrafts() {
+    const dlg = $("drafts-dialog");
+    $("drafts-body").innerHTML = "<p class='hint'>Lade Entwürfe…</p>";
+    if (!dlg.open) dlg.showModal();
+    const docs = window.RetroDB ? await RetroDB.listDrafts() : [];
+    if (!docs.length) {
+      $("drafts-body").innerHTML = "<p class='empty'>Keine Entwürfe.</p>";
+      return;
+    }
+    $("drafts-body").innerHTML = docs
+      .map((d) => {
+        const snippet = String(d.text || "").trim() || "(nur Medien)";
+        return `<article class="draft-item" data-draft-id="${escapeHtml(d._id)}">
+          <p>${escapeHtml(snippet.slice(0, 180))}</p>
+          <div class="outbox-actions">
+            <button type="button" data-draft-open="${escapeHtml(d._id)}">Öffnen</button>
+            <button type="button" class="danger" data-draft-del="${escapeHtml(d._id)}">Löschen</button>
+          </div>
+        </article>`;
+      })
+      .join("");
+  }
+
+  async function loadDraft(id) {
+    if (!window.RetroDB) return;
+    const doc = await RetroDB.getDraft(id);
+    if (!doc) return;
+    resetCompose();
+    state.editingDraftId = doc._id;
+    $("compose-text").value = doc.text || "";
+    $("compose-spoiler").value = doc.spoiler || "";
+    $("compose-vis").value = doc.visibility || "public";
+    $("compose-count").textContent = String(5000 - ($("compose-text").value.length));
+    const files = RetroDB.attachmentsToFiles(doc);
+    state.composeAttach = files.map((item) => ({
+      file: item.file,
+      kind: item.kind === "video" ? "video" : "image",
+      preview: URL.createObjectURL(item.file),
+    }));
+    paintAttachList("compose-attach-list", state.composeAttach, "compose");
+    if ($("drafts-dialog").open) $("drafts-dialog").close();
+    if (!$("compose-dialog").open) $("compose-dialog").showModal();
+  }
+
+  async function uploadAttachList(list) {
+    const ids = [];
+    for (const item of list || []) {
+      const body = new FormData();
+      body.append("file", item.file);
+      const media = await api("/api/v1/media", { method: "POST", body });
+      if (!media || !media.id) throw new Error("Medien-Upload fehlgeschlagen");
+      ids.push(media.id);
+    }
+    return ids;
+  }
+
+  async function publishStatus(payload, context, files) {
+    files = files || [];
     if (state.conn === "online") {
       try {
+        if (files.length) payload = Object.assign({}, payload, { media_ids: await uploadAttachList(files) });
         return await api("/api/v1/statuses", { method: "POST", body: payload });
       } catch (err) {
         if (!isNetworkError(err)) throw err;
@@ -246,7 +423,7 @@
       }
     }
     if (!window.RetroDB) throw new Error("Offline-Speicher nicht verfügbar");
-    await RetroDB.enqueue({ payload, context: context || null });
+    await RetroDB.enqueue({ payload, context: context || null, files });
     await refreshOutboxBadge();
     return { queued: true };
   }
@@ -257,9 +434,13 @@
     let sent = 0;
     try {
       const docs = await RetroDB.listOutbox();
-      for (const doc of docs) {
+      for (const summary of docs) {
         try {
-          await api("/api/v1/statuses", { method: "POST", body: doc.payload });
+          const doc = (await RetroDB.getOutbox(summary._id, true)) || summary;
+          const files = RetroDB.attachmentsToFiles ? RetroDB.attachmentsToFiles(doc) : [];
+          let payload = Object.assign({}, doc.payload);
+          if (files.length) payload.media_ids = await uploadAttachList(files);
+          await api("/api/v1/statuses", { method: "POST", body: payload });
           await RetroDB.removeOutbox(doc._id);
           sent += 1;
         } catch (err) {
@@ -267,7 +448,7 @@
             setConn("offline");
             break;
           }
-          await RetroDB.updateOutbox(doc._id, { error: err.message });
+          await RetroDB.updateOutbox(summary._id, { error: err.message });
         }
       }
     } finally {
@@ -329,6 +510,7 @@
     $("btn-profile").hidden = !on;
     $("app").classList.toggle("is-logged-in", on);
     refreshOutboxBadge();
+    refreshDraftsBadge();
     if (on) {
       state.collapsed = readCollapsed();
       paintCollapsed();
@@ -666,10 +848,11 @@
   }
 
   function detailWindowOpen() {
-    const thread = $("thread-dialog");
-    const overlay = $("overlay-dialog");
-    const outbox = $("outbox-dialog");
-    return (thread && thread.open) || (overlay && overlay.open) || (outbox && outbox.open);
+    return ["thread-dialog", "overlay-dialog", "outbox-dialog", "compose-dialog", "media-dialog", "drafts-dialog", "confirm-dialog"]
+      .some((id) => {
+        const el = $(id);
+        return el && el.open;
+      });
   }
 
   function timelinePath(name, extra) {
@@ -1253,6 +1436,7 @@
   }
 
   function threadDraftPending() {
+    if (state.threadAttach.length) return true;
     const raw = $("thread-reply-text").value.trim();
     if (!raw) return false;
     const expected = state.threadReplyTo ? mentionPrefix(state.threadReplyTo) : "";
@@ -1290,6 +1474,9 @@
       n.classList.remove("is-reply-target");
     });
     state.threadReplyTo = null;
+    revokeAttach(state.threadAttach);
+    state.threadAttach = [];
+    paintAttachList("thread-attach-list", state.threadAttach, "thread");
   }
 
   function openReplyComposer(id) {
@@ -1494,6 +1681,28 @@
     }
     const refresh = ev.target.closest("[data-refresh]");
     if (refresh) loadTimeline(refresh.getAttribute("data-refresh"), true);
+    const attachRm = ev.target.closest("[data-attach-rm]");
+    if (attachRm) {
+      const parts = String(attachRm.getAttribute("data-attach-rm") || "").split(":");
+      removeAttach(parts[0], Number(parts[1]));
+      return;
+    }
+    const draftOpen = ev.target.closest("[data-draft-open]");
+    if (draftOpen) {
+      loadDraft(draftOpen.getAttribute("data-draft-open"));
+      return;
+    }
+    const draftDel = ev.target.closest("[data-draft-del]");
+    if (draftDel) {
+      const id = draftDel.getAttribute("data-draft-del");
+      if (id && window.RetroDB) {
+        RetroDB.removeDraft(id).then(() => {
+          refreshDraftsBadge();
+          openDrafts();
+        });
+      }
+      return;
+    }
     const save = ev.target.closest("[data-outbox-save]");
     if (save) {
       const id = save.getAttribute("data-outbox-save");
@@ -1668,21 +1877,23 @@
   $("compose-form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const status = $("compose-text").value.trim();
-    if (!status) return;
+    if (!status && !state.composeAttach.length) {
+      $("compose-status").textContent = "Text oder Anhang fehlt.";
+      return;
+    }
     $("compose-status").textContent = "Sende…";
     try {
       const payload = {
-        status,
+        status: status || "",
         visibility: $("compose-vis").value,
         spoiler_text: $("compose-spoiler").value.trim() || undefined,
       };
       if (state.replyTo) payload.in_reply_to_id = state.replyTo.id;
-      const result = await publishStatus(payload, state.replyTo ? { status: statusSnapshot(state.replyTo) } : null);
-      $("compose-status").textContent = "";
-      $("compose-text").value = "";
-      $("compose-spoiler").value = "";
-      state.replyTo = null;
+      const result = await publishStatus(payload, state.replyTo ? { status: statusSnapshot(state.replyTo) } : null, state.composeAttach);
+      if (state.editingDraftId && window.RetroDB) await RetroDB.removeDraft(state.editingDraftId);
+      resetCompose();
       $("compose-dialog").close();
+      await refreshDraftsBadge();
       if (result && result.queued) {
         openOutbox();
       } else {
@@ -1705,6 +1916,7 @@
     loadTimeline("notifications", true);
     startPolling();
     refreshOutboxBadge();
+    refreshDraftsBadge();
     tryFlushOutbox();
   }
 
@@ -1724,11 +1936,30 @@
   });
   $("btn-logout").addEventListener("click", logout);
   $("btn-compose").addEventListener("click", () => {
-    state.replyTo = null;
+    resetCompose();
     $("compose-dialog").showModal();
   });
-  $("compose-close").addEventListener("click", () => $("compose-dialog").close());
-  $("compose-cancel").addEventListener("click", () => $("compose-dialog").close());
+  $("compose-close").addEventListener("click", () => {
+    resetCompose();
+    $("compose-dialog").close();
+  });
+  $("compose-cancel").addEventListener("click", () => {
+    resetCompose();
+    $("compose-dialog").close();
+  });
+  $("compose-attach").addEventListener("click", () => $("compose-file").click());
+  $("compose-file").addEventListener("change", (ev) => {
+    addAttachFiles("compose", ev.target.files);
+    ev.target.value = "";
+  });
+  $("compose-draft").addEventListener("click", () => saveCurrentDraft());
+  $("btn-drafts").addEventListener("click", () => openDrafts());
+  $("drafts-close").addEventListener("click", () => $("drafts-dialog").close());
+  $("thread-attach").addEventListener("click", () => $("thread-file").click());
+  $("thread-file").addEventListener("change", (ev) => {
+    addAttachFiles("thread", ev.target.files);
+    ev.target.value = "";
+  });
   $("btn-search").addEventListener("click", openSearch);
   $("btn-profile").addEventListener("click", () => state.me && openProfile(state.me.id));
   $("overlay-close").addEventListener("click", () => $("overlay-dialog").close());
@@ -1752,8 +1983,8 @@
   $("thread-reply-form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const raw = $("thread-reply-text").value.trim();
-    if (!raw || !state.threadReplyTo) return;
-    const text = ensureReplyMentions(raw, state.threadReplyTo);
+    if ((!raw && !state.threadAttach.length) || !state.threadReplyTo) return;
+    const text = raw ? ensureReplyMentions(raw, state.threadReplyTo) : ensureReplyMentions("", state.threadReplyTo);
     $("thread-reply-status").textContent = "Sende…";
     try {
       const payload = {
@@ -1761,7 +1992,7 @@
         in_reply_to_id: state.threadReplyTo.id,
         visibility: state.threadReplyTo.visibility || "public",
       };
-      const result = await publishStatus(payload, { status: statusSnapshot(state.threadReplyTo) });
+      const result = await publishStatus(payload, { status: statusSnapshot(state.threadReplyTo) }, state.threadAttach);
       const rootId = state.threadRootId;
       hideReplyComposer();
       if (result && result.queued) {

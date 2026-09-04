@@ -286,7 +286,8 @@ body.crt::before {
   color: var(--fg);
 }
 .outbox-actions { display: flex; gap: 8px; justify-content: flex-end; }
-#outbox-dialog {
+#outbox-dialog,
+#drafts-dialog {
   width: 80vw;
   max-width: 80vw;
   height: min(860px, calc(100vh - 24px));
@@ -507,35 +508,36 @@ button:disabled { opacity: 0.5; cursor: default; }
 .desktop-logo .login-wordmark { margin: 0; }
 
 .col-dock {
-  position: absolute;
-  left: 14px;
-  bottom: 12px;
-  z-index: 5;
+  position: static;
   display: flex;
   flex-direction: row;
-  gap: 8px;
-  align-items: flex-end;
+  flex: 1;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  padding: 0 8px;
+  z-index: 5;
 }
 .dock-icon {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: 76px;
-  padding: 6px 4px 4px;
+  gap: 2px;
+  width: 56px;
+  padding: 2px 4px;
   background: transparent;
   border: 1px dotted transparent;
   border-radius: 0;
   color: var(--fg);
   font-family: var(--font-ui);
-  font-size: 8px;
-  line-height: 1.35;
+  font-size: 7px;
+  line-height: 1.3;
   text-transform: uppercase;
   image-rendering: pixelated;
 }
 .dock-icon svg {
-  width: 32px;
-  height: 32px;
+  width: 22px;
+  height: 22px;
   display: block;
   image-rendering: pixelated;
 }
@@ -883,6 +885,37 @@ dialog[open] { display: flex; flex-direction: column; }
   padding: 10px;
 }
 #compose-form textarea { min-height: 160px; resize: vertical; }
+.attach-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 14px 8px;
+}
+.attach-item {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+.attach-item img,
+.attach-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #000;
+  display: block;
+}
+.attach-item .attach-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+}
 .compose-meta {
   display: flex;
   justify-content: space-between;
@@ -893,8 +926,36 @@ dialog[open] { display: flex; flex-direction: column; }
 #compose-form footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 0 14px 14px;
+}
+#compose-cancel { margin-right: auto; }
+#compose-attach {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+.draft-item {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.draft-item p { margin: 0 0 8px; }
+.draft-thumbs {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+.draft-thumbs img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 4px;
 }
 #overlay-body { overflow: auto; padding: 14px; }
 
@@ -998,10 +1059,17 @@ dialog[open] { display: flex; flex-direction: column; }
 
 @media (max-width: 960px) {
   body { padding: 6px; }
+  .topbar { flex-wrap: wrap; }
+  .col-dock {
+    order: 5;
+    flex: 1 1 100%;
+    padding: 6px 0 0;
+  }
   .login-wordmark { font-size: 32px; padding-right: 1.9em; }
   .login-year { font-size: 1.56em; }
   #thread-dialog,
   #outbox-dialog,
+  #drafts-dialog,
   #media-dialog {
     width: 100vw;
     max-width: 100vw;
