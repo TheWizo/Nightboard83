@@ -72,10 +72,19 @@
     </section>
 
     <main class="columns" id="columns" hidden>
+      <div id="desktop-logo" class="desktop-logo" hidden>
+        <h1 class="login-wordmark"><span class="login-name">Nightboard</span><span class="login-year">'83</span></h1>
+      </div>
       <section class="col" data-col="home">
         <header class="col-head home">
           <h2>Home</h2>
           <div class="col-head-actions">
+            <button type="button" class="icon-btn" data-collapse="home" title="Einklappen" aria-label="Home einklappen">
+              <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
+                <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
+                <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
+              </svg>
+            </button>
             <button type="button" class="icon-btn" data-expand="home" title="Vollbild" aria-pressed="false" aria-label="Home auf Vollbild">⤢</button>
             <button type="button" class="icon-btn" data-refresh="home" title="Aktualisieren">↻</button>
           </div>
@@ -86,6 +95,12 @@
         <header class="col-head local">
           <h2>Local</h2>
           <div class="col-head-actions">
+            <button type="button" class="icon-btn" data-collapse="local" title="Einklappen" aria-label="Local einklappen">
+              <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
+                <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
+                <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
+              </svg>
+            </button>
             <button type="button" class="icon-btn" data-expand="local" title="Vollbild" aria-pressed="false" aria-label="Local auf Vollbild">⤢</button>
             <button type="button" class="icon-btn" data-refresh="local" title="Aktualisieren">↻</button>
           </div>
@@ -96,6 +111,12 @@
         <header class="col-head notes">
           <h2>Notifications</h2>
           <div class="col-head-actions">
+            <button type="button" class="icon-btn" data-collapse="notifications" title="Einklappen" aria-label="Notifications einklappen">
+              <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
+                <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
+                <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
+              </svg>
+            </button>
             <button type="button" class="icon-btn" data-expand="notifications" title="Vollbild" aria-pressed="false" aria-label="Notifications auf Vollbild">⤢</button>
             <button type="button" class="icon-btn" data-refresh="notifications" title="Aktualisieren">↻</button>
           </div>
@@ -103,6 +124,48 @@
         <div class="col-body" id="notifications-body"></div>
       </section>
     </main>
+    <nav id="col-dock" class="col-dock" hidden aria-label="Eingeklappte Spalten">
+      <button type="button" class="dock-icon is-home" data-restore="home" hidden>
+        <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="7" y="1" width="2" height="2" fill="currentColor"/>
+          <rect x="5" y="3" width="6" height="2" fill="currentColor"/>
+          <rect x="3" y="5" width="10" height="2" fill="currentColor"/>
+          <rect x="1" y="7" width="14" height="2" fill="currentColor"/>
+          <rect x="3" y="9" width="2" height="6" fill="currentColor"/>
+          <rect x="11" y="9" width="2" height="6" fill="currentColor"/>
+          <rect x="3" y="13" width="10" height="2" fill="currentColor"/>
+          <rect x="7" y="9" width="2" height="4" fill="currentColor"/>
+        </svg>
+        <span>Home</span>
+      </button>
+      <button type="button" class="dock-icon is-local" data-restore="local" hidden>
+        <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="5" y="1" width="6" height="2" fill="currentColor"/>
+          <rect x="3" y="3" width="2" height="2" fill="currentColor"/>
+          <rect x="11" y="3" width="2" height="2" fill="currentColor"/>
+          <rect x="1" y="5" width="2" height="6" fill="currentColor"/>
+          <rect x="13" y="5" width="2" height="6" fill="currentColor"/>
+          <rect x="3" y="7" width="10" height="2" fill="currentColor"/>
+          <rect x="7" y="3" width="2" height="10" fill="currentColor"/>
+          <rect x="3" y="11" width="2" height="2" fill="currentColor"/>
+          <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
+          <rect x="5" y="13" width="6" height="2" fill="currentColor"/>
+        </svg>
+        <span>Local</span>
+      </button>
+      <button type="button" class="dock-icon is-notes" data-restore="notifications" hidden>
+        <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="3" y="1" width="10" height="2" fill="currentColor"/>
+          <rect x="3" y="3" width="2" height="12" fill="currentColor"/>
+          <rect x="11" y="3" width="2" height="10" fill="currentColor"/>
+          <rect x="5" y="5" width="4" height="2" fill="currentColor"/>
+          <rect x="5" y="9" width="4" height="2" fill="currentColor"/>
+          <rect x="3" y="13" width="10" height="2" fill="currentColor"/>
+        </svg>
+        <span>Notes</span>
+      </button>
+    </nav>
+    <canvas id="tos-zoom" class="tos-zoom" aria-hidden="true"></canvas>
   </div>
 
   <dialog id="compose-dialog">

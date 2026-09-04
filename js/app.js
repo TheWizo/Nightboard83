@@ -2,11 +2,13 @@
   let INSTANCE = "";
   const SCOPES = "read write follow push";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
+  const COLS = ["home", "local", "notifications"];
   const LS = {
     app: "nightboard83.app",
     token: "nightboard83.token",
     me: "nightboard83.me",
     instance: "nightboard83.instance",
+    collapsed: "nightboard83.collapsed",
   };
 
   const $ = (id) => document.getElementById(id);
@@ -79,6 +81,8 @@
     },
     replyTo: null,
     expandedCol: null,
+    collapsed: { home: false, local: false, notifications: false },
+    colBusy: false,
     threadRootId: null,
     threadReplyTo: null,
     threadById: new Map(),
@@ -314,6 +318,15 @@
     $("btn-profile").hidden = !on;
     $("app").classList.toggle("is-logged-in", on);
     refreshOutboxBadge();
+    if (on) {
+      state.collapsed = readCollapsed();
+      paintCollapsed();
+    } else {
+      const dock = $("col-dock");
+      if (dock) dock.hidden = true;
+      const logo = $("desktop-logo");
+      if (logo) logo.hidden = true;
+    }
   }
 
   async function ensureApp() {
@@ -418,6 +431,7 @@
     localStorage.removeItem(LS.token);
     localStorage.removeItem(LS.me);
     setColumnExpanded(null);
+    state.colBusy = false;
     closeThread();
     stopPolling();
     setLoggedIn(false);
@@ -730,6 +744,7 @@
 
   function setColumnExpanded(name) {
     const next = name && name === state.expandedCol ? null : name || null;
+    if (next && state.collapsed[next]) return;
     state.expandedCol = next;
     $("columns").classList.toggle("is-expanded", Boolean(next));
     document.querySelectorAll(".col").forEach((col) => {
@@ -743,6 +758,180 @@
       btn.setAttribute("aria-label", on ? id + " verkleinern" : id + " auf Vollbild");
       btn.textContent = on ? "⤡" : "⤢";
     });
+  }
+
+  function readCollapsed() {
+    const out = { home: false, local: false, notifications: false };
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS.collapsed) || "[]");
+      if (Array.isArray(raw)) {
+        raw.forEach((id) => {
+          if (id in out) out[id] = true;
+        });
+      }
+    } catch { /* keep defaults */ }
+    return out;
+  }
+
+  function saveCollapsed() {
+    localStorage.setItem(LS.collapsed, JSON.stringify(COLS.filter((id) => state.collapsed[id])));
+  }
+
+  function colEl(name) {
+    return document.querySelector('.col[data-col="' + name + '"]');
+  }
+
+  function dockBtn(name) {
+    return document.querySelector('.dock-icon[data-restore="' + name + '"]');
+  }
+
+  function paintCollapsed() {
+    const logged = $("app").classList.contains("is-logged-in");
+    const visible = COLS.filter((id) => !state.collapsed[id]);
+    COLS.forEach((id) => {
+      const col = colEl(id);
+      if (!col) return;
+      col.classList.toggle("is-collapsed", Boolean(state.collapsed[id]));
+      col.classList.toggle("is-last-visible", visible.length > 0 && visible[visible.length - 1] === id);
+    });
+    const cols = $("columns");
+    if (cols) {
+      cols.classList.toggle("is-empty", logged && visible.length === 0);
+      cols.classList.toggle("has-dock", logged && visible.length < COLS.length);
+    }
+    const logo = $("desktop-logo");
+    if (logo) logo.hidden = !(logged && visible.length === 0);
+    const dock = $("col-dock");
+    if (dock) {
+      dock.hidden = !(logged && visible.length < COLS.length);
+      COLS.forEach((id) => {
+        const btn = dockBtn(id);
+        if (btn) btn.hidden = !state.collapsed[id];
+      });
+    }
+  }
+
+  function asRect(r) {
+    if (!r) return { x: 0, y: 0, w: 0, h: 0 };
+    return { x: r.left, y: r.top, w: r.width, h: r.height };
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function lerpRect(a, b, t) {
+    return {
+      x: lerp(a.x, b.x, t),
+      y: lerp(a.y, b.y, t),
+      w: lerp(a.w, b.w, t),
+      h: lerp(a.h, b.h, t),
+    };
+  }
+
+  function reduceMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function tosZoom(fromElRect, toElRect) {
+    if (reduceMotion()) return Promise.resolve();
+    const from = asRect(fromElRect);
+    const to = asRect(toElRect);
+    const canvas = $("tos-zoom");
+    const app = $("app");
+    if (!canvas || !app) return Promise.resolve();
+    const origin = app.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.round(origin.width * dpr));
+    canvas.height = Math.max(1, Math.round(origin.height * dpr));
+    const ctx = canvas.getContext("2d");
+    canvas.classList.add("is-on");
+    const local = (r) => ({ x: r.x - origin.left, y: r.y - origin.top, w: r.w, h: r.h });
+    const a = local(from);
+    const b = local(to);
+    const steps = 12;
+    const stepMs = 24;
+    return new Promise((resolve) => {
+      const finish = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.classList.remove("is-on");
+        resolve();
+      };
+      const drawBox = (r) => {
+        const x = Math.round(r.x * dpr) + 0.5;
+        const y = Math.round(r.y * dpr) + 0.5;
+        const w = Math.max(2, Math.round(r.w * dpr));
+        const h = Math.max(2, Math.round(r.h * dpr));
+        ctx.strokeRect(x, y, w, h);
+        if (w > 8 * dpr && h > 8 * dpr) {
+          ctx.strokeRect(x + 2 * dpr, y + 2 * dpr, w - 4 * dpr, h - 4 * dpr);
+        }
+      };
+      let i = 0;
+      const frame = () => {
+        i += 1;
+        const step = i / steps;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#d8ffe8";
+        ctx.lineWidth = Math.max(2, Math.round(2 * dpr));
+        for (let k = 2; k >= 0; k -= 1) {
+          drawBox(lerpRect(a, b, Math.max(0, step - k / steps)));
+        }
+        if (i < steps) setTimeout(frame, stepMs);
+        else finish();
+      };
+      frame();
+    });
+  }
+
+  async function collapseCol(name) {
+    if (state.colBusy || !COLS.includes(name) || state.collapsed[name]) return;
+    const col = colEl(name);
+    if (!col) return;
+    state.colBusy = true;
+    try {
+      const from = col.getBoundingClientRect();
+      const dock = $("col-dock");
+      const btn = dockBtn(name);
+      if (dock) dock.hidden = false;
+      if (btn) {
+        btn.hidden = false;
+        btn.style.visibility = "hidden";
+      }
+      const to = btn ? btn.getBoundingClientRect() : from;
+      await tosZoom(from, to);
+      if (state.expandedCol) setColumnExpanded(null);
+      state.collapsed[name] = true;
+      saveCollapsed();
+      if (btn) btn.style.visibility = "";
+      paintCollapsed();
+    } finally {
+      state.colBusy = false;
+    }
+  }
+
+  async function restoreCol(name) {
+    if (state.colBusy || !COLS.includes(name) || !state.collapsed[name]) return;
+    state.colBusy = true;
+    try {
+      const btn = dockBtn(name);
+      const from = btn ? btn.getBoundingClientRect() : null;
+      const wasEmpty = COLS.every((id) => state.collapsed[id]);
+      state.collapsed[name] = false;
+      paintCollapsed();
+      const logo = $("desktop-logo");
+      if (wasEmpty && logo) logo.hidden = false;
+      const col = colEl(name);
+      if (col) col.style.opacity = "0";
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const to = col ? col.getBoundingClientRect() : from;
+      await tosZoom(from, to);
+      if (col) col.style.opacity = "";
+      if (wasEmpty && logo) logo.hidden = true;
+      saveCollapsed();
+    } finally {
+      state.colBusy = false;
+    }
   }
 
   function unwrapStatus(status) {
@@ -1162,6 +1351,16 @@
         } else openThread(id);
         return;
       }
+    }
+    const collapse = ev.target.closest("[data-collapse]");
+    if (collapse) {
+      collapseCol(collapse.getAttribute("data-collapse"));
+      return;
+    }
+    const restore = ev.target.closest("[data-restore]");
+    if (restore) {
+      restoreCol(restore.getAttribute("data-restore"));
+      return;
     }
     const expand = ev.target.closest("[data-expand]");
     if (expand) {
