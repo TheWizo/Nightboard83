@@ -225,16 +225,37 @@
         </select>
       </div>
       <footer>
-        <button type="button" class="ghost" id="compose-cancel">Abbrechen</button>
         <input id="compose-file" type="file" accept="image/*,video/*" multiple hidden />
-        <button type="button" class="ghost" id="compose-attach" title="Anhang" aria-label="Anhang hinzufügen">
-          <svg viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
-            <rect x="4" y="1" width="8" height="10" fill="none" stroke="currentColor" stroke-width="2"/>
-            <rect x="6" y="9" width="8" height="6" fill="none" stroke="currentColor" stroke-width="2"/>
+        <button type="button" class="outbox-btn" id="compose-attach" title="Anhang" aria-label="Anhang hinzufügen">
+          <svg class="outbox-glyph" viewBox="0 0 16 16" width="28" height="28" shape-rendering="crispEdges" aria-hidden="true">
+            <rect x="6" y="0" width="4" height="2" fill="#03edf9"/>
+            <rect x="4" y="2" width="2" height="10" fill="#03edf9"/>
+            <rect x="10" y="2" width="2" height="8" fill="#03edf9"/>
+            <rect x="6" y="10" width="4" height="2" fill="#03edf9"/>
+            <rect x="6" y="4" width="2" height="10" fill="#fede5d"/>
+            <rect x="2" y="12" width="2" height="2" fill="#fede5d"/>
+            <rect x="2" y="14" width="6" height="2" fill="#fede5d"/>
           </svg>
         </button>
-        <button type="button" id="compose-draft">Entwurf</button>
-        <button type="submit" class="primary">Senden</button>
+        <button type="button" class="outbox-btn" id="compose-draft" title="Als Entwurf speichern" aria-label="Als Entwurf speichern">
+          <svg class="outbox-glyph" viewBox="0 0 16 16" width="28" height="28" shape-rendering="crispEdges" aria-hidden="true">
+            <rect x="3" y="1" width="10" height="14" fill="#fede5d"/>
+            <rect x="9" y="1" width="4" height="4" fill="#ff7edb"/>
+            <rect x="5" y="7" width="6" height="2" fill="#191621"/>
+            <rect x="5" y="10" width="6" height="2" fill="#191621"/>
+            <rect x="5" y="13" width="4" height="1" fill="#191621"/>
+          </svg>
+        </button>
+        <button type="submit" class="outbox-btn primary" id="compose-send" title="Senden" aria-label="Senden">
+          <svg class="outbox-glyph" viewBox="0 0 16 16" width="28" height="28" shape-rendering="crispEdges" aria-hidden="true">
+            <rect x="7" y="5" width="2" height="10" fill="#ff7edb"/>
+            <rect x="7" y="1" width="2" height="2" fill="#fede5d"/>
+            <rect x="5" y="3" width="2" height="2" fill="#fede5d"/>
+            <rect x="9" y="3" width="2" height="2" fill="#fede5d"/>
+            <rect x="3" y="5" width="2" height="2" fill="#fede5d"/>
+            <rect x="11" y="5" width="2" height="2" fill="#fede5d"/>
+          </svg>
+        </button>
       </footer>
       <p class="hint" id="compose-status"></p>
     </form>

@@ -105,6 +105,7 @@
     composeAttach: [],
     threadAttach: [],
     editingDraftId: null,
+    composeClosing: false,
   };
 
   function api(path, opts = {}) {
@@ -339,15 +340,22 @@
     paintAttachList("compose-attach-list", state.composeAttach, "compose");
   }
 
+  function composeDraftPending() {
+    if (state.composeAttach.length) return true;
+    const text = $("compose-text") ? $("compose-text").value.trim() : "";
+    const spoiler = $("compose-spoiler") ? $("compose-spoiler").value.trim() : "";
+    return Boolean(text || spoiler);
+  }
+
   async function saveCurrentDraft() {
     const text = $("compose-text").value;
     if (!text.trim() && !state.composeAttach.length) {
       $("compose-status").textContent = "Nichts zu speichern.";
-      return;
+      return false;
     }
     if (!window.RetroDB) {
       $("compose-status").textContent = "Speicher nicht verfügbar.";
-      return;
+      return false;
     }
     try {
       const doc = await RetroDB.saveDraft({
@@ -360,8 +368,44 @@
       state.editingDraftId = doc._id;
       $("compose-status").textContent = "Entwurf gespeichert.";
       await refreshDraftsBadge();
+      return true;
     } catch (err) {
       $("compose-status").textContent = err.message;
+      return false;
+    }
+  }
+
+  function closeCompose() {
+    resetCompose();
+    const dlg = $("compose-dialog");
+    if (dlg && dlg.open) dlg.close();
+  }
+
+  async function requestCloseCompose() {
+    if (state.composeClosing) return;
+    state.composeClosing = true;
+    try {
+      if (!composeDraftPending()) {
+        closeCompose();
+        return;
+      }
+      const choice = await askConfirm({
+        title: "Als Entwurf speichern?",
+        message: "Soll der angefangene Post als Entwurf gespeichert werden?",
+        noLabel: "Verwerfen",
+        yesLabel: "Speichern",
+      });
+      if (choice === null) {
+        $("compose-text").focus();
+        return;
+      }
+      if (choice) {
+        const ok = await saveCurrentDraft();
+        if (!ok) return;
+      }
+      closeCompose();
+    } finally {
+      state.composeClosing = false;
     }
   }
 
@@ -1479,7 +1523,7 @@
   async function openThread(id, opts = {}) {
     if ($("thread-dialog").open && threadDraftPending() && id !== state.threadRootId) {
       const discard = await askDiscardReply();
-      if (!discard) return;
+      if (discard !== true) return;
     }
     const dlg = $("thread-dialog");
     state.threadRootId = id;
@@ -1537,7 +1581,7 @@
       noBtn.onclick = () => finish(false);
       dlg.oncancel = (ev) => {
         ev.preventDefault();
-        finish(false);
+        finish(null);
       };
       dlg.showModal();
     });
@@ -1585,7 +1629,7 @@
   async function requestCloseReplyComposer() {
     if (threadDraftPending()) {
       const discard = await askDiscardReply();
-      if (!discard) {
+      if (discard !== true) {
         $("thread-reply-text").focus();
         return false;
       }
@@ -1605,7 +1649,7 @@
   async function requestCloseThread() {
     if (threadDraftPending()) {
       const discard = await askDiscardReply();
-      if (!discard) {
+      if (discard !== true) {
         $("thread-reply-text").focus();
         return;
       }
@@ -2089,12 +2133,11 @@
     $("compose-dialog").showModal();
   });
   $("compose-close").addEventListener("click", () => {
-    resetCompose();
-    $("compose-dialog").close();
+    requestCloseCompose();
   });
-  $("compose-cancel").addEventListener("click", () => {
-    resetCompose();
-    $("compose-dialog").close();
+  $("compose-dialog").addEventListener("cancel", (ev) => {
+    ev.preventDefault();
+    requestCloseCompose();
   });
   $("compose-attach").addEventListener("click", () => $("compose-file").click());
   $("compose-file").addEventListener("change", (ev) => {

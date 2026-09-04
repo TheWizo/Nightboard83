@@ -994,17 +994,22 @@ dialog[open] { display: flex; flex-direction: column; }
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 14px 14px;
+  flex-wrap: nowrap;
+  gap: 16px;
+  padding: 4px 14px 16px;
 }
-#compose-cancel { margin-right: auto; }
-#compose-attach {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  display: inline-grid;
-  place-items: center;
+#compose-form footer .outbox-btn {
+  min-width: 52px;
+  width: 52px;
+  height: 52px;
+  padding: 8px;
+}
+#compose-form footer .outbox-glyph {
+  width: 28px;
+  height: 28px;
+}
+#compose-form footer .outbox-btn.primary {
+  border-color: var(--pink);
 }
 .draft-item {
   margin-bottom: 16px;
@@ -1195,6 +1200,20 @@ dialog[open] { display: flex; flex-direction: column; }
     padding: 2px;
   }
   .top-actions .outbox-glyph { width: 18px; height: 18px; }
+  #compose-form footer {
+    justify-content: space-evenly;
+    gap: 20px;
+    padding: 8px 16px 18px;
+  }
+  #compose-form footer .outbox-btn {
+    min-width: 56px;
+    width: 56px;
+    height: 56px;
+  }
+  #compose-form footer .outbox-glyph {
+    width: 32px;
+    height: 32px;
+  }
   .login-wordmark { font-size: 32px; padding-right: 1.9em; }
   .login-year { font-size: 1.56em; }
   #thread-dialog,
