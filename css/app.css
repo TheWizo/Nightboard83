@@ -226,7 +226,8 @@ body.crt::before {
 }
 .brand h1 em { color: var(--pink); font-style: normal; text-shadow: 1px 0 0 #03edf966, -1px 0 0 #ff7edb66, 0 0 10px #ff7edb88; }
 .instance { margin: 0; color: var(--muted); font-size: 21px; }
-.conn-status { margin-left: 0.2em; }
+.conn-status:empty { display: none; }
+.conn-status::before { content: " - "; }
 .conn-status.is-connected {
   color: var(--mint);
   animation: conn-pulse 1.8s ease-in-out infinite;
@@ -295,7 +296,17 @@ body.crt::before {
 }
 .topbar .logo,
 .topbar .brand h1 { display: none; }
-.top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.top-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  align-items: center;
+}
+.top-actions .outbox-btn.primary {
+  min-width: 40px;
+  padding: 4px;
+}
 
 button, select, input, textarea {
   font: inherit;
@@ -1040,9 +1051,11 @@ dialog[open] { display: flex; flex-direction: column; }
 .profile-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   margin-top: 10px;
 }
+.profile-actions .hint { margin: 0; min-height: 0; }
 .profile-actions button.is-on {
   border-color: var(--cyan);
   color: var(--cyan);
@@ -1059,12 +1072,72 @@ dialog[open] { display: flex; flex-direction: column; }
 
 @media (max-width: 960px) {
   body { padding: 6px; }
-  .topbar { flex-wrap: wrap; }
-  .col-dock {
-    order: 5;
-    flex: 1 1 100%;
-    padding: 6px 0 0;
+  .topbar {
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 8px 8px;
   }
+  .brand {
+    flex: 1 1 120px;
+    min-width: 96px;
+    align-items: flex-start;
+  }
+  .brand > div {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .instance {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    width: 100%;
+    min-width: 0;
+    font-size: 16px;
+    max-width: none;
+    overflow: visible;
+    white-space: normal;
+    line-height: 1.15;
+  }
+  #instance-label {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .conn-status {
+    display: block;
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .conn-status.is-carrier-lost { font-size: 13px; }
+  .conn-status::before { content: none; }
+  .col-dock {
+    flex: 0 1 auto;
+    padding: 0;
+    gap: 0;
+  }
+  .dock-icon { width: 30px; padding: 2px 0; }
+  .dock-icon span { display: none; }
+  .dock-icon svg { width: 18px; height: 18px; }
+  .top-actions { gap: 1px; }
+  .top-actions .outbox-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 2px;
+  }
+  .top-actions .outbox-glyph { width: 18px; height: 18px; }
   .login-wordmark { font-size: 32px; padding-right: 1.9em; }
   .login-year { font-size: 1.56em; }
   #thread-dialog,

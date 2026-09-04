@@ -168,13 +168,13 @@
     state.carrierTimer = null;
     if (state.conn !== "carrier-lost") return;
     state.conn = "offline";
-    paintConn("is-offline", " - not connected");
+    paintConn("is-offline", "not connected");
   }
 
   function setConn(next) {
     if (next === "offline" && state.conn === "online") {
       state.conn = "carrier-lost";
-      paintConn("is-carrier-lost", " - §$%&?$ CARRIER LOST");
+      paintConn("is-carrier-lost", "§$%&?$ CARRIER LOST");
       if (state.carrierTimer) clearTimeout(state.carrierTimer);
       state.carrierTimer = setTimeout(finishCarrierLost, 30000);
       return;
@@ -187,7 +187,7 @@
         state.carrierTimer = null;
       }
       state.conn = "online";
-      paintConn("is-connected", " - connected");
+      paintConn("is-connected", "connected");
       tryFlushOutbox();
       return;
     }
@@ -197,7 +197,7 @@
         state.carrierTimer = null;
       }
       state.conn = "offline";
-      paintConn("is-offline", " - not connected");
+      paintConn("is-offline", "not connected");
     }
   }
 
@@ -505,7 +505,6 @@
     $("login-panel").hidden = on;
     $("columns").hidden = !on;
     $("btn-login").hidden = on;
-    $("btn-logout").hidden = !on;
     $("btn-compose").hidden = !on;
     $("btn-search").hidden = !on;
     $("btn-profile").hidden = !on;
@@ -1861,7 +1860,10 @@
           <div>
             <div class="display">${escapeHtml(acc.display_name || acc.username)}</div>
             <div class="acct">@${escapeHtml(acc.acct)}</div>
-            ${isSelf ? `<p class="hint">Das bist du.</p>` : `<div class="profile-actions">
+            ${isSelf ? `<div class="profile-actions">
+              <p class="hint">Das bist du.</p>
+              <button type="button" class="danger" id="profile-logout">Logout</button>
+            </div>` : `<div class="profile-actions">
               <button type="button" class="primary" id="follow-btn">Abonnieren</button>
               <button type="button" id="mute-btn">Muten</button>
               <button type="button" class="danger" id="block-btn">Blocken</button>
@@ -1877,7 +1879,15 @@
         </div>
         <div id="profile-statuses"></div>`;
       renderStatusList($("profile-statuses"), statuses, "Keine Posts.");
-      if (!isSelf) {
+      if (isSelf) {
+        const lo = $("profile-logout");
+        if (lo) {
+          lo.addEventListener("click", () => {
+            $("overlay-dialog").close();
+            logout();
+          });
+        }
+      } else {
         paintRelButtons(rel);
         bindProfileActions(id, rel);
       }
@@ -1990,7 +2000,6 @@
     setLoggedIn(false);
     $("login-panel").hidden = false;
   });
-  $("btn-logout").addEventListener("click", logout);
   $("btn-compose").addEventListener("click", () => {
     resetCompose();
     $("compose-dialog").showModal();
