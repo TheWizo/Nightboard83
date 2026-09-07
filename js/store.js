@@ -374,7 +374,9 @@ window.RetroDB = (() => {
       _id: id,
       createdAt: Date.now(),
       error: null,
-      payload: entry.payload,
+      action: entry.action === "edit" || entry.action === "delete" ? entry.action : "create",
+      statusId: entry.statusId || null,
+      payload: entry.payload || {},
       context: entry.context || null,
       filesMeta: packed.meta,
     };
@@ -388,7 +390,7 @@ window.RetroDB = (() => {
     const res = await outbox.allDocs({ include_docs: true });
     return res.rows
       .map((r) => r.doc)
-      .filter((d) => d && d.payload)
+      .filter((d) => d && (d.action === "delete" || d.payload))
       .sort((a, b) => a.createdAt - b.createdAt);
   }
 

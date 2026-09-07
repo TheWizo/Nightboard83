@@ -202,7 +202,9 @@
         try { data = text ? JSON.parse(text) : null; } catch { data = text; }
         if (!res.ok) {
           const msg = (data && (data.error || data.error_description)) || res.statusText;
-          throw new Error(msg);
+          const err = new Error(msg);
+          err.status = res.status;
+          throw err;
         }
         return data;
       },
@@ -219,6 +221,13 @@
     if (err.network) return true;
     const msg = String(err.message || err);
     return /failed to fetch|networkerror|load failed|offline|abort/i.test(msg);
+  }
+
+  function isMissingStatus(err) {
+    if (!err || isNetworkError(err)) return false;
+    if (err.status === 404 || err.status === 410) return true;
+    const msg = String(err.message || "").toLowerCase();
+    return /record not found|status not found|not found|nicht gefunden/.test(msg);
   }
 
   function statusSnapshot(status) {
@@ -641,20 +650,126 @@
       }
     }
     if (!window.RetroDB) throw new Error("Offline-Speicher nicht verfügbar");
-    await RetroDB.enqueue({ payload, context: context || null, files });
+    await RetroDB.enqueue({ action: "create", payload, context: context || null, files });
     await refreshOutboxBadge();
     return { queued: true };
+  }
+
+  async function publishEdit(id, payload) {
+    if (state.conn === "online") {
+      try {
+        return await api("/api/v1/statuses/" + encodeURIComponent(id), { method: "PUT", body: payload });
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+        setConn("offline");
+      }
+    }
+    if (!window.RetroDB) throw new Error("Offline-Speicher nicht verfügbar");
+    const local = findLocalStatus(id);
+    await RetroDB.enqueue({
+      action: "edit",
+      statusId: id,
+      payload,
+      context: local ? { status: statusSnapshot(local) } : null,
+    });
+    await refreshOutboxBadge();
+    return { queued: true };
+  }
+
+  async function dropQueuedStatusActions(id) {
+    if (!id || !window.RetroDB) return;
+    const docs = await RetroDB.listOutbox();
+    for (const doc of docs) {
+      if ((doc.action === "edit" || doc.action === "delete") && doc.statusId === id) {
+        await RetroDB.removeOutbox(doc._id);
+      }
+    }
+  }
+
+  async function publishDelete(id) {
+    if (state.conn === "online") {
+      try {
+        await api("/api/v1/statuses/" + encodeURIComponent(id), { method: "DELETE" });
+        await dropQueuedStatusActions(id);
+        return { deleted: true };
+      } catch (err) {
+        if (isMissingStatus(err)) {
+          await dropQueuedStatusActions(id);
+          return { deleted: true };
+        }
+        if (!isNetworkError(err)) throw err;
+        setConn("offline");
+      }
+    }
+    if (!window.RetroDB) throw new Error("Offline-Speicher nicht verfügbar");
+    const local = findLocalStatus(id);
+    await dropQueuedStatusActions(id);
+    await RetroDB.enqueue({
+      action: "delete",
+      statusId: id,
+      payload: {},
+      context: local ? { status: statusSnapshot(local) } : null,
+    });
+    await refreshOutboxBadge();
+    return { queued: true };
+  }
+
+  async function statusStillExists(id) {
+    try {
+      await api("/api/v1/statuses/" + encodeURIComponent(id));
+      return true;
+    } catch (err) {
+      if (isNetworkError(err)) throw err;
+      if (isMissingStatus(err)) return false;
+      throw err;
+    }
   }
 
   async function tryFlushOutbox() {
     if (state.flushing || state.conn !== "online" || !state.token || !window.RetroDB) return;
     state.flushing = true;
     let sent = 0;
+    const updatedEdits = [];
     try {
       const docs = await RetroDB.listOutbox();
       for (const summary of docs) {
         try {
           const doc = (await RetroDB.getOutbox(summary._id, true)) || summary;
+          const action = doc.action || "create";
+          const targetId = doc.statusId || (doc.payload && doc.payload.id) || null;
+          if (action === "edit" || action === "delete") {
+            if (!targetId) throw new Error(action === "delete" ? "Löschen ohne Status-ID" : "Bearbeitung ohne Status-ID");
+            const exists = await statusStillExists(targetId);
+            if (!exists) {
+              if (action === "delete") {
+                await RetroDB.removeOutbox(doc._id);
+                sent += 1;
+              } else {
+                await RetroDB.updateOutbox(summary._id, {
+                  error: "Post existiert nicht mehr — Bearbeitung nicht gesendet.",
+                });
+              }
+              continue;
+            }
+            if (action === "delete") {
+              try {
+                await api("/api/v1/statuses/" + encodeURIComponent(targetId), { method: "DELETE" });
+              } catch (err) {
+                if (!isMissingStatus(err)) throw err;
+              }
+              await RetroDB.removeOutbox(doc._id);
+              sent += 1;
+              continue;
+            }
+            const updated = await api("/api/v1/statuses/" + encodeURIComponent(targetId), {
+              method: "PUT",
+              body: Object.assign({}, doc.payload),
+            });
+            await RetroDB.removeOutbox(doc._id);
+            sent += 1;
+            if (updated) updatedEdits.push(updated);
+            continue;
+          }
           const files = RetroDB.attachmentsToFiles ? RetroDB.attachmentsToFiles(doc) : [];
           let payload = Object.assign({}, doc.payload);
           if (files.length) payload.media_ids = await uploadAttachList(files);
@@ -666,6 +781,17 @@
             setConn("offline");
             break;
           }
+          if (isMissingStatus(err)) {
+            if (summary.action === "delete") {
+              await RetroDB.removeOutbox(summary._id);
+              sent += 1;
+            } else {
+              await RetroDB.updateOutbox(summary._id, {
+                error: "Post existiert nicht mehr — Bearbeitung nicht gesendet.",
+              });
+            }
+            continue;
+          }
           await RetroDB.updateOutbox(summary._id, { error: err.message });
         }
       }
@@ -673,6 +799,7 @@
       state.flushing = false;
       await refreshOutboxBadge();
       if ($("outbox-dialog").open) openOutbox();
+      updatedEdits.forEach((s) => replaceStatusEverywhere(unwrapStatus(s)));
       if (sent) {
         loadTimeline("home", true);
         loadTimeline("local", true);
@@ -685,21 +812,37 @@
     return docs
       .map((doc) => {
         const ctx = doc.context && doc.context.status;
-        const isReply = Boolean(doc.payload && doc.payload.in_reply_to_id);
-        const contextHtml =
-          isReply && ctx
-            ? `<div class="outbox-context"><p class="hint">Antwort auf</p>${statusHtml(ctx, { hideActions: true })}</div>`
-            : isReply
-              ? `<p class="hint">Antwort auf Post ${escapeHtml(doc.payload.in_reply_to_id)}</p>`
-              : `<p class="hint">Neuer Post</p>`;
+        const isEdit = doc.action === "edit";
+        const isDelete = doc.action === "delete";
+        const isReply = !isEdit && !isDelete && Boolean(doc.payload && doc.payload.in_reply_to_id);
+        const contextHtml = isDelete
+          ? ctx
+            ? `<div class="outbox-context"><p class="hint">Löschen von</p>${statusHtml(ctx, { hideActions: true })}</div>`
+            : `<p class="hint">Löschen${doc.statusId ? " von Post " + escapeHtml(doc.statusId) : ""}</p>`
+          : isEdit
+            ? ctx
+              ? `<div class="outbox-context"><p class="hint">Bearbeitung von</p>${statusHtml(ctx, { hideActions: true })}</div>`
+              : `<p class="hint">Bearbeitung${doc.statusId ? " von Post " + escapeHtml(doc.statusId) : ""}</p>`
+            : isReply && ctx
+              ? `<div class="outbox-context"><p class="hint">Antwort auf</p>${statusHtml(ctx, { hideActions: true })}</div>`
+              : isReply
+                ? `<p class="hint">Antwort auf Post ${escapeHtml(doc.payload.in_reply_to_id)}</p>`
+                : `<p class="hint">Neuer Post</p>`;
+        const waiting = isDelete ? "Wartet auf Löschen" : "Wartet auf Versand";
+        const editor = isDelete
+          ? ""
+          : `<textarea class="outbox-edit" maxlength="${state.maxChars}">${escapeHtml((doc.payload && doc.payload.status) || "")}</textarea>`;
+        const saveBtn = isDelete
+          ? ""
+          : `<button type="button" data-outbox-save="${escapeHtml(doc._id)}">Speichern</button>`;
         return `<article class="outbox-item" data-outbox-id="${escapeHtml(doc._id)}">
           ${contextHtml}
-          <textarea class="outbox-edit" maxlength="${state.maxChars}">${escapeHtml(doc.payload.status || "")}</textarea>
+          ${editor}
           <div class="outbox-actions">
-            <button type="button" data-outbox-save="${escapeHtml(doc._id)}">Speichern</button>
-            <button type="button" class="danger" data-outbox-del="${escapeHtml(doc._id)}">Löschen</button>
+            ${saveBtn}
+            <button type="button" class="danger" data-outbox-del="${escapeHtml(doc._id)}">${isDelete ? "Nicht löschen" : "Löschen"}</button>
           </div>
-          ${doc.error ? `<p class="error">${escapeHtml(doc.error)}</p>` : `<p class="hint">Wartet auf Versand</p>`}
+          ${doc.error ? `<p class="error">${escapeHtml(doc.error)}</p>` : `<p class="hint">${waiting}</p>`}
         </article>`;
       })
       .join("");
@@ -2001,6 +2144,26 @@
     }
   }
 
+  function restoreQueuedDelete(status) {
+    const s = unwrapStatus(status);
+    if (!s || !s.id) return;
+    if (window.RetroDB) RetroDB.saveStatus(s);
+    const home = state.timelines.home;
+    if (!home) return;
+    const exists = home.items.some((it) => it && (it.id === s.id || (it.reblog && it.reblog.id === s.id)));
+    if (exists) return;
+    home.items = [s].concat(home.items);
+    const el = $("home-body");
+    if (!el) return;
+    if (el.querySelector('.status[data-id="' + CSS.escape(s.id) + '"]')) return;
+    const node = paintTimelineItem("home", s);
+    if (!node) return;
+    const placeholder = el.querySelector(":scope > .empty, :scope > .error");
+    if (placeholder) placeholder.remove();
+    el.insertBefore(node, el.firstChild);
+    hydrateNodes([node]);
+  }
+
   async function deleteOwnStatus(id) {
     const choice = await askConfirm({
       title: "Post löschen?",
@@ -2009,8 +2172,9 @@
       yesLabel: "Löschen",
     });
     if (choice !== true) return;
-    await api("/api/v1/statuses/" + encodeURIComponent(id), { method: "DELETE" });
+    const result = await publishDelete(id);
     removeStatusEverywhere(id);
+    if (result && result.queued) openOutbox();
   }
 
   function tagNameFromHref(href) {
@@ -2300,7 +2464,7 @@
       const ta = item && item.querySelector(".outbox-edit");
       if (id && ta && window.RetroDB) {
         RetroDB.getOutbox(id).then((doc) => {
-          if (!doc) return;
+          if (!doc || doc.action === "delete") return;
           const payload = Object.assign({}, doc.payload, { status: ta.value });
           return RetroDB.updateOutbox(id, { payload, error: null });
         }).then(() => openOutbox());
@@ -2311,8 +2475,12 @@
     if (del) {
       const id = del.getAttribute("data-outbox-del");
       if (id && window.RetroDB) {
-        RetroDB.removeOutbox(id).then(() => {
-          refreshOutboxBadge();
+        RetroDB.getOutbox(id).then(async (doc) => {
+          await RetroDB.removeOutbox(id);
+          if (doc && doc.action === "delete" && doc.context && doc.context.status) {
+            restoreQueuedDelete(doc.context.status);
+          }
+          await refreshOutboxBadge();
           openOutbox();
         });
       }
@@ -2494,13 +2662,16 @@
           spoiler_text: $("compose-spoiler").value.trim() || "",
         };
         if (state.editingMediaIds.length) payload.media_ids = state.editingMediaIds;
-        const updated = await api("/api/v1/statuses/" + encodeURIComponent(state.editingStatusId), {
-          method: "PUT",
-          body: payload,
-        });
-        replaceStatusEverywhere(unwrapStatus(updated));
-        resetCompose();
-        $("compose-dialog").close();
+        const result = await publishEdit(state.editingStatusId, payload);
+        if (result && result.queued) {
+          resetCompose();
+          $("compose-dialog").close();
+          openOutbox();
+        } else {
+          replaceStatusEverywhere(unwrapStatus(result));
+          resetCompose();
+          $("compose-dialog").close();
+        }
       } catch (err) {
         $("compose-status").textContent = err.message;
       }
