@@ -1,4 +1,4 @@
-const CACHE = "nightboard83-v24";
+const CACHE = "nightboard83-v25";
 const ASSETS = [
   "./",
   "./index.html",
@@ -12,9 +12,11 @@ const ASSETS = [
   "./fonts/VT323.woff2",
   "./fonts/VT323-latin-ext.woff2",
   "./fonts/Caveat.woff2",
+  "./icons/icon-32.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
+  "./icons/apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (event) => {

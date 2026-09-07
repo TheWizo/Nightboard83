@@ -16,7 +16,7 @@ The client talks to the instance you configure (or type in at login) using OAuth
 - Outbox: compose or reply while offline, send automatically when the connection returns
 - Connection status next to the instance hostname (connected / carrier lost / not connected)
 - Configurable polling for new posts
-- PWA with CRT-chrome round icons
+- PWA with chrome 3D **NB '83** icons
 
 ## Requirements
 
@@ -98,7 +98,7 @@ Tokens and the registered app credentials stay in `localStorage` on that browser
 
 ## Progressive Web App
 
-`manifest.webmanifest` and `sw.js` enable install-to-homescreen. Icons are a chrome **NB** with a pink Caveat `'83` on a transparent canvas so icon packs such as Rad Pack / Rad Walls can keep their chrome disc. On Android the same 512×512 asset is used as the maskable icon (transparent corners, not a square).
+`manifest.webmanifest` and `sw.js` enable install-to-homescreen. Icons are a chrome 3D **NB '83** wordmark over a synthwave grid. The maskable 512×512 asset keeps extra padding so Android adaptive shapes do not crop the lettering. Favicon is 32×32; iOS uses the 180×180 apple-touch icon.
 
 Install from the browser’s install prompt (Chrome: the install icon in the address bar, or the menu). On iOS Safari: Share → Add to Home Screen.
 
