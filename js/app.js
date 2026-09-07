@@ -1289,7 +1289,7 @@
   }
 
   function detailWindowOpen() {
-    return ["thread-dialog", "overlay-dialog", "outbox-dialog", "compose-dialog", "media-dialog", "drafts-dialog", "confirm-dialog"]
+    return ["thread-dialog", "overlay-dialog", "outbox-dialog", "compose-dialog", "media-dialog", "drafts-dialog", "confirm-dialog", "sw-update-dialog"]
       .some((id) => {
         const el = $(id);
         return el && el.open;
@@ -2871,6 +2871,9 @@
     if (!("serviceWorker" in navigator)) return;
     let reloading = false;
     let wantReload = false;
+    let playing = false;
+    let sequenceDone = false;
+    let controllerReady = false;
 
     function canReload() {
       try {
@@ -2891,8 +2894,16 @@
       else wantReload = true;
     }
 
+    function maybeReload() {
+      if (!sequenceDone) return;
+      if (controllerReady || !navigator.serviceWorker.controller) requestReload();
+    }
+
     if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.addEventListener("controllerchange", requestReload);
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        controllerReady = true;
+        maybeReload();
+      });
     }
 
     const tryIdleReload = () => {
@@ -2903,6 +2914,94 @@
     });
     setInterval(tryIdleReload, 4000);
 
+    function reduceMotion() {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, reduceMotion() ? Math.min(ms, 50) : ms));
+    }
+
+    function setUpdateBar(pct) {
+      const fill = $("sw-update-fill");
+      if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + "%";
+    }
+
+    async function typeLine(log, text, cls) {
+      const line = document.createElement("div");
+      if (cls) line.className = cls;
+      log.appendChild(line);
+      let cursor = log.querySelector(".sw-update-cursor");
+      if (!cursor) {
+        cursor = document.createElement("span");
+        cursor.className = "sw-update-cursor";
+        cursor.setAttribute("aria-hidden", "true");
+      }
+      if (reduceMotion()) {
+        line.textContent = text;
+        line.appendChild(cursor);
+        log.scrollTop = log.scrollHeight;
+        return;
+      }
+      for (let i = 1; i <= text.length; i++) {
+        line.textContent = text.slice(0, i);
+        line.appendChild(cursor);
+        log.scrollTop = log.scrollHeight;
+        await sleep(18);
+      }
+    }
+
+    async function playUpdateSequence() {
+      const dlg = $("sw-update-dialog");
+      const log = $("sw-update-log");
+      if (!dlg || !log) return;
+      log.textContent = "";
+      setUpdateBar(6);
+      if (!dlg.open) dlg.showModal();
+      const steps = [
+        { text: "SYNCHRONISING...", cls: "", bar: 18, wait: 420 },
+        { text: "PLEASE STAND BY", cls: "", bar: 32, wait: 520 },
+        { text: "SCANNING GRID NODE", cls: "", bar: 48, wait: 480 },
+        { text: "UPDATE FOUND", cls: "is-found", bar: 64, wait: 560 },
+        { text: "APPLYING PATCH", cls: "is-found", bar: 82, wait: 640 },
+        { text: "REBOOTING TERMINAL", cls: "is-warn", bar: 100, wait: 420 },
+      ];
+      for (const step of steps) {
+        await typeLine(log, step.text, step.cls);
+        setUpdateBar(step.bar);
+        await sleep(step.wait);
+      }
+      if (!canReload()) {
+        await typeLine(log, "HOLD — BUFFER NOT EMPTY", "is-warn");
+        setUpdateBar(100);
+        wantReload = true;
+        while (!canReload()) await sleep(400);
+        await typeLine(log, "BUFFER CLEAR — RESUME", "is-found");
+        await sleep(360);
+      }
+    }
+
+    function activateWaiting(reg) {
+      const w = (reg && (reg.waiting || reg.installing)) || null;
+      if (w) w.postMessage({ type: "SKIP_WAITING" });
+    }
+
+    async function runUpdateShow(reg) {
+      if (playing) return;
+      playing = true;
+      try {
+        await playUpdateSequence();
+        activateWaiting(reg);
+        sequenceDone = true;
+        maybeReload();
+        setTimeout(requestReload, 1200);
+      } catch {
+        sequenceDone = true;
+        activateWaiting(reg);
+        requestReload();
+      }
+    }
+
     const watchReg = (reg) => {
       if (!reg) return;
       const ping = () => reg.update().catch(() => {});
@@ -2912,7 +3011,29 @@
       });
       window.addEventListener("online", ping);
       setInterval(ping, 10 * 60 * 1000);
+
+      if (!navigator.serviceWorker.controller) return;
+
+      if (reg.waiting) runUpdateShow(reg);
+
+      reg.addEventListener("updatefound", () => {
+        const sw = reg.installing;
+        if (!sw) {
+          runUpdateShow(reg);
+          return;
+        }
+        sw.addEventListener("statechange", () => {
+          if (sw.state === "installed" || sw.state === "activating" || sw.state === "activated") {
+            runUpdateShow(reg);
+          }
+        });
+      });
     };
+
+    const dlg = $("sw-update-dialog");
+    if (dlg) {
+      dlg.addEventListener("cancel", (ev) => ev.preventDefault());
+    }
 
     navigator.serviceWorker
       .getRegistration("./sw.js")

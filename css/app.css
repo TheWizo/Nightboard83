@@ -178,6 +178,8 @@ body.crt::before {
   .conn-status.is-connected { animation: none; opacity: 1; }
   .dock-icon.has-unread svg { animation: none; }
   .tos-zoom { display: none !important; }
+  .sw-update-cursor { animation: none; opacity: 1; }
+  .sw-update-bar i { transition: none; }
 }
 
 .is-ticker {
@@ -1179,6 +1181,68 @@ dialog[open] { display: flex; flex-direction: column; }
   max-height: none;
 }
 
+#sw-update-dialog {
+  width: min(440px, calc(100vw - 24px));
+  height: fit-content;
+  max-height: min(70vh, 480px);
+  margin: auto;
+  border-color: var(--cyan);
+  background: #120818;
+  box-shadow: 0 0 40px #03edf944, inset 0 0 40px rgba(0, 0, 0, 0.45);
+}
+.sw-update-head {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--yellow);
+  text-shadow: 0 0 8px #fede5d88;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.sw-update-log {
+  margin: 0;
+  padding: 14px 16px 10px;
+  min-height: 9.2em;
+  overflow: auto;
+  color: var(--mint);
+  font-family: var(--font);
+  font-size: 22px;
+  line-height: 1.35;
+  text-shadow: 0 0 8px #72f1b866;
+}
+.sw-update-log .is-found { color: var(--cyan); text-shadow: 0 0 8px #03edf988; }
+.sw-update-log .is-warn { color: var(--yellow); text-shadow: 0 0 8px #fede5d88; }
+.sw-update-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  background: var(--mint);
+  box-shadow: 0 0 8px #72f1b8;
+  animation: conn-pulse 0.7s step-end infinite;
+}
+.sw-update-bar {
+  height: 12px;
+  margin: 4px 14px 16px;
+  border: 1px solid var(--cyan);
+  background: #0a0710;
+  box-shadow: inset 0 0 8px #03edf922;
+}
+.sw-update-bar i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--mint) 0 7px,
+    #191621 7px 9px
+  );
+  box-shadow: 0 0 10px #72f1b888;
+  transition: width 0.35s linear;
+}
+
 .profile-head { display: flex; gap: 14px; align-items: flex-start; }
 .profile-head img { width: 72px; height: 72px; border-radius: 10px; object-fit: cover; }
 .profile-actions {
@@ -1292,6 +1356,13 @@ dialog[open] { display: flex; flex-direction: column; }
     max-height: 100vh;
     margin: 0;
     border-radius: 0;
+  }
+  #sw-update-dialog {
+    width: min(420px, calc(100vw - 16px));
+    height: fit-content;
+    max-height: min(70vh, 420px);
+    margin: auto;
+    border-radius: 8px;
   }
   .columns {
     flex-direction: column;

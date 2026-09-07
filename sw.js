@@ -1,4 +1,4 @@
-const CACHE = "nightboard83-v25";
+const CACHE = "nightboard83-v26";
 const ASSETS = [
   "./",
   "./index.html",
@@ -21,11 +21,14 @@ const ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => {
+      if (!self.registration.active) return self.skipWaiting();
+    })
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {

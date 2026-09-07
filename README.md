@@ -63,7 +63,7 @@ server {
 }
 ```
 
-The app checks for a new service worker on startup, when the tab becomes visible, and about every ten minutes. HTML, CSS, and JavaScript are fetched network-first (cache only if offline). If a new version is found, the PWA reloads on its own; a typed but unsent compose or reply waits until that draft is gone.
+The app checks for a new service worker on startup, when the tab becomes visible, and about every ten minutes. HTML, CSS, and JavaScript are fetched network-first (cache only if offline). If a new version is found, a SYS.UPDATE overlay runs a short install sequence, then the PWA reloads. A typed but unsent compose or reply waits until that draft is gone.
 
 ## Configuration
 
