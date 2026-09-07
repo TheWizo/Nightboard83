@@ -1192,8 +1192,14 @@
   }
 
   function hydrateNodes(nodes) {
-    if (!window.RetroDB || !nodes || !nodes.length) return;
-    nodes.forEach((node) => RetroDB.hydrateMedia(node));
+    if (!window.RetroDB || !nodes || !nodes.length) return Promise.resolve();
+    return Promise.all(nodes.map((node) => RetroDB.hydrateMedia(node)));
+  }
+
+  function keepScrollAnchor(el, anchor, top) {
+    if (!el || !anchor || !anchor.isConnected) return;
+    const delta = anchor.getBoundingClientRect().top - top;
+    if (Math.abs(delta) >= 0.5) el.scrollTop += delta;
   }
 
   function trimTimeline(name) {
@@ -1311,8 +1317,10 @@
     const placeholder = el.querySelector(".empty, .error");
     if (placeholder) placeholder.remove();
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const pinScroll = el.scrollTop > 24;
-    const prevHeight = el.scrollHeight;
+    const stick = el.scrollTop > 24;
+    const anchor = stick ? el.firstElementChild : null;
+    const anchorTop = anchor ? anchor.getBoundingClientRect().top : 0;
+    const pin = () => keepScrollAnchor(el, anchor, anchorTop);
     const nodes = fresh.map((item) => paintTimelineItem(name, item)).filter(Boolean);
     nodes.slice().reverse().forEach((node, revI) => {
       if (!reduce) {
@@ -1323,15 +1331,35 @@
           () => {
             node.classList.remove("is-ticker");
             node.style.animationDelay = "";
+            pin();
           },
           { once: true }
         );
       }
       el.insertBefore(node, el.firstChild);
     });
-    if (pinScroll) el.scrollTop = el.scrollHeight - prevHeight + el.scrollTop;
-    hydrateNodes(nodes);
+    if (stick) {
+      pin();
+      requestAnimationFrame(() => {
+        pin();
+        requestAnimationFrame(pin);
+      });
+      if (typeof ResizeObserver === "function") {
+        const ro = new ResizeObserver(pin);
+        nodes.forEach((node) => ro.observe(node));
+        setTimeout(() => ro.disconnect(), 2500);
+      }
+      nodes.forEach((node) => {
+        node.querySelectorAll("img, video").forEach((media) => {
+          media.addEventListener("load", pin, { once: true });
+          media.addEventListener("loadeddata", pin, { once: true });
+        });
+      });
+    }
+    const hydrated = hydrateNodes(nodes);
+    if (hydrated && hydrated.then) hydrated.then(pin);
     trimTimeline(name);
+    if (stick) pin();
   }
 
   async function fetchNewer(name) {

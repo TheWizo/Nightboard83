@@ -687,6 +687,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .col-body {
   overflow-x: hidden;
   overflow-y: auto;
+  overflow-anchor: none;
   overscroll-behavior: contain;
   flex: 1;
   min-height: 0;
