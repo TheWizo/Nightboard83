@@ -372,11 +372,11 @@
   async function refreshOutboxBadge() {
     const btn = $("btn-outbox");
     if (!btn) return;
-    if (!state.token || !window.RetroDB) {
+    if (!state.token || !window.NightDB) {
       btn.hidden = true;
       return;
     }
-    const list = await RetroDB.listOutbox();
+    const list = await NightDB.listOutbox();
     const n = list.length;
     $("outbox-count").textContent = String(n);
     btn.hidden = n === 0;
@@ -386,11 +386,11 @@
   async function refreshDraftsBadge() {
     const btn = $("btn-drafts");
     if (!btn) return;
-    if (!state.token || !window.RetroDB) {
+    if (!state.token || !window.NightDB) {
       btn.hidden = true;
       return;
     }
-    const list = await RetroDB.listDrafts();
+    const list = await NightDB.listDrafts();
     const n = list.length;
     $("drafts-count").textContent = String(n);
     btn.hidden = n === 0;
@@ -498,12 +498,12 @@
       $("compose-status").textContent = "Nichts zu speichern.";
       return false;
     }
-    if (!window.RetroDB) {
+    if (!window.NightDB) {
       $("compose-status").textContent = "Speicher nicht verfügbar.";
       return false;
     }
     try {
-      const doc = await RetroDB.saveDraft({
+      const doc = await NightDB.saveDraft({
         _id: state.editingDraftId || undefined,
         text,
         spoiler: $("compose-spoiler").value.trim(),
@@ -574,7 +574,7 @@
     const dlg = $("drafts-dialog");
     $("drafts-body").innerHTML = "<p class='hint'>Lade Entwürfe…</p>";
     if (!dlg.open) dlg.showModal();
-    const docs = window.RetroDB ? await RetroDB.listDrafts() : [];
+    const docs = window.NightDB ? await NightDB.listDrafts() : [];
     if (!docs.length) {
       $("drafts-body").innerHTML = "<p class='empty'>Keine Entwürfe.</p>";
       return;
@@ -594,8 +594,8 @@
   }
 
   async function loadDraft(id) {
-    if (!window.RetroDB) return;
-    const doc = await RetroDB.getDraft(id);
+    if (!window.NightDB) return;
+    const doc = await NightDB.getDraft(id);
     if (!doc) return;
     resetCompose();
     state.editingDraftId = doc._id;
@@ -603,7 +603,7 @@
     $("compose-spoiler").value = doc.spoiler || "";
     $("compose-vis").value = doc.visibility || "public";
     paintComposeCount();
-    const files = RetroDB.attachmentsToFiles(doc);
+    const files = NightDB.attachmentsToFiles(doc);
     state.composeAttach = files.map((item) => ({
       file: item.file,
       kind: item.kind === "video" ? "video" : "image",
@@ -652,8 +652,8 @@
         setConn("offline");
       }
     }
-    if (!window.RetroDB) throw new Error("Offline-Speicher nicht verfügbar");
-    await RetroDB.enqueue({ action: "create", payload, context: context || null, files });
+    if (!window.NightDB) throw new Error("Offline-Speicher nicht verfügbar");
+    await NightDB.enqueue({ action: "create", payload, context: context || null, files });
     await refreshOutboxBadge();
     return { queued: true };
   }
@@ -667,9 +667,9 @@
         setConn("offline");
       }
     }
-    if (!window.RetroDB) throw new Error("Offline-Speicher nicht verfügbar");
+    if (!window.NightDB) throw new Error("Offline-Speicher nicht verfügbar");
     const local = findLocalStatus(id);
-    await RetroDB.enqueue({
+    await NightDB.enqueue({
       action: "edit",
       statusId: id,
       payload,
@@ -680,11 +680,11 @@
   }
 
   async function dropQueuedStatusActions(id) {
-    if (!id || !window.RetroDB) return;
-    const docs = await RetroDB.listOutbox();
+    if (!id || !window.NightDB) return;
+    const docs = await NightDB.listOutbox();
     for (const doc of docs) {
       if ((doc.action === "edit" || doc.action === "delete") && doc.statusId === id) {
-        await RetroDB.removeOutbox(doc._id);
+        await NightDB.removeOutbox(doc._id);
       }
     }
   }
@@ -704,10 +704,10 @@
         setConn("offline");
       }
     }
-    if (!window.RetroDB) throw new Error("Offline-Speicher nicht verfügbar");
+    if (!window.NightDB) throw new Error("Offline-Speicher nicht verfügbar");
     const local = findLocalStatus(id);
     await dropQueuedStatusActions(id);
-    await RetroDB.enqueue({
+    await NightDB.enqueue({
       action: "delete",
       statusId: id,
       payload: {},
@@ -729,15 +729,15 @@
   }
 
   async function tryFlushOutbox() {
-    if (state.flushing || state.conn !== "online" || !state.token || !window.RetroDB) return;
+    if (state.flushing || state.conn !== "online" || !state.token || !window.NightDB) return;
     state.flushing = true;
     let sent = 0;
     const updatedEdits = [];
     try {
-      const docs = await RetroDB.listOutbox();
+      const docs = await NightDB.listOutbox();
       for (const summary of docs) {
         try {
-          const doc = (await RetroDB.getOutbox(summary._id, true)) || summary;
+          const doc = (await NightDB.getOutbox(summary._id, true)) || summary;
           const action = doc.action || "create";
           const targetId = doc.statusId || (doc.payload && doc.payload.id) || null;
           if (action === "edit" || action === "delete") {
@@ -745,10 +745,10 @@
             const exists = await statusStillExists(targetId);
             if (!exists) {
               if (action === "delete") {
-                await RetroDB.removeOutbox(doc._id);
+                await NightDB.removeOutbox(doc._id);
                 sent += 1;
               } else {
-                await RetroDB.updateOutbox(summary._id, {
+                await NightDB.updateOutbox(summary._id, {
                   error: "Post existiert nicht mehr — Bearbeitung nicht gesendet.",
                 });
               }
@@ -760,7 +760,7 @@
               } catch (err) {
                 if (!isMissingStatus(err)) throw err;
               }
-              await RetroDB.removeOutbox(doc._id);
+              await NightDB.removeOutbox(doc._id);
               sent += 1;
               continue;
             }
@@ -768,16 +768,16 @@
               method: "PUT",
               body: Object.assign({}, doc.payload),
             });
-            await RetroDB.removeOutbox(doc._id);
+            await NightDB.removeOutbox(doc._id);
             sent += 1;
             if (updated) updatedEdits.push(updated);
             continue;
           }
-          const files = RetroDB.attachmentsToFiles ? RetroDB.attachmentsToFiles(doc) : [];
+          const files = NightDB.attachmentsToFiles ? NightDB.attachmentsToFiles(doc) : [];
           let payload = Object.assign({}, doc.payload);
           if (files.length) payload.media_ids = await uploadAttachList(files);
           await api("/api/v1/statuses", { method: "POST", body: payload });
-          await RetroDB.removeOutbox(doc._id);
+          await NightDB.removeOutbox(doc._id);
           sent += 1;
         } catch (err) {
           if (isNetworkError(err)) {
@@ -786,16 +786,16 @@
           }
           if (isMissingStatus(err)) {
             if (summary.action === "delete") {
-              await RetroDB.removeOutbox(summary._id);
+              await NightDB.removeOutbox(summary._id);
               sent += 1;
             } else {
-              await RetroDB.updateOutbox(summary._id, {
+              await NightDB.updateOutbox(summary._id, {
                 error: "Post existiert nicht mehr — Bearbeitung nicht gesendet.",
               });
             }
             continue;
           }
-          await RetroDB.updateOutbox(summary._id, { error: err.message });
+          await NightDB.updateOutbox(summary._id, { error: err.message });
         }
       }
     } finally {
@@ -855,9 +855,9 @@
     const dlg = $("outbox-dialog");
     $("outbox-body").innerHTML = "<p class='hint'>Lade Postausgang…</p>";
     if (!dlg.open) dlg.showModal();
-    const docs = window.RetroDB ? await RetroDB.listOutbox() : [];
+    const docs = window.NightDB ? await NightDB.listOutbox() : [];
     $("outbox-body").innerHTML = renderOutboxList(docs);
-    if (window.RetroDB) RetroDB.hydrateMedia($("outbox-body"));
+    if (window.NightDB) NightDB.hydrateMedia($("outbox-body"));
   }
 
   function loadMeCached() {
@@ -1145,7 +1145,7 @@
       const s = items[i].reblog || items[i];
       paintTime(node, s.created_at);
     });
-    if (window.RetroDB) RetroDB.hydrateMedia(el);
+    if (window.NightDB) NightDB.hydrateMedia(el);
   }
 
   function noticeHtml(n) {
@@ -1183,16 +1183,16 @@
     }
     el.innerHTML = visible.map((n) => noticeHtml(n)).join("");
     [...el.children].forEach((node, i) => paintTime(node, visible[i].created_at));
-    if (window.RetroDB) RetroDB.hydrateMedia(el);
+    if (window.NightDB) NightDB.hydrateMedia(el);
   }
 
   function cacheTimelineItems(items) {
-    if (!window.RetroDB || !items || !items.length) return;
+    if (!window.NightDB || !items || !items.length) return;
     items.forEach((it) => {
-      RetroDB.cacheItemMedia(it);
+      NightDB.cacheItemMedia(it);
       const inner = it.reblog || it;
-      if (inner && inner.id && !it.type) RetroDB.saveStatus(inner);
-      if (it.status) RetroDB.saveStatus(it.status);
+      if (inner && inner.id && !it.type) NightDB.saveStatus(inner);
+      if (it.status) NightDB.saveStatus(it.status);
     });
   }
 
@@ -1207,8 +1207,8 @@
   }
 
   function hydrateNodes(nodes) {
-    if (!window.RetroDB || !nodes || !nodes.length) return Promise.resolve();
-    return Promise.all(nodes.map((node) => RetroDB.hydrateMedia(node)));
+    if (!window.NightDB || !nodes || !nodes.length) return Promise.resolve();
+    return Promise.all(nodes.map((node) => NightDB.hydrateMedia(node)));
   }
 
   function keepScrollAnchor(el, anchor, top) {
@@ -1280,14 +1280,14 @@
         trimTimeline(name);
         if (!incremental || reset) syncTimelineUnread(name);
       }
-      if (window.RetroDB) {
-        RetroDB.saveTimeline(name, t.items);
+      if (window.NightDB) {
+        NightDB.saveTimeline(name, t.items);
         cacheTimelineItems(reset ? t.items : batch);
       }
     } catch (err) {
       if (seq !== t.seq) return;
-      if (window.RetroDB) {
-        const cached = await RetroDB.loadTimeline(name);
+      if (window.NightDB) {
+        const cached = await NightDB.loadTimeline(name);
         if (seq !== t.seq) return;
         if (cached.length) {
           t.items = cached;
@@ -1406,8 +1406,8 @@
       t.items = fresh.concat(t.items);
       prependTicker(name, fresh);
       syncTimelineUnread(name);
-      if (window.RetroDB) {
-        RetroDB.saveTimeline(name, t.items);
+      if (window.NightDB) {
+        NightDB.saveTimeline(name, t.items);
         cacheTimelineItems(fresh);
       }
     } catch {
@@ -1474,8 +1474,8 @@
     t.items = [status].concat(t.items || []);
     prependTicker(name, [status]);
     syncTimelineUnread(name);
-    if (window.RetroDB) {
-      RetroDB.saveTimeline(name, t.items);
+    if (window.NightDB) {
+      NightDB.saveTimeline(name, t.items);
       cacheTimelineItems([status]);
     }
   }
@@ -1488,8 +1488,8 @@
     t.items = [n].concat(t.items || []);
     if (notifMatchesFilter(n, state.notifFilter)) prependTicker("notifications", [n]);
     syncTimelineUnread("notifications");
-    if (window.RetroDB) {
-      RetroDB.saveTimeline("notifications", t.items);
+    if (window.NightDB) {
+      NightDB.saveTimeline("notifications", t.items);
       cacheTimelineItems([n]);
     }
   }
@@ -2060,11 +2060,11 @@
       `<div class="thread-root">${statusHtml(root, { root: true })}</div>` +
       repliesHtml;
     paintThreadTimes($("thread-body"), ancestors.concat([root], descendants));
-    if (window.RetroDB) {
-      RetroDB.hydrateMedia($("thread-body"));
+    if (window.NightDB) {
+      NightDB.hydrateMedia($("thread-body"));
       [root].concat(ancestors, descendants).forEach((s) => {
-        RetroDB.saveStatus(s);
-        RetroDB.cacheItemMedia(s);
+        NightDB.saveStatus(s);
+        NightDB.cacheItemMedia(s);
       });
     }
     $("thread-title").textContent = "Thread · " + (root.account.acct || "Post");
@@ -2075,10 +2075,10 @@
   }
 
   async function cachedThreadContext(id) {
-    if (!window.RetroDB) return null;
-    const status = unwrapStatus(await RetroDB.loadStatus(id));
+    if (!window.NightDB) return null;
+    const status = unwrapStatus(await NightDB.loadStatus(id));
     if (!status) return null;
-    const all = await RetroDB.allCachedStatuses();
+    const all = await NightDB.allCachedStatuses();
     const byId = new Map();
     all.forEach((s) => {
       const inner = unwrapStatus(s);
@@ -2347,7 +2347,7 @@
       if (!next) return;
       paintTime(next, updated.created_at);
       node.replaceWith(next);
-      if (window.RetroDB) RetroDB.hydrateMedia(next);
+      if (window.NightDB) NightDB.hydrateMedia(next);
     });
   }
 
@@ -2366,7 +2366,7 @@
     }
     const overlay = $("overlay-body");
     if (overlay) replaceStatusNode(overlay, s);
-    if (window.RetroDB) RetroDB.saveStatus(s);
+    if (window.NightDB) NightDB.saveStatus(s);
   }
 
   function removeStatusEverywhere(id) {
@@ -2403,7 +2403,7 @@
     if (overlay) {
       overlay.querySelectorAll('.status[data-id="' + CSS.escape(id) + '"]').forEach((node) => node.remove());
     }
-    if (window.RetroDB && RetroDB.removeStatus) RetroDB.removeStatus(id);
+    if (window.NightDB && NightDB.removeStatus) NightDB.removeStatus(id);
   }
 
   async function openEditStatus(id) {
@@ -2441,7 +2441,7 @@
   function restoreQueuedDelete(status) {
     const s = unwrapStatus(status);
     if (!s || !s.id) return;
-    if (window.RetroDB) RetroDB.saveStatus(s);
+    if (window.NightDB) NightDB.saveStatus(s);
     const home = state.timelines.home;
     if (!home) return;
     const exists = home.items.some((it) => it && (it.id === s.id || (it.reblog && it.reblog.id === s.id)));
@@ -2544,12 +2544,12 @@
           if (!node) return;
           paintTime(node, (s.reblog || s).created_at);
           el.appendChild(node);
-          if (window.RetroDB) RetroDB.hydrateMedia(node);
+          if (window.NightDB) NightDB.hydrateMedia(node);
         });
       } else {
         renderStatusList(el, tv.items, "Keine Posts mit diesem Hashtag.");
       }
-      if (window.RetroDB) cacheTimelineItems(batch);
+      if (window.NightDB) cacheTimelineItems(batch);
     } catch (err) {
       const el = $("tag-statuses");
       if (el && !tv.items.length) el.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
@@ -2588,7 +2588,7 @@
     let href = url;
     let revoke = "";
     try {
-      const local = window.RetroDB ? await RetroDB.mediaSrc(url) : "";
+      const local = window.NightDB ? await NightDB.mediaSrc(url) : "";
       if (local && local.indexOf("blob:") === 0) {
         href = local;
       } else {
@@ -2666,7 +2666,7 @@
     }
     const dlg = $("media-dialog");
     if (!dlg.open) dlg.showModal();
-    if (window.RetroDB) RetroDB.hydrateMedia(stage);
+    if (window.NightDB) NightDB.hydrateMedia(stage);
   }
 
   document.addEventListener("click", (ev) => {
@@ -2768,8 +2768,8 @@
     const draftDel = ev.target.closest("[data-draft-del]");
     if (draftDel) {
       const id = draftDel.getAttribute("data-draft-del");
-      if (id && window.RetroDB) {
-        RetroDB.removeDraft(id).then(() => {
+      if (id && window.NightDB) {
+        NightDB.removeDraft(id).then(() => {
           refreshDraftsBadge();
           openDrafts();
         });
@@ -2781,11 +2781,11 @@
       const id = save.getAttribute("data-outbox-save");
       const item = save.closest(".outbox-item");
       const ta = item && item.querySelector(".outbox-edit");
-      if (id && ta && window.RetroDB) {
-        RetroDB.getOutbox(id).then((doc) => {
+      if (id && ta && window.NightDB) {
+        NightDB.getOutbox(id).then((doc) => {
           if (!doc || doc.action === "delete") return;
           const payload = Object.assign({}, doc.payload, { status: ta.value });
-          return RetroDB.updateOutbox(id, { payload, error: null });
+          return NightDB.updateOutbox(id, { payload, error: null });
         }).then(() => openOutbox());
       }
       return;
@@ -2793,9 +2793,9 @@
     const del = ev.target.closest("[data-outbox-del]");
     if (del) {
       const id = del.getAttribute("data-outbox-del");
-      if (id && window.RetroDB) {
-        RetroDB.getOutbox(id).then(async (doc) => {
-          await RetroDB.removeOutbox(id);
+      if (id && window.NightDB) {
+        NightDB.getOutbox(id).then(async (doc) => {
+          await NightDB.removeOutbox(id);
           if (doc && doc.action === "delete" && doc.context && doc.context.status) {
             restoreQueuedDelete(doc.context.status);
           }
@@ -2894,12 +2894,12 @@
           if (!node) return;
           paintTime(node, (s.reblog || s).created_at);
           el.appendChild(node);
-          if (window.RetroDB) RetroDB.hydrateMedia(node);
+          if (window.NightDB) NightDB.hydrateMedia(node);
         });
       } else {
         renderStatusList(el, pv.items, "Keine Posts.");
       }
-      if (window.RetroDB) cacheTimelineItems(batch);
+      if (window.NightDB) cacheTimelineItems(batch);
     } catch (err) {
       const el = $("profile-statuses");
       if (el && !pv.items.length) el.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
@@ -3066,7 +3066,7 @@
       };
       if (state.replyTo) payload.in_reply_to_id = state.replyTo.id;
       const result = await publishStatus(payload, state.replyTo ? { status: statusSnapshot(state.replyTo) } : null, state.composeAttach);
-      if (state.editingDraftId && window.RetroDB) await RetroDB.removeDraft(state.editingDraftId);
+      if (state.editingDraftId && window.NightDB) await NightDB.removeDraft(state.editingDraftId);
       resetCompose();
       $("compose-dialog").close();
       await refreshDraftsBadge();

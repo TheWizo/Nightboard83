@@ -1,7 +1,7 @@
 /* Nightboard '83 — local IndexedDB/PouchDB store
    Copyright (C) 2026 Ralf Wissing
    SPDX-License-Identifier: AGPL-3.0-or-later */
-window.RetroDB = (() => {
+window.NightDB = (() => {
   const ready = typeof PouchDB === "function";
   const cache = ready ? new PouchDB("nightboard83-cache") : null;
   const media = ready ? new PouchDB("nightboard83-media") : null;
