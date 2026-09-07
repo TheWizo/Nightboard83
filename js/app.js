@@ -12,6 +12,7 @@
     me: "nightboard83.me",
     instance: "nightboard83.instance",
     collapsed: "nightboard83.collapsed",
+    seen: "nightboard83.seen",
   };
 
   const $ = (id) => document.getElementById(id);
@@ -184,6 +185,7 @@
     composeClosing: false,
     carrierWanted: true,
     unread: { home: false, local: false, notifications: false },
+    seen: { home: "", local: "", notifications: "" },
     maxChars: DEFAULT_MAX_CHARS,
     tagView: null,
   };
@@ -1263,6 +1265,7 @@
         if (incremental) appendTimelineNodes(name, batch);
         else renderTimeline(name, el);
         trimTimeline(name);
+        if (!incremental || reset) syncTimelineUnread(name);
       }
       if (window.RetroDB) {
         RetroDB.saveTimeline(name, t.items);
@@ -1278,6 +1281,7 @@
           t.maxId = cached[cached.length - 1].id;
           t.done = false;
           renderTimeline(name, el);
+          syncTimelineUnread(name);
           return;
         }
       }
@@ -1375,10 +1379,7 @@
       if (!fresh.length) return;
       t.items = fresh.concat(t.items);
       prependTicker(name, fresh);
-      if (state.collapsed[name]) {
-        state.unread[name] = true;
-        paintUnread();
-      }
+      syncTimelineUnread(name);
       if (window.RetroDB) {
         RetroDB.saveTimeline(name, t.items);
         cacheTimelineItems(fresh);
@@ -1448,6 +1449,101 @@
 
   function saveCollapsed() {
     localStorage.setItem(LS.collapsed, JSON.stringify(COLS.filter((id) => state.collapsed[id])));
+  }
+
+  function emptySeen() {
+    return { home: "", local: "", notifications: "" };
+  }
+
+  function emptyUnread() {
+    return { home: false, local: false, notifications: false };
+  }
+
+  function loadSeenState() {
+    try {
+      const data = JSON.parse(localStorage.getItem(LS.seen) || "null");
+      if (!data || data.instance !== INSTANCE) {
+        state.seen = emptySeen();
+        state.unread = emptyUnread();
+        paintUnread();
+        return;
+      }
+      state.seen = {
+        home: String(data.home || ""),
+        local: String(data.local || ""),
+        notifications: String(data.notifications || ""),
+      };
+      const u = data.unread || {};
+      state.unread = {
+        home: Boolean(u.home),
+        local: Boolean(u.local),
+        notifications: Boolean(u.notifications),
+      };
+    } catch {
+      state.seen = emptySeen();
+      state.unread = emptyUnread();
+    }
+    paintUnread();
+  }
+
+  function persistSeen() {
+    if (!INSTANCE) return;
+    localStorage.setItem(LS.seen, JSON.stringify({
+      instance: INSTANCE,
+      home: state.seen.home || "",
+      local: state.seen.local || "",
+      notifications: state.seen.notifications || "",
+      unread: {
+        home: Boolean(state.unread.home),
+        local: Boolean(state.unread.local),
+        notifications: Boolean(state.unread.notifications),
+      },
+    }));
+  }
+
+  function newestItemId(name) {
+    const items = state.timelines[name] && state.timelines[name].items;
+    if (!items || !items.length || !items[0] || !items[0].id) return "";
+    return String(items[0].id);
+  }
+
+  function idNewer(a, b) {
+    if (!a || a === b) return false;
+    if (!b) return false;
+    if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+      if (a.length !== b.length) return a.length > b.length;
+      return a > b;
+    }
+    return a !== b;
+  }
+
+  function markTimelineRead(name) {
+    const id = newestItemId(name);
+    if (id) state.seen[name] = id;
+    state.unread[name] = false;
+    persistSeen();
+    paintUnread();
+  }
+
+  function syncTimelineUnread(name) {
+    const newest = newestItemId(name);
+    if (!newest) return;
+    if (!state.seen[name]) {
+      state.seen[name] = newest;
+      state.unread[name] = false;
+      persistSeen();
+      paintUnread();
+      return;
+    }
+    const hasNew = idNewer(newest, state.seen[name]);
+    if (state.collapsed[name]) {
+      state.unread[name] = hasNew;
+    } else {
+      if (hasNew) state.seen[name] = newest;
+      state.unread[name] = false;
+    }
+    persistSeen();
+    paintUnread();
   }
 
   function colEl(name) {
@@ -1600,7 +1696,7 @@
       const from = btn ? btn.getBoundingClientRect() : null;
       const wasEmpty = COLS.every((id) => state.collapsed[id]);
       state.collapsed[name] = false;
-      state.unread[name] = false;
+      markTimelineRead(name);
       paintCollapsed();
       paintUnread();
       const logo = $("desktop-logo");
@@ -2748,6 +2844,7 @@
   });
 
   function bootApp() {
+    loadSeenState();
     setLoggedIn(true);
     refreshInstanceConfig();
     applyMaxChars(state.maxChars);
@@ -3077,6 +3174,7 @@
     applyMaxChars(state.maxChars);
     startConnWatch();
     loadMeCached();
+    loadSeenState();
     if (state.token) {
       setLoggedIn(true);
       refreshMe()
