@@ -1,3 +1,6 @@
+/* Nightboard '83 — static Mastodon/GoToSocial web client
+   Copyright (C) 2026 Ralf Wissing
+   SPDX-License-Identifier: AGPL-3.0-or-later */
 (() => {
   let INSTANCE = "";
   let POLL_MS = 2 * 60 * 1000;

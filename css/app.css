@@ -1,3 +1,6 @@
+/* Nightboard '83
+   Copyright (C) 2026 Ralf Wissing
+   SPDX-License-Identifier: AGPL-3.0-or-later */
 @font-face {
   font-family: "Press Start 2P";
   font-style: normal;
@@ -243,6 +246,21 @@ body.crt::before {
   text-shadow: 0 0 10px #fe4450aa;
 }
 .conn-status.is-offline { color: var(--yellow); text-shadow: 0 0 8px #fede5d66; }
+.license-line {
+  margin: 12px 0 0;
+  font-size: 18px;
+  color: var(--comment);
+}
+.license-line a, .source-link {
+  color: var(--cyan);
+  text-decoration: none;
+}
+.license-line a:hover, .source-link:hover { text-decoration: underline; }
+.source-link {
+  margin-left: 8px;
+  font-size: 16px;
+  color: var(--comment);
+}
 @keyframes conn-pulse {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }

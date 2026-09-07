@@ -1,7 +1,11 @@
-const CACHE = "nightboard83-v27";
+/* Nightboard '83 — service worker
+   Copyright (C) 2026 Ralf Wissing
+   SPDX-License-Identifier: AGPL-3.0-or-later */
+const CACHE = "nightboard83-v28";
 const ASSETS = [
   "./",
   "./index.html",
+  "./LICENSE",
   "./css/app.css",
   "./js/app.js",
   "./js/store.js",

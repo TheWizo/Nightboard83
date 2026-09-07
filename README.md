@@ -122,6 +122,6 @@ Covers instance parsing, ID comparison, outbox flush decisions, and (if Chromium
 
 ## License
 
-- Application code: **MIT**, Copyright 2026 Ralf Wissing — see `LICENSE`
+- Application code: **GNU Affero GPL v3 or later**, Copyright 2026 Ralf Wissing — see `LICENSE`
 - Fonts in `fonts/` (Press Start 2P, VT323, Caveat): **SIL Open Font License 1.1** — see `fonts/OFL.txt`
 - PouchDB (`js/pouchdb.min.js`): **Apache License 2.0**
