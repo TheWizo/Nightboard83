@@ -776,6 +776,19 @@ button.acct-open-inline:hover {
 }
 .content p { margin: 0 0 0.6em; }
 .content a { color: var(--cyan); }
+.content img,
+.profile-note img {
+  height: 1.2em;
+  width: auto;
+  max-height: 1.2em;
+  max-width: 1.4em;
+  vertical-align: -0.2em;
+  display: inline;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  image-rendering: auto;
+}
 .cw {
   margin: 8px 0 0 50px;
 }
@@ -893,6 +906,7 @@ button.media-thumb:hover { border-color: var(--cyan); }
 }
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 8px 0 0 50px;
 }
@@ -906,6 +920,7 @@ button.media-thumb:hover { border-color: var(--cyan); }
 }
 .actions button.on-fav { color: var(--yellow); }
 .actions button.on-boost { color: var(--mint); }
+.actions button.danger { color: var(--red); }
 .notif-kind {
   font-family: var(--font-ui);
   font-size: 10px;
@@ -968,6 +983,7 @@ dialog[open] { display: flex; flex-direction: column; }
   color: var(--cyan);
   text-shadow: 1px 0 0 #ff7edb55, 0 0 10px #03edf966;
 }
+#compose-vis:disabled { opacity: 0.55; cursor: not-allowed; }
 #compose-form > input, #compose-form > textarea {
   margin: 10px 14px 0;
   width: calc(100% - 28px);
@@ -1186,6 +1202,7 @@ dialog[open] { display: flex; flex-direction: column; }
 .profile-stats strong { color: var(--fg); display: block; }
 .search-box { display: flex; gap: 8px; margin-bottom: 12px; }
 .search-hit { padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.search-hit:hover { color: var(--cyan); }
 
 @media (max-width: 960px) {
   body { padding: 6px; }

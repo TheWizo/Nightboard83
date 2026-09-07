@@ -5,6 +5,7 @@
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
   const COLS = ["home", "local", "notifications"];
   const TIMELINE_CAP = 300;
+  const DEFAULT_MAX_CHARS = 5000;
   const LS = {
     app: "nightboard83.app",
     token: "nightboard83.token",
@@ -82,6 +83,79 @@
     setInstance(fromLs || fromCfg, Boolean(fromLs));
     POLL_MS = pollIntervalMs(cfg);
   }
+
+  function maxCharsFromInstance(data) {
+    if (!data || typeof data !== "object") return 0;
+    const cfg = data.configuration && data.configuration.statuses;
+    const raw = (cfg && cfg.max_characters) ?? data.max_toot_chars ?? data.max_status_chars;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+
+  function remainingChars(text) {
+    return Math.max(0, state.maxChars - String(text || "").length);
+  }
+
+  function paintComposeCount() {
+    const el = $("compose-count");
+    const ta = $("compose-text");
+    if (el && ta) el.textContent = String(remainingChars(ta.value));
+  }
+
+  function paintThreadReplyCount() {
+    const el = $("thread-reply-count");
+    const ta = $("thread-reply-text");
+    if (el && ta) el.textContent = "noch " + remainingChars(ta.value);
+  }
+
+  function applyMaxChars(n) {
+    const v = Number(n);
+    state.maxChars = Number.isFinite(v) && v > 0
+      ? Math.min(100000, Math.max(1, Math.floor(v)))
+      : DEFAULT_MAX_CHARS;
+    ["compose-text", "thread-reply-text"].forEach((id) => {
+      const el = $(id);
+      if (el) el.maxLength = state.maxChars;
+    });
+    paintComposeCount();
+    paintThreadReplyCount();
+  }
+
+  function paintComposeMode() {
+    const title = document.querySelector("#compose-dialog h2");
+    const editing = Boolean(state.editingStatusId);
+    if (title) title.textContent = editing ? "Post bearbeiten" : "Neuer Post";
+    const vis = $("compose-vis");
+    if (vis) vis.disabled = editing;
+    const attach = $("compose-attach");
+    const draft = $("compose-draft");
+    if (attach) attach.hidden = editing;
+    if (draft) draft.hidden = editing;
+    if (editing && state.editingMediaIds.length && $("compose-status") && !$("compose-status").textContent) {
+      $("compose-status").textContent = state.editingMediaIds.length === 1
+        ? "1 vorhandener Anhang bleibt erhalten."
+        : state.editingMediaIds.length + " vorhandene Anhänge bleiben erhalten.";
+    }
+  }
+
+  async function refreshInstanceConfig() {
+    if (!INSTANCE) {
+      applyMaxChars(DEFAULT_MAX_CHARS);
+      return;
+    }
+    try {
+      let data = null;
+      try {
+        data = await api("/api/v2/instance");
+      } catch {
+        data = await api("/api/v1/instance");
+      }
+      applyMaxChars(maxCharsFromInstance(data) || DEFAULT_MAX_CHARS);
+    } catch {
+      /* keep current limit */
+    }
+  }
+
   const state = {
     token: localStorage.getItem(LS.token) || "",
     me: null,
@@ -105,9 +179,13 @@
     composeAttach: [],
     threadAttach: [],
     editingDraftId: null,
+    editingStatusId: null,
+    editingMediaIds: [],
     composeClosing: false,
     carrierWanted: true,
     unread: { home: false, local: false, notifications: false },
+    maxChars: DEFAULT_MAX_CHARS,
+    tagView: null,
   };
 
   function api(path, opts = {}) {
@@ -256,6 +334,13 @@
       const res = await fetch(INSTANCE + "/api/v1/instance", { signal: ctrl.signal, cache: "no-store" });
       clearTimeout(timer);
       setConn(res.ok ? "online" : "offline");
+      if (res.ok) {
+        try {
+          applyMaxChars(maxCharsFromInstance(await res.json()));
+        } catch {
+          /* keep current limit */
+        }
+      }
     } catch {
       setConn("offline");
     }
@@ -376,13 +461,16 @@
     if ($("compose-text")) $("compose-text").value = "";
     if ($("compose-spoiler")) $("compose-spoiler").value = "";
     if ($("compose-vis")) $("compose-vis").value = "public";
-    if ($("compose-count")) $("compose-count").textContent = "5000";
     if ($("compose-status")) $("compose-status").textContent = "";
     revokeAttach(state.composeAttach);
     state.composeAttach = [];
     state.editingDraftId = null;
+    state.editingStatusId = null;
+    state.editingMediaIds = [];
     state.replyTo = null;
     paintAttachList("compose-attach-list", state.composeAttach, "compose");
+    paintComposeMode();
+    paintComposeCount();
   }
 
   function composeDraftPending() {
@@ -430,6 +518,22 @@
     if (state.composeClosing) return;
     state.composeClosing = true;
     try {
+      if (state.editingStatusId) {
+        if (composeDraftPending()) {
+          const discard = await askConfirm({
+            title: "Änderung verwerfen?",
+            message: "Die Bearbeitung wird nicht gespeichert.",
+            noLabel: "Weiter bearbeiten",
+            yesLabel: "Verwerfen",
+          });
+          if (discard !== true) {
+            $("compose-text").focus();
+            return;
+          }
+        }
+        closeCompose();
+        return;
+      }
       if (!composeDraftPending()) {
         closeCompose();
         return;
@@ -486,7 +590,7 @@
     $("compose-text").value = doc.text || "";
     $("compose-spoiler").value = doc.spoiler || "";
     $("compose-vis").value = doc.visibility || "public";
-    $("compose-count").textContent = String(5000 - ($("compose-text").value.length));
+    paintComposeCount();
     const files = RetroDB.attachmentsToFiles(doc);
     state.composeAttach = files.map((item) => ({
       file: item.file,
@@ -590,7 +694,7 @@
               : `<p class="hint">Neuer Post</p>`;
         return `<article class="outbox-item" data-outbox-id="${escapeHtml(doc._id)}">
           ${contextHtml}
-          <textarea class="outbox-edit" maxlength="5000">${escapeHtml(doc.payload.status || "")}</textarea>
+          <textarea class="outbox-edit" maxlength="${state.maxChars}">${escapeHtml(doc.payload.status || "")}</textarea>
           <div class="outbox-actions">
             <button type="button" data-outbox-save="${escapeHtml(doc._id)}">Speichern</button>
             <button type="button" class="danger" data-outbox-del="${escapeHtml(doc._id)}">Löschen</button>
@@ -753,7 +857,7 @@
 
   function sanitize(html) {
     const doc = new DOMParser().parseFromString("<div>" + (html || "") + "</div>", "text/html");
-    const allowed = new Set(["P", "A", "BR", "SPAN", "DEL", "PRE", "CODE", "BLOCKQUOTE", "UL", "OL", "LI", "EM", "STRONG", "B", "I"]);
+    const allowed = new Set(["P", "A", "BR", "SPAN", "DEL", "PRE", "CODE", "BLOCKQUOTE", "UL", "OL", "LI", "EM", "STRONG", "B", "I", "IMG"]);
     const walk = (node) => {
       [...node.childNodes].forEach((child) => {
         if (child.nodeType === 1) {
@@ -765,6 +869,15 @@
           }
           [...child.attributes].forEach((attr) => {
             const n = attr.name.toLowerCase();
+            if (child.tagName === "IMG") {
+              if (n === "src") {
+                if (!/^(https?:)/i.test(String(attr.value || "").trim())) child.removeAttribute(attr.name);
+                return;
+              }
+              if (n === "alt" || n === "class" || n === "title" || n === "width" || n === "height") return;
+              child.removeAttribute(attr.name);
+              return;
+            }
             if (child.tagName === "A" && (n === "href" || n === "rel" || n === "class" || n === "target")) {
               if (n === "href" && !/^(https?:|mailto:|#)/i.test(attr.value)) child.removeAttribute(attr.name);
               return;
@@ -772,6 +885,14 @@
             if (n === "class") return;
             child.removeAttribute(attr.name);
           });
+          if (child.tagName === "IMG") {
+            if (!child.getAttribute("src")) {
+              child.remove();
+              return;
+            }
+            child.setAttribute("loading", "lazy");
+            child.setAttribute("draggable", "false");
+          }
           if (child.tagName === "A") {
             child.setAttribute("target", "_blank");
             child.setAttribute("rel", "noopener noreferrer");
@@ -842,6 +963,10 @@
       ? `<div class="boost-line">↻ <button type="button" class="acct-open-inline" data-acct-open="${escapeHtml(boosted.account.id)}">${escapeHtml(boosted.account.display_name || boosted.account.username)}</button> boosted</div>`
       : "";
     const extraClass = opts.root ? " is-thread-root" : "";
+    const own = Boolean(state.me && s.account && s.account.id === state.me.id);
+    const ownBtns = own
+      ? `<button type="button" data-act="edit">Bearbeiten</button><button type="button" data-act="delete" class="danger">Löschen</button>`
+      : "";
     return `<article class="status${extraClass}" data-id="${escapeHtml(s.id)}" data-acct="${escapeHtml(s.account.id)}">
       ${boostLine}
       <div class="status-head">${accountLine(s.account)}</div>
@@ -851,6 +976,7 @@
         <button type="button" data-act="boost" class="${s.reblogged ? "on-boost" : ""}">↻ ${s.reblogs_count || 0}</button>
         <button type="button" data-act="fav" class="${s.favourited ? "on-fav" : ""}">★ ${s.favourites_count || 0}</button>
         <button type="button" data-act="open">Profil</button>
+        ${ownBtns}
       </div>`}
     </article>`;
   }
@@ -1457,7 +1583,7 @@
     const prevMention = prev ? mentionPrefix(prev) : "";
     const trimmed = ta.value.trim();
     if (!trimmed || trimmed === prevMention) ta.value = mention;
-    $("thread-reply-count").textContent = "noch " + (5000 - ta.value.length);
+    paintThreadReplyCount();
   }
 
   function renderThreadView(status, context) {
@@ -1593,7 +1719,7 @@
     if (!opts.keepDraft) {
       if (opts.focusReply) {
         $("thread-reply-text").value = "";
-        $("thread-reply-count").textContent = "noch 5000";
+        paintThreadReplyCount();
         $("thread-reply-status").textContent = "";
         state.threadReplyTo = null;
       } else {
@@ -1669,7 +1795,7 @@
     $("thread-reply-form").hidden = true;
     $("thread-reply-text").value = "";
     $("thread-reply-status").textContent = "";
-    $("thread-reply-count").textContent = "noch 5000";
+    paintThreadReplyCount();
     $("thread-reply-to").textContent = "";
     document.querySelectorAll("#thread-body .status").forEach((n) => {
       n.classList.remove("is-reply-target");
@@ -1735,9 +1861,224 @@
           return;
         }
         openThread(id, { focusReply: true });
+      } else if (act === "edit") {
+        await openEditStatus(id);
+      } else if (act === "delete") {
+        await deleteOwnStatus(id);
       }
     } catch (err) {
       alert(err.message);
+    }
+  }
+
+  function htmlToPlain(html) {
+    const doc = new DOMParser().parseFromString("<div>" + (html || "") + "</div>", "text/html");
+    return String(doc.body.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  function findLocalStatus(id) {
+    if (!id) return null;
+    if (state.threadById.has(id)) return state.threadById.get(id);
+    for (const name of COLS) {
+      const items = state.timelines[name] && state.timelines[name].items;
+      if (!items) continue;
+      for (const it of items) {
+        if (it && it.id === id && !it.reblog) return it;
+        if (it && it.reblog && it.reblog.id === id) return it.reblog;
+        if (it && it.status && it.status.id === id) return unwrapStatus(it.status);
+      }
+    }
+    return null;
+  }
+
+  function patchStatusInList(items, updated) {
+    return items.map((it) => {
+      if (!it || !updated) return it;
+      if (it.id === updated.id && !it.reblog) return updated;
+      if (it.reblog && it.reblog.id === updated.id) return Object.assign({}, it, { reblog: updated });
+      if (it.status && it.status.id === updated.id) return Object.assign({}, it, { status: updated });
+      return it;
+    });
+  }
+
+  function replaceStatusNode(root, updated) {
+    if (!root || !updated || !updated.id) return;
+    root.querySelectorAll('.status[data-id="' + CSS.escape(updated.id) + '"]').forEach((node) => {
+      const wrap = document.createElement("div");
+      wrap.innerHTML = statusHtml(updated, { root: node.classList.contains("is-thread-root") });
+      const next = wrap.firstElementChild;
+      if (!next) return;
+      paintTime(next, updated.created_at);
+      node.replaceWith(next);
+      if (window.RetroDB) RetroDB.hydrateMedia(next);
+    });
+  }
+
+  function replaceStatusEverywhere(updated) {
+    const s = unwrapStatus(updated);
+    if (!s || !s.id) return;
+    COLS.forEach((name) => {
+      const t = state.timelines[name];
+      if (!t) return;
+      t.items = patchStatusInList(t.items, s);
+      replaceStatusNode($(name + "-body"), s);
+    });
+    if (state.threadById.has(s.id)) {
+      state.threadById.set(s.id, s);
+      replaceStatusNode($("thread-body"), s);
+    }
+    const overlay = $("overlay-body");
+    if (overlay) replaceStatusNode(overlay, s);
+    if (window.RetroDB) RetroDB.saveStatus(s);
+  }
+
+  function removeStatusEverywhere(id) {
+    if (!id) return;
+    COLS.forEach((name) => {
+      const t = state.timelines[name];
+      if (!t) return;
+      t.items = t.items.filter((it) => {
+        if (!it) return false;
+        if (it.id === id) return false;
+        if (it.reblog && it.reblog.id === id) return false;
+        if (it.status && it.status.id === id) return false;
+        return true;
+      });
+      const el = $(name + "-body");
+      if (!el) return;
+      el.querySelectorAll('.status[data-id="' + CSS.escape(id) + '"]').forEach((node) => {
+        const notice = node.closest(".notice");
+        (notice || node).remove();
+      });
+    });
+    if (state.threadRootId === id) closeThread();
+    else if (state.threadById.has(id)) {
+      state.threadById.delete(id);
+      const body = $("thread-body");
+      if (body) {
+        body.querySelectorAll('.status[data-id="' + CSS.escape(id) + '"]').forEach((node) => {
+          const branch = node.closest(".thread-branch");
+          (branch || node).remove();
+        });
+      }
+    }
+    const overlay = $("overlay-body");
+    if (overlay) {
+      overlay.querySelectorAll('.status[data-id="' + CSS.escape(id) + '"]').forEach((node) => node.remove());
+    }
+    if (window.RetroDB && RetroDB.removeStatus) RetroDB.removeStatus(id);
+  }
+
+  async function openEditStatus(id) {
+    let status = findLocalStatus(id);
+    try {
+      if (!status) status = unwrapStatus(await api("/api/v1/statuses/" + encodeURIComponent(id)));
+      else status = unwrapStatus(status);
+      if (!status || !state.me || status.account.id !== state.me.id) {
+        throw new Error("Nur eigene Posts können bearbeitet werden.");
+      }
+      let text = "";
+      let spoiler = status.spoiler_text || "";
+      try {
+        const src = await api("/api/v1/statuses/" + encodeURIComponent(id) + "/source");
+        text = src && src.text != null ? String(src.text) : htmlToPlain(status.content);
+        if (src && src.spoiler_text != null) spoiler = String(src.spoiler_text);
+      } catch {
+        text = htmlToPlain(status.content);
+      }
+      resetCompose();
+      state.editingStatusId = id;
+      state.editingMediaIds = (status.media_attachments || []).map((m) => m.id).filter(Boolean);
+      $("compose-text").value = text;
+      $("compose-spoiler").value = spoiler;
+      if (status.visibility && $("compose-vis")) $("compose-vis").value = status.visibility;
+      paintComposeMode();
+      paintComposeCount();
+      if (!$("compose-dialog").open) $("compose-dialog").showModal();
+      $("compose-text").focus();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function deleteOwnStatus(id) {
+    const choice = await askConfirm({
+      title: "Post löschen?",
+      message: "Der Post wird auf der Instanz gelöscht. Das lässt sich nicht rückgängig machen.",
+      noLabel: "Abbrechen",
+      yesLabel: "Löschen",
+    });
+    if (choice !== true) return;
+    await api("/api/v1/statuses/" + encodeURIComponent(id), { method: "DELETE" });
+    removeStatusEverywhere(id);
+  }
+
+  function tagNameFromHref(href) {
+    if (!href) return "";
+    try {
+      const u = new URL(href, location.href);
+      const m = u.pathname.match(/\/tags?\/([^/]+)\/?$/i);
+      if (m) return decodeURIComponent(m[1]);
+    } catch {
+      /* ignore */
+    }
+    return "";
+  }
+
+  async function openHashtag(name) {
+    const tag = String(name || "").replace(/^#/, "").trim();
+    if (!tag) return;
+    state.tagView = { name: tag, maxId: null, loading: false, done: false, items: [] };
+    $("overlay-title").textContent = "#" + tag;
+    $("overlay-body").innerHTML = "<div id='tag-statuses'><p class='hint'>Lade Hashtag…</p></div>";
+    const dlg = $("overlay-dialog");
+    if (!dlg.open) dlg.showModal();
+    await loadHashtagPage(true);
+  }
+
+  async function loadHashtagPage(reset) {
+    const tv = state.tagView;
+    if (!tv || (tv.loading && !reset) || (tv.done && !reset)) return;
+    tv.loading = true;
+    if (reset) {
+      tv.items = [];
+      tv.maxId = null;
+      tv.done = false;
+    }
+    try {
+      let path = "/api/v1/timelines/tag/" + encodeURIComponent(tv.name) + "?limit=30";
+      if (tv.maxId) path += "&max_id=" + encodeURIComponent(tv.maxId);
+      const batch = await api(path);
+      if (!state.tagView || state.tagView.name !== tv.name) return;
+      const el = $("tag-statuses");
+      if (!Array.isArray(batch) || !batch.length) {
+        tv.done = true;
+        if (el && !tv.items.length) el.innerHTML = "<p class='empty'>Keine Posts mit diesem Hashtag.</p>";
+        return;
+      }
+      const incremental = tv.items.length > 0 && !reset;
+      tv.items = tv.items.concat(batch);
+      tv.maxId = batch[batch.length - 1].id;
+      if (!el) return;
+      if (incremental) {
+        batch.forEach((s) => {
+          const wrap = document.createElement("div");
+          wrap.innerHTML = statusHtml(s);
+          const node = wrap.firstElementChild;
+          if (!node) return;
+          paintTime(node, (s.reblog || s).created_at);
+          el.appendChild(node);
+          if (window.RetroDB) RetroDB.hydrateMedia(node);
+        });
+      } else {
+        renderStatusList(el, tv.items, "Keine Posts mit diesem Hashtag.");
+      }
+      if (window.RetroDB) cacheTimelineItems(batch);
+    } catch (err) {
+      const el = $("tag-statuses");
+      if (el && !tv.items.length) el.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    } finally {
+      if (state.tagView === tv) tv.loading = false;
     }
   }
 
@@ -1857,6 +2198,7 @@
     if (btn) {
       const article = btn.closest(".status");
       const act = btn.getAttribute("data-act");
+      if (!article) return;
       if (act === "cw") {
         const content = article.querySelector(".content");
         content.hidden = !content.hidden;
@@ -1887,6 +2229,20 @@
     if (acctOpen) {
       openProfile(acctOpen.getAttribute("data-acct-open"));
       return;
+    }
+    const tagOpen = ev.target.closest("[data-tag-open]");
+    if (tagOpen) {
+      openHashtag(tagOpen.getAttribute("data-tag-open"));
+      return;
+    }
+    const tagLink = ev.target.closest("a[href]");
+    if (tagLink) {
+      const tag = tagNameFromHref(tagLink.getAttribute("href"));
+      if (tag) {
+        ev.preventDefault();
+        openHashtag(tag);
+        return;
+      }
     }
     if (!ev.target.closest("a, button, input, textarea, select, video, label")) {
       const article = ev.target.closest(".status");
@@ -2021,6 +2377,7 @@
 
   async function openProfile(id) {
     if (!id) return;
+    state.tagView = null;
     const dlg = $("overlay-dialog");
     $("overlay-title").textContent = "Profil";
     $("overlay-body").innerHTML = "<p class='hint'>Lade Profil…</p>";
@@ -2094,7 +2451,10 @@
         .join("");
       const statuses = (res.statuses || []).map((s) => statusHtml(s)).join("");
       const tags = (res.hashtags || [])
-        .map((t) => `<div class="search-hit">#${escapeHtml(t.name)}</div>`)
+        .map((t) => {
+          const name = t.name || t;
+          return `<div class="search-hit" data-tag-open="${escapeHtml(name)}" role="button" tabindex="0">#${escapeHtml(name)}</div>`;
+        })
         .join("");
       box.innerHTML =
         (accounts ? "<h3>Accounts</h3>" + accounts : "") +
@@ -2107,6 +2467,7 @@
   }
 
   function openSearch() {
+    state.tagView = null;
     $("overlay-title").textContent = "Suche";
     $("overlay-body").innerHTML = `
       <div class="search-box">
@@ -2121,6 +2482,30 @@
   $("compose-form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const status = $("compose-text").value.trim();
+    if (state.editingStatusId) {
+      if (!status && !state.editingMediaIds.length) {
+        $("compose-status").textContent = "Text oder Anhang fehlt.";
+        return;
+      }
+      $("compose-status").textContent = "Speichere…";
+      try {
+        const payload = {
+          status: status || "",
+          spoiler_text: $("compose-spoiler").value.trim() || "",
+        };
+        if (state.editingMediaIds.length) payload.media_ids = state.editingMediaIds;
+        const updated = await api("/api/v1/statuses/" + encodeURIComponent(state.editingStatusId), {
+          method: "PUT",
+          body: payload,
+        });
+        replaceStatusEverywhere(unwrapStatus(updated));
+        resetCompose();
+        $("compose-dialog").close();
+      } catch (err) {
+        $("compose-status").textContent = err.message;
+      }
+      return;
+    }
     if (!status && !state.composeAttach.length) {
       $("compose-status").textContent = "Text oder Anhang fehlt.";
       return;
@@ -2160,11 +2545,13 @@
   });
 
   $("compose-text").addEventListener("input", () => {
-    $("compose-count").textContent = String(5000 - $("compose-text").value.length);
+    paintComposeCount();
   });
 
   function bootApp() {
     setLoggedIn(true);
+    refreshInstanceConfig();
+    applyMaxChars(state.maxChars);
     loadTimeline("home", true);
     loadTimeline("local", true);
     loadTimeline("notifications", true);
@@ -2230,9 +2617,22 @@
       ev.preventDefault();
       runSearch();
     }
+    const tagHit = ev.target && ev.target.closest && ev.target.closest("[data-tag-open]");
+    if (tagHit && (ev.key === "Enter" || ev.key === " ")) {
+      ev.preventDefault();
+      openHashtag(tagHit.getAttribute("data-tag-open"));
+    }
   });
   $("btn-profile").addEventListener("click", () => state.me && openProfile(state.me.id));
   $("overlay-close").addEventListener("click", () => $("overlay-dialog").close());
+  $("overlay-dialog").addEventListener("close", () => {
+    state.tagView = null;
+  });
+  $("overlay-body").addEventListener("scroll", () => {
+    const el = $("overlay-body");
+    if (!el || !state.tagView || state.tagView.loading || state.tagView.done) return;
+    if (el.scrollTop + el.clientHeight > el.scrollHeight - 200) loadHashtagPage(false);
+  });
   $("media-close").addEventListener("click", closeMedia);
   $("media-dialog").addEventListener("close", stopMediaPlayback);
   $("media-download").addEventListener("click", () => {
@@ -2248,7 +2648,7 @@
     requestCloseThread();
   });
   $("thread-reply-text").addEventListener("input", () => {
-    $("thread-reply-count").textContent = "noch " + (5000 - $("thread-reply-text").value.length);
+    paintThreadReplyCount();
   });
   $("thread-reply-form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
@@ -2298,6 +2698,7 @@
 
   (async () => {
     await initInstance();
+    applyMaxChars(state.maxChars);
     startConnWatch();
     loadMeCached();
     if (state.token) {

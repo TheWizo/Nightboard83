@@ -6,7 +6,11 @@ window.RetroDB = (() => {
   const drafts = ready ? new PouchDB("nightboard83-drafts") : null;
   const blobUrls = new Map();
   const BLOB_URL_MAX = 80;
+  const MEDIA_MAX_BYTES = 64 * 1024 * 1024;
+  const MEDIA_MAX_FILES = 400;
+  const TIMELINE_KEEP = 120;
   let mediaQueue = Promise.resolve();
+  let evictTimer = null;
 
   function mediaId(url) {
     return "m:" + encodeURIComponent(url);
@@ -32,39 +36,54 @@ window.RetroDB = (() => {
     }
   }
 
-  function collectUrls(item) {
-    const urls = [];
+  function collectUrlEntries(item) {
+    const out = [];
     const walk = (s) => {
       if (!s) return;
       const acc = s.account;
       if (acc) {
-        if (acc.avatar_static) urls.push(acc.avatar_static);
-        else if (acc.avatar) urls.push(acc.avatar);
+        const av = acc.avatar_static || acc.avatar;
+        if (av) out.push({ url: av, kind: "avatar" });
       }
       (s.media_attachments || []).forEach((m) => {
-        if (m.preview_url) urls.push(m.preview_url);
-        else if (m.type === "image" && m.url) urls.push(m.url);
+        if (m.preview_url) out.push({ url: m.preview_url, kind: "preview" });
+        else if (m.type === "image" && m.url) out.push({ url: m.url, kind: "preview" });
       });
     };
     if (item && item.type && item.account && item.status !== undefined) {
       walk({ account: item.account });
       walk(item.status);
+      if (item.status && item.status.reblog) walk(item.status.reblog);
     } else {
       walk(item);
       if (item && item.reblog) walk(item.reblog);
     }
-    return urls.filter(Boolean);
+    return out.filter((e) => e && e.url);
   }
 
   async function saveTimeline(name, items) {
     if (!cache) return;
-    const ids = items.map((it) => it.id).filter(Boolean);
-    await putDoc(cache, "index:" + name, { type: "index", ids: ids.slice(0, 120) });
+    const keep = (items || []).slice(0, TIMELINE_KEEP);
+    const ids = keep.map((it) => it.id).filter(Boolean);
+    await putDoc(cache, "index:" + name, { type: "index", ids });
     await Promise.all(
-      items.slice(0, 120).map((it) =>
+      keep.map((it) =>
         putDoc(cache, "item:" + name + ":" + it.id, { type: "item", timeline: name, data: it })
       )
     );
+    try {
+      const prefix = "item:" + name + ":";
+      const res = await cache.allDocs({ startkey: prefix, endkey: prefix + "\ufff0", include_docs: true });
+      const keepSet = new Set(ids.map((id) => prefix + id));
+      await Promise.all(
+        res.rows
+          .filter((row) => row.doc && !keepSet.has(row.id))
+          .map((row) => cache.remove(row.doc).catch(() => {}))
+      );
+    } catch {
+      /* ignore */
+    }
+    scheduleEvict();
   }
 
   async function loadTimeline(name) {
@@ -104,6 +123,33 @@ window.RetroDB = (() => {
     }
   }
 
+  async function removeStatus(id) {
+    if (!cache || !id) return;
+    const keys = ["status:" + id, "item:home:" + id, "item:local:" + id];
+    for (const key of keys) {
+      try {
+        const doc = await cache.get(key);
+        await cache.remove(doc);
+      } catch {
+        /* ignore */
+      }
+    }
+    for (const name of ["home", "local", "notifications"]) {
+      try {
+        const idx = await cache.get("index:" + name);
+        if (!idx || !Array.isArray(idx.ids)) continue;
+        const next = idx.ids.filter((x) => x !== id);
+        if (next.length !== idx.ids.length) {
+          idx.ids = next;
+          await cache.put(idx);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    scheduleEvict();
+  }
+
   async function allCachedStatuses() {
     if (!cache) return [];
     const res = await cache.allDocs({ include_docs: true });
@@ -117,7 +163,99 @@ window.RetroDB = (() => {
     return out;
   }
 
-  function cacheMedia(url) {
+  function mediaBytes(doc) {
+    if (!doc) return 0;
+    if (Number.isFinite(doc.bytes) && doc.bytes >= 0) return doc.bytes;
+    const att = doc._attachments && doc._attachments.file;
+    if (att && Number.isFinite(att.length) && att.length >= 0) return att.length;
+    return 0;
+  }
+
+  function revokeCachedBlob(url) {
+    if (!url || !blobUrls.has(url)) return;
+    const prev = blobUrls.get(url);
+    blobUrls.delete(url);
+    if (prev && String(prev).indexOf("blob:") === 0) URL.revokeObjectURL(prev);
+  }
+
+  async function pinnedMediaMap() {
+    const pinned = new Map();
+    if (!cache) return pinned;
+    try {
+      const res = await cache.allDocs({ include_docs: true });
+      res.rows.forEach((row) => {
+        const doc = row.doc;
+        if (!doc) return;
+        let item = null;
+        if (doc.type === "item" && doc.data) item = doc.data;
+        else if (doc.type === "status" && doc.data) item = doc.data;
+        if (!item) return;
+        collectUrlEntries(item).forEach((e) => {
+          if (!e.url) return;
+          if (pinned.get(e.url) === "avatar") return;
+          pinned.set(e.url, e.kind === "avatar" ? "avatar" : "preview");
+        });
+      });
+    } catch {
+      /* ignore */
+    }
+    return pinned;
+  }
+
+  async function evictMedia() {
+    if (!media) return;
+    let docs;
+    try {
+      const res = await media.allDocs({ include_docs: true });
+      docs = res.rows.map((r) => r.doc).filter(Boolean);
+    } catch {
+      return;
+    }
+    let total = docs.reduce((sum, d) => sum + mediaBytes(d), 0);
+    if (total <= MEDIA_MAX_BYTES && docs.length <= MEDIA_MAX_FILES) return;
+
+    const pinned = await pinnedMediaMap();
+    const unreferenced = [];
+    const pinnedPreview = [];
+    const pinnedAvatar = [];
+    docs.forEach((doc) => {
+      const url = doc.url || "";
+      const pinKind = url ? pinned.get(url) : null;
+      const kind = pinKind || doc.kind || "preview";
+      const rec = { doc, url, kind, bytes: mediaBytes(doc), created: Number(doc.createdAt) || 0 };
+      if (!pinKind) unreferenced.push(rec);
+      else if (kind === "avatar") pinnedAvatar.push(rec);
+      else pinnedPreview.push(rec);
+    });
+    const oldestFirst = (a, b) => a.created - b.created || String(a.url).localeCompare(String(b.url));
+    unreferenced.sort(oldestFirst);
+    pinnedPreview.sort(oldestFirst);
+    pinnedAvatar.sort(oldestFirst);
+
+    let files = docs.length;
+    const victims = unreferenced.concat(pinnedPreview, pinnedAvatar);
+    for (const rec of victims) {
+      if (total <= MEDIA_MAX_BYTES && files <= MEDIA_MAX_FILES) break;
+      try {
+        await media.remove(rec.doc);
+        total -= rec.bytes;
+        files -= 1;
+        revokeCachedBlob(rec.url);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  function scheduleEvict() {
+    if (evictTimer) clearTimeout(evictTimer);
+    evictTimer = setTimeout(() => {
+      evictTimer = null;
+      mediaQueue = mediaQueue.then(() => evictMedia()).catch(() => {});
+    }, 800);
+  }
+
+  function cacheMedia(url, kind) {
     if (!media || !url || !/^https?:/i.test(url)) return;
     mediaQueue = mediaQueue.then(async () => {
       const id = mediaId(url);
@@ -134,10 +272,14 @@ window.RetroDB = (() => {
         await media.put({
           _id: id,
           url,
+          kind: kind === "avatar" ? "avatar" : "preview",
+          bytes: blob.size || 0,
+          createdAt: Date.now(),
           _attachments: {
             file: { content_type: blob.type || "application/octet-stream", data: blob },
           },
         });
+        scheduleEvict();
       } catch {
         /* ignore */
       }
@@ -145,7 +287,7 @@ window.RetroDB = (() => {
   }
 
   function cacheItemMedia(item) {
-    collectUrls(item).forEach(cacheMedia);
+    collectUrlEntries(item).forEach((e) => cacheMedia(e.url, e.kind));
   }
 
   function rememberBlob(url, obj) {
@@ -325,9 +467,11 @@ window.RetroDB = (() => {
     loadTimeline,
     saveStatus,
     loadStatus,
+    removeStatus,
     allCachedStatuses,
     cacheItemMedia,
     hydrateMedia,
+    mediaSrc,
     enqueue,
     listOutbox,
     getOutbox,
