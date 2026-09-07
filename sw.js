@@ -1,4 +1,4 @@
-const CACHE = "nightboard83-v23";
+const CACHE = "nightboard83-v24";
 const ASSETS = [
   "./",
   "./index.html",
@@ -35,35 +35,39 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function putInCache(request, res) {
+  if (res && res.ok) {
+    const copy = res.clone();
+    caches.open(CACHE).then((cache) => cache.put(request, copy));
+  }
+  return res;
+}
+
+function isAppShell(request, url) {
+  if (request.mode === "navigate") return true;
+  const dest = request.destination;
+  if (dest === "document" || dest === "script" || dest === "style" || dest === "manifest") return true;
+  const path = url.pathname;
+  return /\.(?:html|js|css|webmanifest)$/i.test(path) || /\/$/.test(path);
+}
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   const isConfig = /\/config\.json$/i.test(url.pathname);
-  if (isConfig) {
+  if (isConfig || isAppShell(event.request, url)) {
     event.respondWith(
       fetch(event.request, { cache: "no-store" })
-        .then((res) => {
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-          }
-          return res;
-        })
-        .catch(() => caches.match(event.request))
+        .then((res) => putInCache(event.request, res))
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html")))
     );
     return;
   }
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetched = fetch(event.request)
-        .then((res) => {
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-          }
-          return res;
-        })
+        .then((res) => putInCache(event.request, res))
         .catch(() => cached);
       return cached || fetched;
     })

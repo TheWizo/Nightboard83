@@ -2867,6 +2867,62 @@
   bindColumnScroll("local");
   bindColumnScroll("notifications");
 
+  function startSwUpdates() {
+    if (!("serviceWorker" in navigator)) return;
+    let reloading = false;
+    let wantReload = false;
+
+    function canReload() {
+      try {
+        return !composeDraftPending() && !threadDraftPending();
+      } catch {
+        return true;
+      }
+    }
+
+    function reloadNow() {
+      if (reloading) return;
+      reloading = true;
+      location.reload();
+    }
+
+    function requestReload() {
+      if (canReload()) reloadNow();
+      else wantReload = true;
+    }
+
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.addEventListener("controllerchange", requestReload);
+    }
+
+    const tryIdleReload = () => {
+      if (wantReload && canReload()) reloadNow();
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) tryIdleReload();
+    });
+    setInterval(tryIdleReload, 4000);
+
+    const watchReg = (reg) => {
+      if (!reg) return;
+      const ping = () => reg.update().catch(() => {});
+      ping();
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) ping();
+      });
+      window.addEventListener("online", ping);
+      setInterval(ping, 10 * 60 * 1000);
+    };
+
+    navigator.serviceWorker
+      .getRegistration("./sw.js")
+      .then((reg) => reg || navigator.serviceWorker.register("./sw.js"))
+      .then(watchReg)
+      .catch(() => {});
+  }
+
+  startSwUpdates();
+
   (async () => {
     await initInstance();
     applyMaxChars(state.maxChars);

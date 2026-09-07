@@ -63,7 +63,7 @@ server {
 }
 ```
 
-After an update, do a refresh or re-open the PWA so the service worker can pick up the new cache name.
+The app checks for a new service worker on startup, when the tab becomes visible, and about every ten minutes. HTML, CSS, and JavaScript are fetched network-first (cache only if offline). If a new version is found, the PWA reloads on its own; a typed but unsent compose or reply waits until that draft is gone.
 
 ## Configuration
 
