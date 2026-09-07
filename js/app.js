@@ -1,7 +1,8 @@
 (() => {
   let INSTANCE = "";
   let POLL_MS = 2 * 60 * 1000;
-  const SCOPES = "read write follow push";
+  const Core = window.NBCore || {};
+  const SCOPES = "read write follow";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
   const COLS = ["home", "local", "notifications"];
   const TIMELINE_CAP = 300;
@@ -13,26 +14,21 @@
     instance: "nightboard83.instance",
     collapsed: "nightboard83.collapsed",
     seen: "nightboard83.seen",
+    pkce: "nightboard83.pkce",
   };
 
   const $ = (id) => document.getElementById(id);
 
   function instanceHost(url) {
-    try { return new URL(url).host; } catch { return ""; }
+    return Core.instanceHost ? Core.instanceHost(url) : "";
   }
 
   function normalizeInstance(raw) {
-    let v = String(raw || "").trim();
-    if (!v) return "";
-    v = v.replace(/\/+$/, "");
-    if (!/^https?:\/\//i.test(v)) v = "https://" + v;
-    try {
-      const u = new URL(v);
-      if (!u.hostname) return "";
-      return u.origin;
-    } catch {
-      return "";
-    }
+    return Core.normalizeInstance ? Core.normalizeInstance(raw) : "";
+  }
+
+  function appBaseUrl() {
+    return Core.appBaseUrl ? Core.appBaseUrl(location) : (location.origin + "/");
   }
 
   function paintInstanceLabel(host) {
@@ -70,11 +66,7 @@
   }
 
   function pollIntervalMs(cfg) {
-    const raw = cfg && (cfg.poll_minutes ?? cfg.pollMinutes ?? cfg.polling_minutes ?? cfg.poll);
-    const minutes = Number(raw);
-    if (!Number.isFinite(minutes) || minutes <= 0) return 2 * 60 * 1000;
-    const clamped = Math.min(1440, Math.max(0.25, minutes));
-    return Math.round(clamped * 60 * 1000);
+    return Core.pollIntervalMs ? Core.pollIntervalMs(cfg) : 2 * 60 * 1000;
   }
 
   async function initInstance() {
@@ -86,11 +78,7 @@
   }
 
   function maxCharsFromInstance(data) {
-    if (!data || typeof data !== "object") return 0;
-    const cfg = data.configuration && data.configuration.statuses;
-    const raw = (cfg && cfg.max_characters) ?? data.max_toot_chars ?? data.max_status_chars;
-    const n = Number(raw);
-    return Number.isFinite(n) && n > 0 ? n : 0;
+    return Core.maxCharsFromInstance ? Core.maxCharsFromInstance(data) : 0;
   }
 
   function remainingChars(text) {
@@ -152,6 +140,7 @@
         data = await api("/api/v1/instance");
       }
       applyMaxChars(maxCharsFromInstance(data) || DEFAULT_MAX_CHARS);
+      rememberStreamingUrl(data);
     } catch {
       /* keep current limit */
     }
@@ -188,6 +177,13 @@
     seen: { home: "", local: "", notifications: "" },
     maxChars: DEFAULT_MAX_CHARS,
     tagView: null,
+    profileView: null,
+    notifFilter: "all",
+    streams: [],
+    streamingUrl: "",
+    usingStream: false,
+    streamRetry: null,
+    authBusy: false,
   };
 
   function api(path, opts = {}) {
@@ -206,6 +202,9 @@
           const msg = (data && (data.error || data.error_description)) || res.statusText;
           const err = new Error(msg);
           err.status = res.status;
+          if (res.status === 401 && state.token && !opts.skipAuth) {
+            logout();
+          }
           throw err;
         }
         return data;
@@ -219,17 +218,11 @@
   }
 
   function isNetworkError(err) {
-    if (!err) return false;
-    if (err.network) return true;
-    const msg = String(err.message || err);
-    return /failed to fetch|networkerror|load failed|offline|abort/i.test(msg);
+    return Core.isNetworkError ? Core.isNetworkError(err) : false;
   }
 
   function isMissingStatus(err) {
-    if (!err || isNetworkError(err)) return false;
-    if (err.status === 404 || err.status === 410) return true;
-    const msg = String(err.message || "").toLowerCase();
-    return /record not found|status not found|not found|nicht gefunden/.test(msg);
+    return Core.isMissingStatus ? Core.isMissingStatus(err) : false;
   }
 
   function statusSnapshot(status) {
@@ -262,6 +255,7 @@
 
   function hangUp() {
     state.carrierWanted = false;
+    stopStreaming();
     stopPolling();
     if (state.carrierTimer) {
       clearTimeout(state.carrierTimer);
@@ -274,7 +268,7 @@
   function pickUp() {
     state.carrierWanted = true;
     probeConn();
-    if (state.token) startPolling();
+    if (state.token) startLiveUpdates();
   }
 
   function toggleCarrier() {
@@ -315,6 +309,7 @@
       state.conn = "online";
       paintConn("is-connected", "connected");
       tryFlushOutbox();
+      if (state.token && state.carrierWanted) startStreaming();
       return;
     }
     if (next === "offline") {
@@ -324,6 +319,7 @@
       }
       state.conn = "offline";
       paintConn("is-offline", "not connected");
+      stopStreaming();
     }
   }
 
@@ -347,7 +343,9 @@
       setConn(res.ok ? "online" : "offline");
       if (res.ok) {
         try {
-          applyMaxChars(maxCharsFromInstance(await res.json()));
+          const data = await res.json();
+          applyMaxChars(maxCharsFromInstance(data));
+          rememberStreamingUrl(data);
         } catch {
           /* keep current limit */
         }
@@ -884,32 +882,64 @@
     }
   }
 
-  async function ensureApp() {
+  async function ensureApp(redirectUri) {
+    const redirect = redirectUri || appBaseUrl();
     const cached = localStorage.getItem(LS.app);
     if (cached) {
       try {
         const app = JSON.parse(cached);
-        if (app && app.client_id && app._instance === INSTANCE) return app;
+        if (
+          app &&
+          app.client_id &&
+          app._instance === INSTANCE &&
+          app._redirect === redirect &&
+          app._scopes === SCOPES
+        ) {
+          return app;
+        }
       } catch { /* re-register */ }
     }
-    const body = new URLSearchParams({
-      client_name: "Nightboard '83",
-      redirect_uris: OOB,
-      scopes: SCOPES,
-      website: INSTANCE,
-    });
-    const app = await fetch(INSTANCE + "/api/v1/apps", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-      body,
-    }).then(async (r) => {
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "App-Registrierung fehlgeschlagen");
+    const register = async (uris) => {
+      const body = new URLSearchParams({
+        client_name: "Nightboard '83",
+        redirect_uris: uris,
+        scopes: SCOPES,
+        website: appBaseUrl() || location.origin,
+      });
+      const res = await fetch(INSTANCE + "/api/v1/apps", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+        body,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "App-Registrierung fehlgeschlagen");
       return data;
-    });
+    };
+    let app;
+    try {
+      app = await register(redirect + "\n" + OOB);
+    } catch {
+      app = await register(redirect);
+    }
     app._instance = INSTANCE;
+    app._redirect = redirect;
+    app._scopes = SCOPES;
     localStorage.setItem(LS.app, JSON.stringify(app));
     return app;
+  }
+
+  function bytesToB64Url(bytes) {
+    const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    let bin = "";
+    for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  async function makePkce() {
+    const raw = crypto.getRandomValues(new Uint8Array(32));
+    const verifier = bytesToB64Url(raw);
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+    return { verifier, challenge: bytesToB64Url(digest) };
   }
 
   async function startOAuth() {
@@ -919,43 +949,48 @@
         return;
       }
       $("login-status").textContent = "App wird registriert…";
-      const app = await ensureApp();
-      const url =
-        INSTANCE +
-        "/oauth/authorize?" +
-        new URLSearchParams({
-          client_id: app.client_id,
-          redirect_uri: OOB,
-          response_type: "code",
-          scope: SCOPES,
-        }).toString();
-      window.open(url, "_blank", "noopener");
-      $("login-status").textContent = "Im neuen Tab freigeben, Code hier einfügen.";
+      const redirect = appBaseUrl();
+      const app = await ensureApp(redirect);
+      const pkce = await makePkce();
+      sessionStorage.setItem(LS.pkce, pkce.verifier);
+      const params = new URLSearchParams({
+        client_id: app.client_id,
+        redirect_uri: redirect,
+        response_type: "code",
+        scope: SCOPES,
+        code_challenge: pkce.challenge,
+        code_challenge_method: "S256",
+      });
+      $("login-status").textContent = "Weiterleitung zur Freigabe…";
+      location.href = INSTANCE + "/oauth/authorize?" + params.toString();
     } catch (err) {
       $("login-status").textContent = err.message;
     }
   }
 
-  async function exchangeCode() {
-    const code = $("oauth-code").value.trim();
+  async function exchangeCode(rawCode, oob) {
+    const code = String(rawCode || ($("oauth-code") && $("oauth-code").value) || "").trim();
     if (!code) {
       $("login-status").textContent = "Bitte Code einfügen.";
       return;
     }
     try {
-      if (!applyInstanceFromInput()) {
+      if (!INSTANCE && !applyInstanceFromInput()) {
         $("login-status").textContent = "Bitte eine gültige Instanz eintragen.";
         return;
       }
-      const app = await ensureApp();
+      if ($("instance-input") && $("instance-input").value) applyInstanceFromInput();
+      const redirect = oob ? OOB : appBaseUrl();
+      const app = await ensureApp(appBaseUrl());
       const body = new URLSearchParams({
         grant_type: "authorization_code",
         client_id: app.client_id,
-        client_secret: app.client_secret,
-        redirect_uri: OOB,
+        redirect_uri: redirect,
         code,
-        scope: SCOPES,
       });
+      if (app.client_secret) body.set("client_secret", app.client_secret);
+      const verifier = sessionStorage.getItem(LS.pkce);
+      if (verifier && !oob) body.set("code_verifier", verifier);
       const token = await fetch(INSTANCE + "/oauth/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
@@ -965,6 +1000,7 @@
         if (!r.ok) throw new Error(data.error_description || data.error || "Token fehlgeschlagen");
         return data;
       });
+      sessionStorage.removeItem(LS.pkce);
       state.token = token.access_token;
       localStorage.setItem(LS.token, state.token);
       await refreshMe();
@@ -973,6 +1009,21 @@
     } catch (err) {
       $("login-status").textContent = err.message;
     }
+  }
+
+  async function consumeOAuthRedirect() {
+    const params = new URLSearchParams(location.search);
+    const code = params.get("code");
+    const err = params.get("error");
+    if (!code && !err) return false;
+    history.replaceState({}, "", location.pathname + location.hash);
+    if (err) {
+      $("login-status").textContent = params.get("error_description") || err;
+      return true;
+    }
+    $("login-status").textContent = "Token wird geholt…";
+    await exchangeCode(code, false);
+    return true;
   }
 
   async function refreshMe() {
@@ -985,71 +1036,21 @@
     state.me = null;
     localStorage.removeItem(LS.token);
     localStorage.removeItem(LS.me);
+    sessionStorage.removeItem(LS.pkce);
     setColumnExpanded(null);
     state.colBusy = false;
     closeThread();
+    stopStreaming();
     stopPolling();
     setLoggedIn(false);
   }
 
   function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    return Core.escapeHtml ? Core.escapeHtml(s) : String(s || "");
   }
 
   function sanitize(html) {
-    const doc = new DOMParser().parseFromString("<div>" + (html || "") + "</div>", "text/html");
-    const allowed = new Set(["P", "A", "BR", "SPAN", "DEL", "PRE", "CODE", "BLOCKQUOTE", "UL", "OL", "LI", "EM", "STRONG", "B", "I", "IMG"]);
-    const walk = (node) => {
-      [...node.childNodes].forEach((child) => {
-        if (child.nodeType === 1) {
-          if (!allowed.has(child.tagName)) {
-            const parent = child.parentNode;
-            while (child.firstChild) parent.insertBefore(child.firstChild, child);
-            parent.removeChild(child);
-            return;
-          }
-          [...child.attributes].forEach((attr) => {
-            const n = attr.name.toLowerCase();
-            if (child.tagName === "IMG") {
-              if (n === "src") {
-                if (!/^(https?:)/i.test(String(attr.value || "").trim())) child.removeAttribute(attr.name);
-                return;
-              }
-              if (n === "alt" || n === "class" || n === "title" || n === "width" || n === "height") return;
-              child.removeAttribute(attr.name);
-              return;
-            }
-            if (child.tagName === "A" && (n === "href" || n === "rel" || n === "class" || n === "target")) {
-              if (n === "href" && !/^(https?:|mailto:|#)/i.test(attr.value)) child.removeAttribute(attr.name);
-              return;
-            }
-            if (n === "class") return;
-            child.removeAttribute(attr.name);
-          });
-          if (child.tagName === "IMG") {
-            if (!child.getAttribute("src")) {
-              child.remove();
-              return;
-            }
-            child.setAttribute("loading", "lazy");
-            child.setAttribute("draggable", "false");
-          }
-          if (child.tagName === "A") {
-            child.setAttribute("target", "_blank");
-            child.setAttribute("rel", "noopener noreferrer");
-          }
-          walk(child);
-        } else if (child.nodeType !== 3) {
-          child.remove();
-        }
-      });
-    };
-    walk(doc.body.firstChild);
-    return doc.body.firstChild.innerHTML;
+    return Core.sanitize ? Core.sanitize(html) : escapeHtml(html);
   }
 
   function relTime(iso) {
@@ -1163,13 +1164,22 @@
     </div>`;
   }
 
+  function notifMatchesFilter(n, filter) {
+    if (!n) return false;
+    if (!filter || filter === "all") return true;
+    if (filter === "mention") return n.type === "mention";
+    if (filter === "follow") return n.type === "follow" || n.type === "follow_request";
+    return n.type === filter;
+  }
+
   function renderNotifications(el, items) {
-    if (!items.length) {
+    const visible = (items || []).filter((n) => notifMatchesFilter(n, state.notifFilter));
+    if (!visible.length) {
       el.innerHTML = `<div class="empty">Keine Notifications.</div>`;
       return;
     }
-    el.innerHTML = items.map((n) => noticeHtml(n)).join("");
-    [...el.children].forEach((node, i) => paintTime(node, items[i].created_at));
+    el.innerHTML = visible.map((n) => noticeHtml(n)).join("");
+    [...el.children].forEach((node, i) => paintTime(node, visible[i].created_at));
     if (window.RetroDB) RetroDB.hydrateMedia(el);
   }
 
@@ -1306,11 +1316,24 @@
       });
   }
 
+  function notifExcludeTypes(filter) {
+    const all = ["mention", "status", "reblog", "follow", "follow_request", "favourite", "poll", "update"];
+    if (!filter || filter === "all") return [];
+    if (filter === "mention") return all.filter((t) => t !== "mention");
+    if (filter === "follow") return all.filter((t) => t !== "follow" && t !== "follow_request");
+    return all.filter((t) => t !== filter);
+  }
+
   function timelinePath(name, extra) {
     let path;
     if (name === "home") path = "/api/v1/timelines/home?limit=30";
     else if (name === "local") path = "/api/v1/timelines/public?local=true&limit=30";
-    else path = "/api/v1/notifications?limit=30";
+    else {
+      path = "/api/v1/notifications?limit=30";
+      notifExcludeTypes(state.notifFilter).forEach((t) => {
+        path += "&exclude_types[]=" + encodeURIComponent(t);
+      });
+    }
     if (extra) path += extra;
     return path;
   }
@@ -1391,6 +1414,7 @@
 
   async function pollNewPosts() {
     if (!state.carrierWanted || !state.token || detailWindowOpen() || document.hidden) return;
+    if (state.usingStream) return;
     await Promise.all([fetchNewer("home"), fetchNewer("local"), fetchNewer("notifications")]);
   }
 
@@ -1404,6 +1428,155 @@
       clearInterval(state.pollTimer);
       state.pollTimer = null;
     }
+  }
+
+  function rememberStreamingUrl(data) {
+    if (!data || typeof data !== "object") return;
+    const urls = data.urls || {};
+    const raw = urls.streaming_api || urls.streaming || "";
+    if (raw) state.streamingUrl = String(raw);
+  }
+
+  function streamingWsBase() {
+    const raw = String(state.streamingUrl || "").trim();
+    if (raw) return raw.replace(/\/$/, "");
+    return INSTANCE.replace(/^http/i, "ws");
+  }
+
+  function buildStreamUrl(stream) {
+    let base = streamingWsBase();
+    if (!/\/api\/v1\/streaming$/i.test(base)) base += "/api/v1/streaming";
+    const u = new URL(base);
+    u.searchParams.set("access_token", state.token);
+    u.searchParams.set("stream", stream);
+    return u.toString();
+  }
+
+  function parseStreamPayload(event, payload) {
+    if (payload && typeof payload === "object") return payload;
+    if (typeof payload !== "string" || !payload) return payload;
+    if (event === "delete") return payload;
+    try { return JSON.parse(payload); } catch { return payload; }
+  }
+
+  function ingestStatus(name, status) {
+    const s = unwrapStatus(status);
+    if (!s || !s.id) return;
+    const t = state.timelines[name];
+    if (!t) return;
+    if ((t.items || []).some((it) => it && (it.id === s.id || (it.reblog && it.reblog.id === s.id)))) {
+      replaceStatusEverywhere(s);
+      return;
+    }
+    t.items = [status].concat(t.items || []);
+    prependTicker(name, [status]);
+    syncTimelineUnread(name);
+    if (window.RetroDB) {
+      RetroDB.saveTimeline(name, t.items);
+      cacheTimelineItems([status]);
+    }
+  }
+
+  function ingestNotification(n) {
+    if (!n || !n.id) return;
+    const t = state.timelines.notifications;
+    if (!t) return;
+    if ((t.items || []).some((it) => it && it.id === n.id)) return;
+    t.items = [n].concat(t.items || []);
+    if (notifMatchesFilter(n, state.notifFilter)) prependTicker("notifications", [n]);
+    syncTimelineUnread("notifications");
+    if (window.RetroDB) {
+      RetroDB.saveTimeline("notifications", t.items);
+      cacheTimelineItems([n]);
+    }
+  }
+
+  function handleStreamEvent(source, event, payload) {
+    const data = parseStreamPayload(event, payload);
+    if (event === "delete") {
+      removeStatusEverywhere(String(data || payload || ""));
+      return;
+    }
+    if (event === "status.update" && data) {
+      replaceStatusEverywhere(data);
+      return;
+    }
+    if (event === "notification" && data) {
+      ingestNotification(data);
+      return;
+    }
+    if (event === "update" && data) {
+      ingestStatus(source === "local" ? "local" : "home", data);
+    }
+  }
+
+  function openStream(stream, source) {
+    if (!state.token || typeof WebSocket !== "function") return null;
+    let ws;
+    try {
+      ws = new WebSocket(buildStreamUrl(stream));
+    } catch {
+      return null;
+    }
+    ws.onmessage = (ev) => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch { return; }
+      handleStreamEvent(source, msg.event, msg.payload);
+    };
+    return ws;
+  }
+
+  function stopStreaming() {
+    if (state.streamRetry) {
+      clearTimeout(state.streamRetry);
+      state.streamRetry = null;
+    }
+    (state.streams || []).forEach((ws) => {
+      try {
+        ws.onclose = null;
+        ws.onerror = null;
+        ws.close();
+      } catch { /* ignore */ }
+    });
+    state.streams = [];
+    state.usingStream = false;
+  }
+
+  function scheduleStreamRetry() {
+    if (state.streamRetry || !state.carrierWanted || state.conn !== "online" || !state.token) return;
+    state.streamRetry = setTimeout(() => {
+      state.streamRetry = null;
+      startStreaming();
+    }, 8000);
+  }
+
+  function startStreaming() {
+    stopStreaming();
+    if (!state.token || !state.carrierWanted || state.conn !== "online") return;
+    const sockets = [
+      openStream("user", "home"),
+      openStream("public:local", "local"),
+    ].filter(Boolean);
+    state.streams = sockets;
+    if (!sockets.length) return;
+    sockets.forEach((ws) => {
+      ws.onopen = () => {
+        state.usingStream = true;
+      };
+      ws.onclose = () => {
+        state.usingStream = state.streams.some((s) => s && s.readyState === 1);
+        if (!state.usingStream) {
+          if (state.carrierWanted && state.conn === "online" && state.token) startPolling();
+          scheduleStreamRetry();
+        }
+      };
+    });
+  }
+
+  function startLiveUpdates() {
+    if (!state.token || !state.carrierWanted) return;
+    startStreaming();
+    startPolling();
   }
 
   function setColumnExpanded(name) {
@@ -1508,13 +1681,7 @@
   }
 
   function idNewer(a, b) {
-    if (!a || a === b) return false;
-    if (!b) return false;
-    if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
-      if (a.length !== b.length) return a.length > b.length;
-      return a > b;
-    }
-    return a !== b;
+    return Core.idNewer ? Core.idNewer(a, b) : false;
   }
 
   function markTimelineRead(name) {
@@ -2302,20 +2469,38 @@
   }
 
   function tagNameFromHref(href) {
-    if (!href) return "";
+    return Core.tagNameFromHref ? Core.tagNameFromHref(href, location.href) : "";
+  }
+
+  function mentionAcctFromHref(href) {
+    return Core.mentionAcctFromHref
+      ? Core.mentionAcctFromHref(href, location.href, instanceHost(INSTANCE))
+      : "";
+  }
+
+  async function openMention(acct) {
+    const who = String(acct || "").replace(/^@/, "").trim();
+    if (!who) return;
     try {
-      const u = new URL(href, location.href);
-      const m = u.pathname.match(/\/tags?\/([^/]+)\/?$/i);
-      if (m) return decodeURIComponent(m[1]);
-    } catch {
-      /* ignore */
+      const acc = await api("/api/v1/accounts/lookup?acct=" + encodeURIComponent(who));
+      if (acc && acc.id) {
+        await openProfile(acc.id);
+        return;
+      }
+    } catch { /* try search */ }
+    try {
+      const res = await api("/api/v2/search?q=" + encodeURIComponent("@" + who) + "&type=accounts&resolve=true");
+      const hit = res && res.accounts && res.accounts[0];
+      if (hit && hit.id) await openProfile(hit.id);
+    } catch (err) {
+      alert(err.message);
     }
-    return "";
   }
 
   async function openHashtag(name) {
     const tag = String(name || "").replace(/^#/, "").trim();
     if (!tag) return;
+    state.profileView = null;
     state.tagView = { name: tag, maxId: null, loading: false, done: false, items: [] };
     $("overlay-title").textContent = "#" + tag;
     $("overlay-body").innerHTML = "<div id='tag-statuses'><p class='hint'>Lade Hashtag…</p></div>";
@@ -2525,10 +2710,17 @@
     }
     const tagLink = ev.target.closest("a[href]");
     if (tagLink) {
-      const tag = tagNameFromHref(tagLink.getAttribute("href"));
+      const href = tagLink.getAttribute("href");
+      const tag = tagNameFromHref(href);
       if (tag) {
         ev.preventDefault();
         openHashtag(tag);
+        return;
+      }
+      const mention = mentionAcctFromHref(href);
+      if (mention && (tagLink.classList.contains("mention") || /\/@|\/users\//i.test(href || ""))) {
+        ev.preventDefault();
+        openMention(mention);
         return;
       }
     }
@@ -2667,9 +2859,56 @@
     });
   }
 
+  async function loadProfileStatuses(reset) {
+    const pv = state.profileView;
+    if (!pv || (pv.loading && !reset) || (pv.done && !reset)) return;
+    pv.loading = true;
+    if (reset) {
+      pv.items = [];
+      pv.maxId = null;
+      pv.done = false;
+    }
+    try {
+      let path = "/api/v1/accounts/" + encodeURIComponent(pv.id) + "/statuses?limit=20";
+      if (pv.maxId) path += "&max_id=" + encodeURIComponent(pv.maxId);
+      const batch = await api(path);
+      if (!state.profileView || state.profileView.id !== pv.id) return;
+      const el = $("profile-statuses");
+      if (!Array.isArray(batch) || !batch.length) {
+        pv.done = true;
+        if (el && !pv.items.length) el.innerHTML = "<p class='empty'>Keine Posts.</p>";
+        return;
+      }
+      const incremental = pv.items.length > 0 && !reset;
+      pv.items = pv.items.concat(batch);
+      pv.maxId = batch[batch.length - 1].id;
+      if (!el) return;
+      if (incremental) {
+        batch.forEach((s) => {
+          const wrap = document.createElement("div");
+          wrap.innerHTML = statusHtml(s);
+          const node = wrap.firstElementChild;
+          if (!node) return;
+          paintTime(node, (s.reblog || s).created_at);
+          el.appendChild(node);
+          if (window.RetroDB) RetroDB.hydrateMedia(node);
+        });
+      } else {
+        renderStatusList(el, pv.items, "Keine Posts.");
+      }
+      if (window.RetroDB) cacheTimelineItems(batch);
+    } catch (err) {
+      const el = $("profile-statuses");
+      if (el && !pv.items.length) el.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    } finally {
+      if (state.profileView === pv) pv.loading = false;
+    }
+  }
+
   async function openProfile(id) {
     if (!id) return;
     state.tagView = null;
+    state.profileView = { id, maxId: null, loading: false, done: false, items: [] };
     const dlg = $("overlay-dialog");
     $("overlay-title").textContent = "Profil";
     $("overlay-body").innerHTML = "<p class='hint'>Lade Profil…</p>";
@@ -2678,7 +2917,6 @@
       const acc = await api("/api/v1/accounts/" + encodeURIComponent(id));
       const rels = await api("/api/v1/accounts/relationships?id[]=" + encodeURIComponent(id)).catch(() => []);
       const rel = (rels && rels[0]) || {};
-      const statuses = await api("/api/v1/accounts/" + encodeURIComponent(id) + "/statuses?limit=20");
       const isSelf = Boolean(state.me && state.me.id === acc.id);
       $("overlay-title").textContent = acc.display_name || acc.username;
       $("overlay-body").innerHTML = `
@@ -2704,8 +2942,8 @@
           <div><strong>${acc.following_count}</strong>Following</div>
           <div><strong>${acc.followers_count}</strong>Followers</div>
         </div>
-        <div id="profile-statuses"></div>`;
-      renderStatusList($("profile-statuses"), statuses, "Keine Posts.");
+        <div id="profile-statuses"><p class="hint">Lade Posts…</p></div>`;
+      await loadProfileStatuses(true);
       if (isSelf) {
         const lo = $("profile-logout");
         if (lo) {
@@ -2760,6 +2998,7 @@
 
   function openSearch() {
     state.tagView = null;
+    state.profileView = null;
     $("overlay-title").textContent = "Suche";
     $("overlay-body").innerHTML = `
       <div class="search-box">
@@ -2851,7 +3090,7 @@
     loadTimeline("home", true);
     loadTimeline("local", true);
     loadTimeline("notifications", true);
-    if (state.carrierWanted) startPolling();
+    if (state.carrierWanted) startLiveUpdates();
     refreshOutboxBadge();
     refreshDraftsBadge();
     tryFlushOutbox();
@@ -2866,7 +3105,27 @@
     if (url) $("instance-input").value = instanceHost(url);
   });
   $("btn-oauth").addEventListener("click", startOAuth);
-  $("btn-token").addEventListener("click", exchangeCode);
+  $("btn-token").addEventListener("click", () => exchangeCode($("oauth-code").value, true));
+  const notifFilter = $("notif-filter");
+  if (notifFilter) {
+    notifFilter.addEventListener("change", () => {
+      state.notifFilter = notifFilter.value || "all";
+      loadTimeline("notifications", true);
+    });
+  }
+  const notifClear = $("notif-clear");
+  if (notifClear) {
+    notifClear.addEventListener("click", async () => {
+      try {
+        await api("/api/v1/notifications/clear", { method: "POST" });
+        state.timelines.notifications.items = [];
+        markTimelineRead("notifications");
+        loadTimeline("notifications", true);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  }
   $("btn-login").addEventListener("click", () => {
     setLoggedIn(false);
     $("login-panel").hidden = false;
@@ -2923,11 +3182,14 @@
   $("overlay-close").addEventListener("click", () => $("overlay-dialog").close());
   $("overlay-dialog").addEventListener("close", () => {
     state.tagView = null;
+    state.profileView = null;
   });
   $("overlay-body").addEventListener("scroll", () => {
     const el = $("overlay-body");
-    if (!el || !state.tagView || state.tagView.loading || state.tagView.done) return;
-    if (el.scrollTop + el.clientHeight > el.scrollHeight - 200) loadHashtagPage(false);
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight <= el.scrollHeight - 200) return;
+    if (state.tagView && !state.tagView.loading && !state.tagView.done) loadHashtagPage(false);
+    if (state.profileView && !state.profileView.loading && !state.profileView.done) loadProfileStatuses(false);
   });
   $("media-close").addEventListener("click", closeMedia);
   $("media-dialog").addEventListener("close", stopMediaPlayback);
@@ -3175,6 +3437,7 @@
     startConnWatch();
     loadMeCached();
     loadSeenState();
+    if (await consumeOAuthRedirect()) return;
     if (state.token) {
       setLoggedIn(true);
       refreshMe()

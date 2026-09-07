@@ -672,7 +672,25 @@ button:disabled { opacity: 0.5; cursor: default; }
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
-.col-head-actions { display: flex; gap: 2px; align-items: center; }
+.col-head-actions { display: flex; gap: 2px; align-items: center; flex-wrap: wrap; }
+.col-head-actions select {
+  max-width: 7.8em;
+  margin-right: 4px;
+  padding: 2px 4px;
+  background: #191621;
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 18px;
+}
+.oauth-fallback {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 20px;
+}
+.oauth-fallback summary { cursor: pointer; color: var(--cyan); }
+.oauth-fallback label { display: block; margin-top: 8px; }
 .col-head h2 {
   margin: 0;
   font-family: var(--font-ui);

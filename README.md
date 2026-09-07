@@ -2,7 +2,7 @@
 
 Nightboard '83 is a static web client for [Mastodon](https://docs.joinmastodon.org/client/intro/)-compatible servers, written with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, CSS, and JavaScript files with no build step and no backend of its own. The interface is German, in an 1980s CRT / neon style, and can be installed as a Progressive Web App.
 
-The client talks to the instance you configure (or type in at login) using OAuth 2.0 out-of-band (`urn:ietf:wg:oauth:2.0:oob`). After you authorize in a new tab, you paste the code back into Nightboard.
+The client talks to the instance you configure (or type in at login) using OAuth 2.0 with PKCE. After you authorize, the instance redirects back to Nightboard. A paste-the-code fallback remains for stubborn servers.
 
 ## Features
 
@@ -88,11 +88,10 @@ Polling is paused while a thread, profile, compose, media, drafts, or outbox dia
 ## First login
 
 1. Open the app and, if needed, set the instance hostname.
-2. Click **1. Autorisieren**. A new tab opens the instance’s OAuth consent page.
-3. Approve access. The instance shows an authorization code (out-of-band).
-4. Paste the code into **Authorization Code** and click **2. Token holen**.
+2. Click **Autorisieren**. The instance’s OAuth consent page opens in the same window.
+3. Approve access. You are redirected back to Nightboard and signed in.
 
-Scopes requested: `read write follow push`.
+Scopes requested: `read write follow`. If redirect login fails, use **Fallback: Code einfügen**.
 
 Tokens and the registered app credentials stay in `localStorage` on that browser. Logout only drops the token and profile cache, not drafts or the outbox.
 
@@ -110,6 +109,16 @@ All of this lives in the browser, not on your instance:
 - Timeline cache, media blobs, outbox, drafts: IndexedDB databases `nightboard83-cache`, `nightboard83-media`, `nightboard83-outbox`, `nightboard83-drafts` (PouchDB)
 
 Clearing site data logs you out and deletes drafts and queued posts.
+
+## Tests
+
+From the project root:
+
+```bash
+node test/run.mjs
+```
+
+Covers instance parsing, ID comparison, outbox flush decisions, and (if Chromium is available) HTML sanitizing.
 
 ## License
 

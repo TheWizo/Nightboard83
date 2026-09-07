@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>pending</title>
+<pre id="out">running</pre>
+<script src="../js/core.js"></script>
+<script>
+function fail(msg) {
+  document.title = "FAIL";
+  document.getElementById("out").textContent = String(msg);
+}
+try {
+  const s = window.NBCore.sanitize;
+  const emoji = s('<p>hi <img src="https://ex.example/e.png" alt=":e:" class="emoji" onerror="alert(1)"> x</p>');
+  if (!emoji.includes('src="https://ex.example/e.png"')) throw new Error("emoji src " + emoji);
+  if (/onerror/i.test(emoji)) throw new Error("handler survived");
+  const js = s('<img src="javascript:alert(1)" alt="x">');
+  if (/javascript:/i.test(js) || /<img/i.test(js)) throw new Error("js src " + js);
+  const data = s('<img src="data:image/png;base64,xx">');
+  if (/<img/i.test(data)) throw new Error("data uri " + data);
+  const wrap = s('<' + 'script>alert(1)</' + 'script><p>ok</p>');
+  if (/<script/i.test(wrap)) throw new Error("script " + wrap);
+  if (!wrap.includes("<p>ok</p>")) throw new Error("p dropped " + wrap);
+  document.title = "PASS";
+  document.getElementById("out").textContent = "PASS " + emoji;
+} catch (e) {
+  fail(e && e.stack || e);
+}
+</script>

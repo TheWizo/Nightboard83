@@ -1,10 +1,11 @@
-const CACHE = "nightboard83-v26";
+const CACHE = "nightboard83-v27";
 const ASSETS = [
   "./",
   "./index.html",
   "./css/app.css",
   "./js/app.js",
   "./js/store.js",
+  "./js/core.js",
   "./js/pouchdb.min.js",
   "./manifest.webmanifest",
   "./fonts/PressStart2P.woff2",

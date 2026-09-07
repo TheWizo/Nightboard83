@@ -134,17 +134,20 @@
           Instanz
           <input id="instance-input" type="text" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="mastodon.example" />
         </label>
-        <p>Anmeldung per OAuth — den Code nach der Freigabe hier einfügen.</p>
+        <p>Anmeldung per OAuth — Freigabe im gleichen Fenster, danach kommst du automatisch zurück.</p>
         <div class="row">
-          <button type="button" class="primary" id="btn-oauth">1. Autorisieren</button>
+          <button type="button" class="primary" id="btn-oauth">Autorisieren</button>
         </div>
-        <label>
-          Authorization Code
-          <input id="oauth-code" type="text" autocomplete="off" placeholder="Code aus dem Browser-Tab einfügen" />
-        </label>
-        <div class="row">
-          <button type="button" class="primary" id="btn-token">2. Token holen</button>
-        </div>
+        <details class="oauth-fallback">
+          <summary>Fallback: Code einfügen</summary>
+          <label>
+            Authorization Code
+            <input id="oauth-code" type="text" autocomplete="off" placeholder="Code aus dem Browser-Tab einfügen" />
+          </label>
+          <div class="row">
+            <button type="button" class="primary" id="btn-token">Token holen</button>
+          </div>
+        </details>
         <p class="hint" id="login-status"></p>
       </div>
       </div>
@@ -190,6 +193,14 @@
         <header class="col-head notes">
           <h2>Notifications</h2>
           <div class="col-head-actions">
+            <select id="notif-filter" title="Filter" aria-label="Notification-Filter">
+              <option value="all">Alle</option>
+              <option value="mention">Mentions</option>
+              <option value="follow">Follows</option>
+              <option value="reblog">Boosts</option>
+              <option value="favourite">Favs</option>
+            </select>
+            <button type="button" class="icon-btn" id="notif-clear" title="Alle als gelesen markieren" aria-label="Notifications als gelesen markieren">✓</button>
             <button type="button" class="icon-btn" data-collapse="notifications" title="Einklappen" aria-label="Notifications einklappen">
               <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
                 <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
@@ -370,6 +381,7 @@
 
   <script src="js/pouchdb.min.js"></script>
   <script src="js/store.js"></script>
+  <script src="js/core.js"></script>
   <script src="js/app.js" defer></script>
   <script>
     if ("serviceWorker" in navigator) {
