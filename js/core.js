@@ -8,29 +8,29 @@
 
   function parseInstanceInput(raw) {
     let v = String(raw || "").trim();
-    if (!v) return { origin: "", error: "Bitte eine gültige Instanz eintragen." };
+    if (!v) return { origin: "", error: "errors.instanceRequired" };
     if (/^https?:$/i.test(v) || /^https?:\/\/$/i.test(v)) {
-      return { origin: "", error: "Unvollständige URL — Hostname fehlt (Schema allein reicht nicht)." };
+      return { origin: "", error: "errors.incompleteUrl" };
     }
     if (/^[a-z][a-z0-9+.-]*:/i.test(v) && !/^https?:\/\//i.test(v)) {
-      return { origin: "", error: "Ungültiges URL-Schema — bitte http:// oder https:// nutzen." };
+      return { origin: "", error: "errors.invalidScheme" };
     }
     const candidate = (/^https?:\/\//i.test(v) ? v : "https://" + v).replace(/\/+$/, "");
     let u;
     try {
       u = new URL(candidate);
     } catch {
-      return { origin: "", error: "Ungültige Instanz-URL (Format)." };
+      return { origin: "", error: "errors.invalidInstanceUrl" };
     }
     if (!u.hostname) {
-      return { origin: "", error: "Ungültige Instanz-URL — Hostname fehlt." };
+      return { origin: "", error: "errors.hostnameMissing" };
     }
     const host = u.hostname;
     const isLocalhost = host === "localhost";
     const isIpv4 = /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
     const isIpv6 = host.includes(":");
     if (!isLocalhost && !isIpv4 && !isIpv6 && !host.includes(".")) {
-      return { origin: "", error: "Ungültiger Hostname — bitte Domain (mit Punkt) oder IP angeben." };
+      return { origin: "", error: "errors.invalidHostname" };
     }
     return { origin: u.origin, error: "" };
   }
@@ -41,14 +41,14 @@
 
   function friendlyConnectError(err) {
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
-      return "Offline — keine Netzverbindung. Anmeldung und App-Registrierung sind nicht möglich.";
+      return "errors.offlineFull";
     }
     if (isNetworkError(err)) {
-      return "Instanz nicht erreichbar (Netzwerk, DNS oder blockierte Anfrage).";
+      return "errors.instanceUnreachable";
     }
     const msg = String((err && err.message) || err || "").trim();
     if (!msg || /failed to fetch|networkerror|load failed/i.test(msg)) {
-      return "Instanz nicht erreichbar (Netzwerk, DNS oder blockierte Anfrage).";
+      return "errors.instanceUnreachable";
     }
     return msg;
   }
@@ -159,11 +159,11 @@
     const targetId = (doc && (doc.statusId || (doc.payload && doc.payload.id))) || null;
     if (action === "edit" || action === "delete") {
       if (!targetId) {
-        return { error: action === "delete" ? "Löschen ohne Status-ID" : "Bearbeitung ohne Status-ID" };
+        return { error: action === "delete" ? "errors.deleteWithoutStatusId" : "errors.editWithoutStatusId" };
       }
       if (!exists) {
         if (action === "delete") return { done: true };
-        return { error: "Post existiert nicht mehr — Bearbeitung nicht gesendet." };
+        return { error: "errors.postGoneEdit" };
       }
       return { method: action === "delete" ? "DELETE" : "PUT", statusId: targetId };
     }

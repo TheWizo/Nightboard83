@@ -1,7 +1,7 @@
 /* Nightboard '83 — service worker
    Copyright (C) 2026 Ralf Wissing
    SPDX-License-Identifier: AGPL-3.0-or-later */
-const CACHE = "nightboard83-v34";
+const CACHE = "nightboard83-v35";
 const ASSETS = [
   "./",
   "./index.html",
@@ -10,7 +10,10 @@ const ASSETS = [
   "./js/app.js",
   "./js/store.js",
   "./js/core.js",
+  "./js/i18n.js",
   "./js/pouchdb.min.js",
+  "./i18n/de.json",
+  "./i18n/en.json",
   "./manifest.webmanifest",
   "./fonts/PressStart2P.woff2",
   "./fonts/PressStart2P-latin-ext.woff2",
@@ -58,7 +61,7 @@ function isAppShell(request, url) {
   const dest = request.destination;
   if (dest === "document" || dest === "script" || dest === "style" || dest === "manifest") return true;
   const path = url.pathname;
-  return /\.(?:html|js|css|webmanifest)$/i.test(path) || /\/$/.test(path);
+  return /\.(?:html|js|css|webmanifest|json)$/i.test(path) || /\/$/.test(path);
 }
 
 self.addEventListener("fetch", (event) => {
