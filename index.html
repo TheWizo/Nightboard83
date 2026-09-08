@@ -30,7 +30,7 @@
           <h1>Nightboard <em>'83</em></h1>
         </div>
       </div>
-      <nav id="col-dock" class="col-dock" hidden aria-label="Eingeklappte Spalten">
+      <nav id="col-dock" class="col-dock" hidden aria-label="Eingeklappte Spalten" data-i18n-aria="nav.dockAria">
         <button type="button" class="dock-icon is-home" data-restore="home" hidden>
           <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="7" y="1" width="2" height="2" fill="currentColor"/>
@@ -42,7 +42,7 @@
             <rect x="3" y="13" width="10" height="2" fill="currentColor"/>
             <rect x="7" y="9" width="2" height="4" fill="currentColor"/>
           </svg>
-          <span>Home</span>
+          <span data-i18n="nav.home">Home</span>
         </button>
         <button type="button" class="dock-icon is-local" data-restore="local" hidden>
           <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
@@ -57,7 +57,7 @@
             <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
             <rect x="5" y="13" width="6" height="2" fill="currentColor"/>
           </svg>
-          <span>Local</span>
+          <span data-i18n="nav.local">Local</span>
         </button>
         <button type="button" class="dock-icon is-federated" data-restore="federated" hidden>
           <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
@@ -74,7 +74,7 @@
             <rect x="0" y="7" width="2" height="2" fill="currentColor"/>
             <rect x="14" y="7" width="2" height="2" fill="currentColor"/>
           </svg>
-          <span>Föd</span>
+          <span data-i18n="nav.federatedShort">Föd</span>
         </button>
         <button type="button" class="dock-icon is-notes" data-restore="notifications" hidden>
           <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
@@ -85,11 +85,11 @@
             <rect x="5" y="9" width="4" height="2" fill="currentColor"/>
             <rect x="3" y="13" width="10" height="2" fill="currentColor"/>
           </svg>
-          <span>Notes</span>
+          <span data-i18n="nav.notificationsShort">Notes</span>
         </button>
       </nav>
       <div class="top-actions" id="top-actions">
-        <button type="button" class="outbox-btn" id="btn-search" hidden title="Suche" aria-label="Suche">
+        <button type="button" class="outbox-btn" id="btn-search" hidden title="Suche" aria-label="Suche" data-i18n-title="nav.search" data-i18n-aria="nav.search">
           <svg class="outbox-glyph" viewBox="0 0 16 16" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="2" y="2" width="8" height="2" fill="#03edf9"/>
             <rect x="2" y="8" width="8" height="2" fill="#03edf9"/>
@@ -100,7 +100,7 @@
             <rect x="13" y="13" width="2" height="2" fill="#fede5d"/>
           </svg>
         </button>
-        <button type="button" class="outbox-btn" id="btn-profile" hidden title="Profil" aria-label="Profil">
+        <button type="button" class="outbox-btn" id="btn-profile" hidden title="Profil" aria-label="Profil" data-i18n-title="nav.profile" data-i18n-aria="nav.profile">
           <svg class="outbox-glyph" viewBox="0 0 16 16" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="6" y="1" width="4" height="2" fill="#72f1b8"/>
             <rect x="5" y="3" width="6" height="4" fill="#72f1b8"/>
@@ -109,7 +109,7 @@
             <rect x="2" y="12" width="12" height="3" fill="#72f1b8"/>
           </svg>
         </button>
-        <button type="button" class="outbox-btn primary" id="btn-compose" hidden title="Neuer Post" aria-label="Neuer Post">
+        <button type="button" class="outbox-btn primary" id="btn-compose" hidden title="Neuer Post" aria-label="Neuer Post" data-i18n-title="nav.compose" data-i18n-aria="nav.compose">
           <svg class="outbox-glyph" viewBox="0 0 16 16" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="2" y="12" width="2" height="2" fill="#ff7edb"/>
             <rect x="4" y="10" width="2" height="2" fill="#ff7edb"/>
@@ -121,7 +121,7 @@
             <rect x="12" y="4" width="2" height="2" fill="#ff7edb"/>
           </svg>
         </button>
-        <button type="button" class="outbox-btn" id="btn-drafts" hidden title="Entwürfe" aria-label="Entwürfe">
+        <button type="button" class="outbox-btn" id="btn-drafts" hidden title="Entwürfe" aria-label="Entwürfe" data-i18n-title="nav.drafts" data-i18n-aria="nav.drafts">
           <svg class="outbox-glyph" viewBox="0 0 16 16" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="3" y="1" width="10" height="14" fill="#fede5d"/>
             <rect x="9" y="1" width="4" height="4" fill="#ff7edb"/>
@@ -131,7 +131,7 @@
           </svg>
           <span class="outbox-count" id="drafts-count">0</span>
         </button>
-        <button type="button" class="outbox-btn" id="btn-outbox" hidden title="Postausgang" aria-label="Postausgang">
+        <button type="button" class="outbox-btn" id="btn-outbox" hidden title="Postausgang" aria-label="Postausgang" data-i18n-title="nav.outbox" data-i18n-aria="nav.outbox">
           <svg class="outbox-glyph" viewBox="0 0 16 16" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="1" y="9" width="14" height="6" fill="#72f1b8"/>
             <rect x="0" y="8" width="16" height="2" fill="#03edf9"/>
@@ -143,7 +143,11 @@
           </svg>
           <span class="outbox-count" id="outbox-count">0</span>
         </button>
-        <button type="button" class="ghost" id="btn-login">Anmelden</button>
+        <div class="lang-switch" role="group" aria-label="Sprache" data-i18n-aria="common.language">
+          <button type="button" class="lang-btn" data-lang="de" aria-pressed="true">DE</button>
+          <button type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+        </div>
+        <button type="button" class="ghost" id="btn-login" data-i18n="login.signIn">Anmelden</button>
       </div>
     </header>
 
@@ -151,27 +155,31 @@
       <div class="login-stack">
       <h1 class="login-wordmark"><span class="login-name">Nightboard</span><span class="login-year">'83</span></h1>
       <div class="login-card">
-        <h2>Mit dem Grid verbinden</h2>
+        <h2 data-i18n="login.title">Mit dem Grid verbinden</h2>
+        <div class="lang-switch" role="group" aria-label="Sprache" data-i18n-aria="common.language">
+          <button type="button" class="lang-btn" data-lang="de" aria-pressed="true">DE</button>
+          <button type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+        </div>
         <label>
-          Instanz
-          <input id="instance-input" type="text" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="mastodon.example" />
+          <span data-i18n="login.instance">Instanz</span>
+          <input id="instance-input" type="text" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="mastodon.example" data-i18n-placeholder="login.instancePlaceholder" />
         </label>
-        <p>Anmeldung per OAuth — Freigabe im gleichen Fenster, danach kommst du automatisch zurück. Bei GTS-Fehler „redirect_uri not found in session“: Cookies der Instanz löschen und erneut autorisieren (kein GTS-Neustart währenddessen).</p>
+        <p data-i18n="login.oauthHint">Anmeldung per OAuth — Freigabe im gleichen Fenster, danach kommst du automatisch zurück. Bei GTS-Fehler „redirect_uri not found in session“: Cookies der Instanz löschen und erneut autorisieren (kein GTS-Neustart währenddessen).</p>
         <div class="row">
-          <button type="button" class="primary" id="btn-oauth">Autorisieren</button>
+          <button type="button" class="primary" id="btn-oauth" data-i18n="login.authorize">Autorisieren</button>
         </div>
         <details class="oauth-fallback">
-          <summary>Fallback: Code einfügen</summary>
+          <summary data-i18n="login.fallbackSummary">Fallback: Code einfügen</summary>
           <label>
-            Autorisierungscode
-            <input id="oauth-code" type="text" autocomplete="off" placeholder="Code aus dem Browser-Tab einfügen" />
+            <span data-i18n="login.authCode">Autorisierungscode</span>
+            <input id="oauth-code" type="text" autocomplete="off" placeholder="Code aus dem Browser-Tab einfügen" data-i18n-placeholder="login.authCodePlaceholder" />
           </label>
           <div class="row">
-            <button type="button" class="primary" id="btn-token">Token holen</button>
+            <button type="button" class="primary" id="btn-token" data-i18n="login.getToken">Token holen</button>
           </div>
         </details>
         <p class="hint" id="login-status"></p>
-        <p class="license-line"><a href="LICENSE">AGPLv3</a> · <a href="https://git.blackneon.net/ralf/Nightboard83.git">Quellcode</a></p>
+        <p class="license-line"><a href="LICENSE" data-i18n="common.license">AGPLv3</a> · <a href="https://git.blackneon.net/ralf/Nightboard83.git" data-i18n="common.sourceCode">Quellcode</a></p>
       </div>
       </div>
     </section>
@@ -182,72 +190,72 @@
       </div>
       <section class="col" data-col="home">
         <header class="col-head home">
-          <h2>Home</h2>
+          <h2 data-i18n="nav.home">Home</h2>
           <div class="col-head-actions">
-            <button type="button" class="icon-btn" data-collapse="home" title="Einklappen" aria-label="Home einklappen">
+            <button type="button" class="icon-btn" data-collapse="home" title="Einklappen" data-i18n-title="a11y.collapse" aria-label="Home einklappen" data-i18n-aria="nav.collapseHome">
               <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
                 <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
                 <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
               </svg>
             </button>
-            <button type="button" class="icon-btn" data-expand="home" title="Vollbild" aria-pressed="false" aria-label="Home auf Vollbild">⤢</button>
-            <button type="button" class="icon-btn" data-refresh="home" title="Aktualisieren">↻</button>
+            <button type="button" class="icon-btn" data-expand="home" title="Vollbild" data-i18n-title="a11y.expand" aria-pressed="false" aria-label="Home auf Vollbild" data-i18n-aria="nav.expandHome">⤢</button>
+            <button type="button" class="icon-btn" data-refresh="home" title="Aktualisieren" data-i18n-title="a11y.refresh">↻</button>
           </div>
         </header>
         <div class="col-body" id="home-body"></div>
       </section>
       <section class="col" data-col="local">
         <header class="col-head local">
-          <h2>Local</h2>
+          <h2 data-i18n="nav.local">Local</h2>
           <div class="col-head-actions">
-            <button type="button" class="icon-btn" data-collapse="local" title="Einklappen" aria-label="Local einklappen">
+            <button type="button" class="icon-btn" data-collapse="local" title="Einklappen" data-i18n-title="a11y.collapse" aria-label="Local einklappen" data-i18n-aria="nav.collapseLocal">
               <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
                 <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
                 <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
               </svg>
             </button>
-            <button type="button" class="icon-btn" data-expand="local" title="Vollbild" aria-pressed="false" aria-label="Local auf Vollbild">⤢</button>
-            <button type="button" class="icon-btn" data-refresh="local" title="Aktualisieren">↻</button>
+            <button type="button" class="icon-btn" data-expand="local" title="Vollbild" data-i18n-title="a11y.expand" aria-pressed="false" aria-label="Local auf Vollbild" data-i18n-aria="nav.expandLocal">⤢</button>
+            <button type="button" class="icon-btn" data-refresh="local" title="Aktualisieren" data-i18n-title="a11y.refresh">↻</button>
           </div>
         </header>
         <div class="col-body" id="local-body"></div>
       </section>
       <section class="col" data-col="federated">
         <header class="col-head federated">
-          <h2>Föderiert</h2>
+          <h2 data-i18n="nav.federated">Föderiert</h2>
           <div class="col-head-actions">
-            <button type="button" class="icon-btn" data-collapse="federated" title="Einklappen" aria-label="Föderiert einklappen">
+            <button type="button" class="icon-btn" data-collapse="federated" title="Einklappen" data-i18n-title="a11y.collapse" aria-label="Föderiert einklappen" data-i18n-aria="nav.collapseFederated">
               <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
                 <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
                 <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
               </svg>
             </button>
-            <button type="button" class="icon-btn" data-expand="federated" title="Vollbild" aria-pressed="false" aria-label="Föderiert auf Vollbild">⤢</button>
-            <button type="button" class="icon-btn" data-refresh="federated" title="Aktualisieren">↻</button>
+            <button type="button" class="icon-btn" data-expand="federated" title="Vollbild" data-i18n-title="a11y.expand" aria-pressed="false" aria-label="Föderiert auf Vollbild" data-i18n-aria="nav.expandFederated">⤢</button>
+            <button type="button" class="icon-btn" data-refresh="federated" title="Aktualisieren" data-i18n-title="a11y.refresh">↻</button>
           </div>
         </header>
         <div class="col-body" id="federated-body"></div>
       </section>
       <section class="col" data-col="notifications">
         <header class="col-head notes">
-          <h2>Benachrichtigungen</h2>
+          <h2 data-i18n="nav.notifications">Benachrichtigungen</h2>
           <div class="col-head-actions">
-            <select id="notif-filter" title="Filter" aria-label="Benachrichtigungs-Filter">
-              <option value="all">Alle</option>
-              <option value="mention">Erwähnungen</option>
-              <option value="follow">Follows</option>
-              <option value="reblog">Boosts</option>
-              <option value="favourite">Favs</option>
+            <select id="notif-filter" title="Filter" aria-label="Benachrichtigungs-Filter" data-i18n-title="timeline.notifFilter" data-i18n-aria="timeline.notifFilterAria">
+              <option value="all" data-i18n="timeline.notifAll">Alle</option>
+              <option value="mention" data-i18n="timeline.notifMentions">Erwähnungen</option>
+              <option value="follow" data-i18n="timeline.notifFollows">Follows</option>
+              <option value="reblog" data-i18n="timeline.notifBoosts">Boosts</option>
+              <option value="favourite" data-i18n="timeline.notifFavs">Favs</option>
             </select>
-            <button type="button" class="icon-btn" id="notif-clear" title="Alle als gelesen markieren" aria-label="Benachrichtigungen als gelesen markieren">✓</button>
-            <button type="button" class="icon-btn" data-collapse="notifications" title="Einklappen" aria-label="Benachrichtigungen einklappen">
+            <button type="button" class="icon-btn" id="notif-clear" title="Alle als gelesen markieren" aria-label="Benachrichtigungen als gelesen markieren" data-i18n-title="timeline.notifMarkRead" data-i18n-aria="timeline.notifMarkReadAria">✓</button>
+            <button type="button" class="icon-btn" data-collapse="notifications" title="Einklappen" data-i18n-title="a11y.collapse" aria-label="Benachrichtigungen einklappen" data-i18n-aria="nav.collapseNotifications">
               <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
                 <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
                 <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
               </svg>
             </button>
-            <button type="button" class="icon-btn" data-expand="notifications" title="Vollbild" aria-pressed="false" aria-label="Benachrichtigungen auf Vollbild">⤢</button>
-            <button type="button" class="icon-btn" data-refresh="notifications" title="Aktualisieren">↻</button>
+            <button type="button" class="icon-btn" data-expand="notifications" title="Vollbild" data-i18n-title="a11y.expand" aria-pressed="false" aria-label="Benachrichtigungen auf Vollbild" data-i18n-aria="nav.expandNotifications">⤢</button>
+            <button type="button" class="icon-btn" data-refresh="notifications" title="Aktualisieren" data-i18n-title="a11y.refresh">↻</button>
           </div>
         </header>
         <div class="col-body" id="notifications-body"></div>
@@ -255,8 +263,8 @@
     </main>
     <canvas id="tos-zoom" class="tos-zoom" aria-hidden="true"></canvas>
     <footer class="statusbar" id="statusbar">
-      <p class="instance"><span id="instance-label"></span><span id="conn-status" class="conn-status"></span> <a class="source-link" href="https://git.blackneon.net/ralf/Nightboard83.git" title="Quellcode (AGPLv3)">src</a></p>
-      <button type="button" class="carrier-btn is-offline" id="btn-carrier" title="Verbinden" aria-label="Verbindung herstellen" aria-pressed="false">
+      <p class="instance"><span id="instance-label"></span><span id="conn-status" class="conn-status"></span> <a class="source-link" href="https://git.blackneon.net/ralf/Nightboard83.git" title="Quellcode (AGPLv3)" data-i18n-title="common.sourceTitle" data-i18n="common.source">src</a></p>
+      <button type="button" class="carrier-btn is-offline" id="btn-carrier" title="Verbinden" aria-label="Verbindung herstellen" data-i18n-title="status.connect" data-i18n-aria="status.connectAria" aria-pressed="false">
         <svg class="phone-down" viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
           <rect x="0" y="0" width="5" height="5" fill="#ffd0d4"/>
           <rect x="11" y="0" width="5" height="5" fill="#ffd0d4"/>
@@ -288,24 +296,24 @@
   <dialog id="compose-dialog">
     <form id="compose-form" method="dialog">
       <header>
-        <h2>Neuer Post</h2>
+        <h2 data-i18n="compose.title">Neuer Post</h2>
         <button type="button" class="icon-btn" id="compose-close">×</button>
       </header>
-      <input id="compose-spoiler" type="text" placeholder="Content Warning (optional)" maxlength="200" />
-      <textarea id="compose-text" maxlength="5000" placeholder="Was geht ab im Neon-Grid?"></textarea>
+      <input id="compose-spoiler" type="text" placeholder="Content Warning (optional)" data-i18n-placeholder="compose.contentWarning" maxlength="200" />
+      <textarea id="compose-text" maxlength="5000" placeholder="Was geht ab im Neon-Grid?" data-i18n-placeholder="compose.placeholder"></textarea>
       <div class="attach-list" id="compose-attach-list"></div>
       <div class="compose-meta">
         <span id="compose-count">5000</span>
         <select id="compose-vis">
-          <option value="public">Public</option>
-          <option value="unlisted">Unlisted</option>
-          <option value="private">Followers</option>
-          <option value="direct">Direct</option>
+          <option value="public" data-i18n="compose.visibilityPublic">Public</option>
+          <option value="unlisted" data-i18n="compose.visibilityUnlisted">Unlisted</option>
+          <option value="private" data-i18n="compose.visibilityPrivate">Followers</option>
+          <option value="direct" data-i18n="compose.visibilityDirect">Direct</option>
         </select>
       </div>
       <footer>
         <input id="compose-file" type="file" accept="image/*,video/*" multiple hidden />
-        <button type="button" class="outbox-btn" id="compose-attach" title="Anhang" aria-label="Anhang hinzufügen">
+        <button type="button" class="outbox-btn" id="compose-attach" title="Anhang" aria-label="Anhang hinzufügen" data-i18n-title="compose.attach" data-i18n-aria="compose.attachAria">
           <svg class="outbox-glyph" viewBox="0 0 16 16" width="28" height="28" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="6" y="0" width="4" height="2" fill="#03edf9"/>
             <rect x="4" y="2" width="2" height="10" fill="#03edf9"/>
@@ -316,7 +324,7 @@
             <rect x="2" y="14" width="6" height="2" fill="#fede5d"/>
           </svg>
         </button>
-        <button type="button" class="outbox-btn" id="compose-draft" title="Als Entwurf speichern" aria-label="Als Entwurf speichern">
+        <button type="button" class="outbox-btn" id="compose-draft" title="Als Entwurf speichern" aria-label="Als Entwurf speichern" data-i18n-title="compose.saveDraft" data-i18n-aria="compose.saveDraft">
           <svg class="outbox-glyph" viewBox="0 0 16 16" width="28" height="28" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="3" y="1" width="10" height="14" fill="#fede5d"/>
             <rect x="9" y="1" width="4" height="4" fill="#ff7edb"/>
@@ -325,7 +333,7 @@
             <rect x="5" y="13" width="4" height="1" fill="#191621"/>
           </svg>
         </button>
-        <button type="submit" class="outbox-btn primary" id="compose-send" title="Senden" aria-label="Senden">
+        <button type="submit" class="outbox-btn primary" id="compose-send" title="Senden" aria-label="Senden" data-i18n-title="compose.send" data-i18n-aria="compose.send">
           <svg class="outbox-glyph" viewBox="0 0 16 16" width="28" height="28" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="7" y="5" width="2" height="10" fill="#ff7edb"/>
             <rect x="7" y="1" width="2" height="2" fill="#fede5d"/>
@@ -342,7 +350,7 @@
 
   <dialog id="overlay-dialog">
     <div class="overlay-head">
-      <h2 id="overlay-title">Overlay</h2>
+      <h2 id="overlay-title" data-i18n="pwa.overlay.title">Overlay</h2>
       <button type="button" class="icon-btn" id="overlay-close">×</button>
     </div>
     <div id="overlay-body"></div>
@@ -350,34 +358,34 @@
 
   <dialog id="media-dialog">
     <div class="overlay-head">
-      <h2 id="media-title">Medien</h2>
-      <button type="button" class="icon-btn" id="media-close" title="Schließen" aria-label="Medien schließen">×</button>
+      <h2 id="media-title" data-i18n="media.title">Medien</h2>
+      <button type="button" class="icon-btn" id="media-close" title="Schließen" aria-label="Medien schließen" data-i18n-title="common.close" data-i18n-aria="media.closeAria">×</button>
     </div>
     <div id="media-stage" class="media-stage"></div>
     <p id="media-alt" class="media-alt-view" hidden></p>
     <footer class="media-bar">
-      <button type="button" class="primary" id="media-download">Herunterladen</button>
+      <button type="button" class="primary" id="media-download" data-i18n="media.download">Herunterladen</button>
     </footer>
   </dialog>
 
   <dialog id="thread-dialog">
     <div class="overlay-head">
-      <h2 id="thread-title">Thread</h2>
-      <button type="button" class="icon-btn" id="thread-close" title="Schließen" aria-label="Thread schließen">×</button>
+      <h2 id="thread-title" data-i18n="thread.title">Thread</h2>
+      <button type="button" class="icon-btn" id="thread-close" title="Schließen" aria-label="Thread schließen" data-i18n-title="common.close" data-i18n-aria="thread.closeAria">×</button>
     </div>
     <div id="thread-body" class="thread-body"></div>
     <form id="thread-reply-form" class="thread-reply" hidden>
       <div class="thread-reply-head">
         <p class="thread-reply-to" id="thread-reply-to"></p>
-        <button type="button" class="icon-btn" id="thread-reply-close" title="Schließen" aria-label="Antwortfeld schließen">×</button>
+        <button type="button" class="icon-btn" id="thread-reply-close" title="Schließen" aria-label="Antwortfeld schließen" data-i18n-title="common.close" data-i18n-aria="thread.replyCloseAria">×</button>
       </div>
-      <textarea id="thread-reply-text" maxlength="5000" placeholder="Antwort schreiben…"></textarea>
+      <textarea id="thread-reply-text" maxlength="5000" placeholder="Antwort schreiben…" data-i18n-placeholder="thread.replyPlaceholder"></textarea>
       <div class="attach-list" id="thread-attach-list"></div>
       <div class="thread-reply-meta">
         <span id="thread-reply-count">noch 5000</span>
         <input id="thread-file" type="file" accept="image/*,video/*" multiple hidden />
-        <button type="button" class="ghost" id="thread-attach" title="Anhang" aria-label="Anhang hinzufügen">Anhang</button>
-        <button type="submit" class="primary">Senden</button>
+        <button type="button" class="ghost" id="thread-attach" title="Anhang" aria-label="Anhang hinzufügen" data-i18n-title="compose.attach" data-i18n-aria="compose.attachAria" data-i18n="thread.attach">Anhang</button>
+        <button type="submit" class="primary" data-i18n="thread.send">Senden</button>
       </div>
       <p class="hint" id="thread-reply-status"></p>
     </form>
@@ -385,35 +393,35 @@
 
   <dialog id="drafts-dialog">
     <div class="overlay-head">
-      <h2>Entwürfe</h2>
-      <button type="button" class="icon-btn" id="drafts-close" title="Schließen" aria-label="Entwürfe schließen">×</button>
+      <h2 data-i18n="drafts.title">Entwürfe</h2>
+      <button type="button" class="icon-btn" id="drafts-close" title="Schließen" aria-label="Entwürfe schließen" data-i18n-title="common.close" data-i18n-aria="drafts.closeAria">×</button>
     </div>
     <div id="drafts-body" class="outbox-body"></div>
   </dialog>
 
   <dialog id="outbox-dialog">
     <div class="overlay-head">
-      <h2>Postausgang</h2>
-      <button type="button" class="icon-btn" id="outbox-close" title="Schließen" aria-label="Postausgang schließen">×</button>
+      <h2 data-i18n="outbox.title">Postausgang</h2>
+      <button type="button" class="icon-btn" id="outbox-close" title="Schließen" aria-label="Postausgang schließen" data-i18n-title="common.close" data-i18n-aria="outbox.closeAria">×</button>
     </div>
     <div id="outbox-body" class="outbox-body"></div>
   </dialog>
 
   <dialog id="sw-update-dialog" class="sw-update">
-    <div class="sw-update-head">SYS.UPDATE // NIGHTBOARD</div>
+    <div class="sw-update-head"><span data-i18n="pwa.sysUpdate">SYS.UPDATE // NIGHTBOARD</span></div>
     <pre id="sw-update-log" class="sw-update-log" aria-live="polite"></pre>
     <div class="sw-update-bar" aria-hidden="true"><i id="sw-update-fill"></i></div>
   </dialog>
 
   <dialog id="confirm-dialog">
     <div class="overlay-head">
-      <h2 id="confirm-title">Antwort verwerfen?</h2>
+      <h2 id="confirm-title" data-i18n="thread.discardTitle">Antwort verwerfen?</h2>
     </div>
     <div class="confirm-body">
-      <p id="confirm-message">Die angefangene Antwort geht verloren.</p>
+      <p id="confirm-message" data-i18n="thread.discardMessage">Die angefangene Antwort geht verloren.</p>
       <footer>
-        <button type="button" class="ghost" id="confirm-no">Weiter schreiben</button>
-        <button type="button" class="primary" id="confirm-yes">Verwerfen</button>
+        <button type="button" class="ghost" id="confirm-no" data-i18n="thread.keepWriting">Weiter schreiben</button>
+        <button type="button" class="primary" id="confirm-yes" data-i18n="common.discard">Verwerfen</button>
       </footer>
     </div>
   </dialog>
@@ -421,6 +429,7 @@
   <script src="js/pouchdb.min.js"></script>
   <script src="js/store.js"></script>
   <script src="js/core.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/app.js" defer></script>
   <script>
     if ("serviceWorker" in navigator) {

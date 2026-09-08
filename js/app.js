@@ -18,7 +18,22 @@
     collapsed: "nightboard83.collapsed",
     seen: "nightboard83.seen",
     pkce: "nightboard83.pkce",
+    locale: "nightboard83.locale",
   };
+
+  const I18n = window.NBI18n || {};
+  function t(key, vars) {
+    return I18n.t ? I18n.t(key, vars) : String(key || "");
+  }
+  /** Translate error/status payloads that may already be i18n keys. */
+  function tx(msg) {
+    const s = String(msg || "");
+    if (!s) return "";
+    if (/^(errors|login|compose|thread|outbox|status|common|nav|timeline|profile|search|media|drafts|pwa|a11y|confirm)\./.test(s)) {
+      return t(s);
+    }
+    return s;
+  }
 
   const $ = (id) => document.getElementById(id);
 
@@ -35,11 +50,12 @@
     const origin = normalizeInstance(raw);
     return origin
       ? { origin, error: "" }
-      : { origin: "", error: "Bitte eine gültige Instanz eintragen." };
+      : { origin: "", error: "errors.instanceRequired" };
   }
 
   function friendlyConnectError(err) {
-    return Core.friendlyConnectError ? Core.friendlyConnectError(err) : String((err && err.message) || err || "Fehler");
+    const raw = Core.friendlyConnectError ? Core.friendlyConnectError(err) : String((err && err.message) || err || "common.error");
+    return tx(raw);
   }
 
   function appBaseUrl() {
@@ -109,7 +125,7 @@
   function paintThreadReplyCount() {
     const el = $("thread-reply-count");
     const ta = $("thread-reply-text");
-    if (el && ta) el.textContent = "noch " + remainingChars(ta.value);
+    if (el && ta) el.textContent = t("thread.charsLeft", { count: remainingChars(ta.value) });
   }
 
   function applyMaxChars(n) {
@@ -128,7 +144,7 @@
   function paintComposeMode() {
     const title = document.querySelector("#compose-dialog h2");
     const editing = Boolean(state.editingStatusId);
-    if (title) title.textContent = editing ? "Post bearbeiten" : "Neuer Post";
+    if (title) title.textContent = editing ? t("compose.editTitle") : t("compose.title");
     const vis = $("compose-vis");
     if (vis) vis.disabled = editing;
     const attach = $("compose-attach");
@@ -136,9 +152,7 @@
     if (attach) attach.hidden = editing;
     if (draft) draft.hidden = editing;
     if (editing && state.editingMediaIds.length && $("compose-status") && !$("compose-status").textContent) {
-      $("compose-status").textContent = state.editingMediaIds.length === 1
-        ? "1 vorhandener Anhang bleibt erhalten."
-        : state.editingMediaIds.length + " vorhandene Anhänge bleiben erhalten.";
+      $("compose-status").textContent = t("compose.existingAttachments", { count: state.editingMediaIds.length });
     }
   }
 
@@ -266,8 +280,8 @@
     btn.classList.toggle("is-online", on);
     btn.classList.toggle("is-offline", !on);
     btn.setAttribute("aria-pressed", String(on));
-    btn.title = on ? "Verbindung trennen" : "Verbinden";
-    btn.setAttribute("aria-label", on ? "Verbindung trennen" : "Verbindung herstellen");
+    btn.title = on ? t("status.disconnect") : t("status.connect");
+    btn.setAttribute("aria-label", on ? t("status.disconnect") : t("status.connectAria"));
   }
 
   function hangUp() {
@@ -279,7 +293,7 @@
       state.carrierTimer = null;
     }
     state.conn = "offline";
-    paintConn("is-offline", "nicht verbunden");
+    paintConn("is-offline", t("status.offline"));
   }
 
   function pickUp() {
@@ -305,13 +319,13 @@
     state.carrierTimer = null;
     if (state.conn !== "carrier-lost") return;
     state.conn = "offline";
-    paintConn("is-offline", "nicht verbunden");
+    paintConn("is-offline", t("status.offline"));
   }
 
   function setConn(next) {
     if (next === "offline" && state.conn === "online") {
       state.conn = "carrier-lost";
-      paintConn("is-carrier-lost", "§$%&?$ CARRIER LOST");
+      paintConn("is-carrier-lost", t("status.carrierLost"));
       if (state.carrierTimer) clearTimeout(state.carrierTimer);
       state.carrierTimer = setTimeout(finishCarrierLost, 30000);
       return;
@@ -324,7 +338,7 @@
         state.carrierTimer = null;
       }
       state.conn = "online";
-      paintConn("is-connected", "verbunden");
+      paintConn("is-connected", t("status.connected"));
       tryFlushOutbox();
       if (state.token && state.carrierWanted) startStreaming();
       return;
@@ -335,7 +349,7 @@
         state.carrierTimer = null;
       }
       state.conn = "offline";
-      paintConn("is-offline", "nicht verbunden");
+      paintConn("is-offline", t("status.offline"));
       stopStreaming();
     }
   }
@@ -344,7 +358,7 @@
     if (!state.carrierWanted) {
       if (state.conn !== "offline") {
         state.conn = "offline";
-        paintConn("is-offline", "nicht verbunden");
+        paintConn("is-offline", t("status.offline"));
       }
       return;
     }
@@ -394,7 +408,7 @@
     const n = list.length;
     $("outbox-count").textContent = String(n);
     btn.hidden = n === 0;
-    btn.setAttribute("aria-label", "Postausgang (" + n + ")");
+    btn.setAttribute("aria-label", t("outbox.countAria", { count: n }));
   }
 
   async function refreshDraftsBadge() {
@@ -408,7 +422,7 @@
     const n = list.length;
     $("drafts-count").textContent = String(n);
     btn.hidden = n === 0;
-    btn.setAttribute("aria-label", "Entwürfe (" + n + ")");
+    btn.setAttribute("aria-label", t("drafts.countAria", { count: n }));
   }
 
   function revokeAttach(list) {
@@ -422,15 +436,15 @@
   }
 
   function canAddAttach(list, file) {
-    if (!file) return "Ungültige Datei.";
-    if (list.length >= 4) return "Maximal 4 Anhänge.";
+    if (!file) return t("compose.invalidFile");
+    if (list.length >= 4) return t("compose.maxAttachments");
     const kind = attachKind(file);
-    if (kind !== "image" && kind !== "video") return "Nur Bilder oder Videos.";
-    if (!/^image\//.test(file.type) && !/^video\//.test(file.type)) return "Nur Bilder oder Videos.";
+    if (kind !== "image" && kind !== "video") return t("compose.imagesOrVideosOnly");
+    if (!/^image\//.test(file.type) && !/^video\//.test(file.type)) return t("compose.imagesOrVideosOnly");
     const hasVid = list.some((x) => x.kind === "video");
     const hasImg = list.some((x) => x.kind === "image");
-    if (kind === "video" && (hasVid || hasImg)) return "Nur ein Video, nicht zusammen mit Bildern.";
-    if (kind === "image" && hasVid) return "Bilder nicht zusammen mit einem Video.";
+    if (kind === "video" && (hasVid || hasImg)) return t("compose.oneVideoOnly");
+    if (kind === "image" && hasVid) return t("compose.noImagesWithVideo");
     return "";
   }
 
@@ -443,7 +457,7 @@
         const media = item.kind === "video"
           ? `<video src="${escapeHtml(item.preview)}" muted></video>`
           : `<img alt="${alt}" src="${escapeHtml(item.preview)}" />`;
-        return `<div class="attach-item">${media}<label class="attach-alt"><span>Alt-Text</span><textarea data-attach-alt="${which}:${i}" maxlength="1500" rows="2" placeholder="Beschreibung für Screenreader…">${alt}</textarea></label><button type="button" class="attach-remove" data-attach-rm="${which}:${i}" aria-label="Anhang entfernen">×</button></div>`;
+        return `<div class="attach-item">${media}<label class="attach-alt"><span>${escapeHtml(t("compose.altText"))}</span><textarea data-attach-alt="${which}:${i}" maxlength="1500" rows="2" placeholder="${escapeHtml(t("compose.altPlaceholder"))}">${alt}</textarea></label><button type="button" class="attach-remove" data-attach-rm="${which}:${i}" aria-label="${escapeHtml(t("compose.removeAttachAria"))}">×</button></div>`;
       })
       .join("");
   }
@@ -509,11 +523,11 @@
   async function saveCurrentDraft() {
     const text = $("compose-text").value;
     if (!text.trim() && !state.composeAttach.length) {
-      $("compose-status").textContent = "Nichts zu speichern.";
+      $("compose-status").textContent = t("compose.nothingToSave");
       return false;
     }
     if (!window.NightDB) {
-      $("compose-status").textContent = "Speicher nicht verfügbar.";
+      $("compose-status").textContent = t("compose.storageUnavailable");
       return false;
     }
     try {
@@ -525,7 +539,7 @@
         in_reply_to_id: state.replyTo ? state.replyTo.id : null,
       }, state.composeAttach);
       state.editingDraftId = doc._id;
-      $("compose-status").textContent = "Entwurf gespeichert.";
+      $("compose-status").textContent = t("compose.draftSaved");
       await refreshDraftsBadge();
       return true;
     } catch (err) {
@@ -547,10 +561,10 @@
       if (state.editingStatusId) {
         if (composeDraftPending()) {
           const discard = await askConfirm({
-            title: "Änderung verwerfen?",
-            message: "Die Bearbeitung wird nicht gespeichert.",
-            noLabel: "Weiter bearbeiten",
-            yesLabel: "Verwerfen",
+            title: t("compose.discardEditTitle"),
+            message: t("compose.discardEditMessage"),
+            noLabel: t("compose.keepEditing"),
+            yesLabel: t("common.discard"),
           });
           if (discard !== true) {
             $("compose-text").focus();
@@ -565,10 +579,10 @@
         return;
       }
       const choice = await askConfirm({
-        title: "Als Entwurf speichern?",
-        message: "Soll der angefangene Post als Entwurf gespeichert werden?",
-        noLabel: "Verwerfen",
-        yesLabel: "Speichern",
+        title: t("compose.saveDraftTitle"),
+        message: t("compose.saveDraftMessage"),
+        noLabel: t("common.discard"),
+        yesLabel: t("common.save"),
       });
       if (choice === null) {
         $("compose-text").focus();
@@ -586,21 +600,21 @@
 
   async function openDrafts() {
     const dlg = $("drafts-dialog");
-    $("drafts-body").innerHTML = "<p class='hint'>Lade Entwürfe…</p>";
+    $("drafts-body").innerHTML = "<p class='hint'>" + escapeHtml(t("drafts.loading")) + "</p>";
     if (!dlg.open) dlg.showModal();
     const docs = window.NightDB ? await NightDB.listDrafts() : [];
     if (!docs.length) {
-      $("drafts-body").innerHTML = "<p class='empty'>Keine Entwürfe.</p>";
+      $("drafts-body").innerHTML = "<p class='empty'>" + escapeHtml(t("drafts.empty")) + "</p>";
       return;
     }
     $("drafts-body").innerHTML = docs
       .map((d) => {
-        const snippet = String(d.text || "").trim() || "(nur Medien)";
+        const snippet = String(d.text || "").trim() || t("drafts.mediaOnly");
         return `<article class="draft-item" data-draft-id="${escapeHtml(d._id)}">
           <p>${escapeHtml(snippet.slice(0, 180))}</p>
           <div class="outbox-actions">
-            <button type="button" data-draft-open="${escapeHtml(d._id)}">Öffnen</button>
-            <button type="button" class="danger" data-draft-del="${escapeHtml(d._id)}">Löschen</button>
+            <button type="button" data-draft-open="${escapeHtml(d._id)}">${escapeHtml(t("drafts.open"))}</button>
+            <button type="button" class="danger" data-draft-del="${escapeHtml(d._id)}">${escapeHtml(t("common.delete"))}</button>
           </div>
         </article>`;
       })
@@ -641,7 +655,7 @@
       const alt = String(item.alt || "").trim();
       if (alt) body.append("description", alt);
       const media = await api("/api/v1/media", { method: "POST", body });
-      if (!media || !media.id) throw new Error("Medien-Upload fehlgeschlagen");
+      if (!media || !media.id) throw new Error(t("errors.mediaUploadFailed"));
       if (alt && String(media.description || "").trim() !== alt) {
         try {
           await api("/api/v1/media/" + encodeURIComponent(media.id), {
@@ -666,7 +680,7 @@
         setConn("offline");
       }
     }
-    if (!window.NightDB) throw new Error("Offline-Speicher nicht verfügbar");
+    if (!window.NightDB) throw new Error(t("errors.offlineStoreUnavailable"));
     await NightDB.enqueue({ action: "create", payload, context: context || null, files });
     await refreshOutboxBadge();
     return { queued: true };
@@ -681,7 +695,7 @@
         setConn("offline");
       }
     }
-    if (!window.NightDB) throw new Error("Offline-Speicher nicht verfügbar");
+    if (!window.NightDB) throw new Error(t("errors.offlineStoreUnavailable"));
     const local = findLocalStatus(id);
     await NightDB.enqueue({
       action: "edit",
@@ -718,7 +732,7 @@
         setConn("offline");
       }
     }
-    if (!window.NightDB) throw new Error("Offline-Speicher nicht verfügbar");
+    if (!window.NightDB) throw new Error(t("errors.offlineStoreUnavailable"));
     const local = findLocalStatus(id);
     await dropQueuedStatusActions(id);
     await NightDB.enqueue({
@@ -755,7 +769,7 @@
           const action = doc.action || "create";
           const targetId = doc.statusId || (doc.payload && doc.payload.id) || null;
           if (action === "edit" || action === "delete") {
-            if (!targetId) throw new Error(action === "delete" ? "Löschen ohne Status-ID" : "Bearbeitung ohne Status-ID");
+            if (!targetId) throw new Error(action === "delete" ? t("errors.deleteWithoutStatusId") : t("errors.editWithoutStatusId"));
             const exists = await statusStillExists(targetId);
             if (!exists) {
               if (action === "delete") {
@@ -763,7 +777,7 @@
                 sent += 1;
               } else {
                 await NightDB.updateOutbox(summary._id, {
-                  error: "Post existiert nicht mehr — Bearbeitung nicht gesendet.",
+                  error: t("errors.postGoneEdit"),
                 });
               }
               continue;
@@ -804,7 +818,7 @@
               sent += 1;
             } else {
               await NightDB.updateOutbox(summary._id, {
-                error: "Post existiert nicht mehr — Bearbeitung nicht gesendet.",
+                error: t("errors.postGoneEdit"),
               });
             }
             continue;
@@ -826,7 +840,7 @@
   }
 
   function renderOutboxList(docs) {
-    if (!docs.length) return "<p class='empty'>Postausgang leer.</p>";
+    if (!docs.length) return "<p class='empty'>" + escapeHtml(t("outbox.empty")) + "</p>";
     return docs
       .map((doc) => {
         const ctx = doc.context && doc.context.status;
@@ -835,32 +849,32 @@
         const isReply = !isEdit && !isDelete && Boolean(doc.payload && doc.payload.in_reply_to_id);
         const contextHtml = isDelete
           ? ctx
-            ? `<div class="outbox-context"><p class="hint">Löschen von</p>${statusHtml(ctx, { hideActions: true })}</div>`
-            : `<p class="hint">Löschen${doc.statusId ? " von Post " + escapeHtml(doc.statusId) : ""}</p>`
+            ? `<div class="outbox-context"><p class="hint">${escapeHtml(t("outbox.deleteOf"))}</p>${statusHtml(ctx, { hideActions: true })}</div>`
+            : `<p class="hint">${escapeHtml(doc.statusId ? t("outbox.deleteOfPost", { id: doc.statusId }) : t("outbox.deleteGeneric"))}</p>`
           : isEdit
             ? ctx
-              ? `<div class="outbox-context"><p class="hint">Bearbeitung von</p>${statusHtml(ctx, { hideActions: true })}</div>`
-              : `<p class="hint">Bearbeitung${doc.statusId ? " von Post " + escapeHtml(doc.statusId) : ""}</p>`
+              ? `<div class="outbox-context"><p class="hint">${escapeHtml(t("outbox.editOf"))}</p>${statusHtml(ctx, { hideActions: true })}</div>`
+              : `<p class="hint">${escapeHtml(doc.statusId ? t("outbox.editOfPost", { id: doc.statusId }) : t("outbox.editGeneric"))}</p>`
             : isReply && ctx
-              ? `<div class="outbox-context"><p class="hint">Antwort auf</p>${statusHtml(ctx, { hideActions: true })}</div>`
+              ? `<div class="outbox-context"><p class="hint">${escapeHtml(t("outbox.replyTo"))}</p>${statusHtml(ctx, { hideActions: true })}</div>`
               : isReply
-                ? `<p class="hint">Antwort auf Post ${escapeHtml(doc.payload.in_reply_to_id)}</p>`
-                : `<p class="hint">Neuer Post</p>`;
-        const waiting = isDelete ? "Wartet auf Löschen" : "Wartet auf Versand";
+                ? `<p class="hint">${escapeHtml(t("outbox.replyToPost", { id: doc.payload.in_reply_to_id }))}</p>`
+                : `<p class="hint">${escapeHtml(t("outbox.newPost"))}</p>`;
+        const waiting = isDelete ? t("outbox.waitingDelete") : t("outbox.waitingSend");
         const editor = isDelete
           ? ""
           : `<textarea class="outbox-edit" maxlength="${state.maxChars}">${escapeHtml((doc.payload && doc.payload.status) || "")}</textarea>`;
         const saveBtn = isDelete
           ? ""
-          : `<button type="button" data-outbox-save="${escapeHtml(doc._id)}">Speichern</button>`;
+          : `<button type="button" data-outbox-save="${escapeHtml(doc._id)}">${escapeHtml(t("outbox.save"))}</button>`;
         return `<article class="outbox-item" data-outbox-id="${escapeHtml(doc._id)}">
           ${contextHtml}
           ${editor}
           <div class="outbox-actions">
             ${saveBtn}
-            <button type="button" class="danger" data-outbox-del="${escapeHtml(doc._id)}">${isDelete ? "Nicht löschen" : "Löschen"}</button>
+            <button type="button" class="danger" data-outbox-del="${escapeHtml(doc._id)}">${escapeHtml(isDelete ? t("outbox.dontDelete") : t("outbox.deleteAction"))}</button>
           </div>
-          ${doc.error ? `<p class="error">${escapeHtml(doc.error)}</p>` : `<p class="hint">${waiting}</p>`}
+          ${doc.error ? `<p class="error">${escapeHtml(tx(doc.error))}</p>` : `<p class="hint">${escapeHtml(waiting)}</p>`}
         </article>`;
       })
       .join("");
@@ -868,7 +882,7 @@
 
   async function openOutbox() {
     const dlg = $("outbox-dialog");
-    $("outbox-body").innerHTML = "<p class='hint'>Lade Postausgang…</p>";
+    $("outbox-body").innerHTML = "<p class='hint'>" + escapeHtml(t("outbox.loading")) + "</p>";
     if (!dlg.open) dlg.showModal();
     const docs = window.NightDB ? await NightDB.listOutbox() : [];
     $("outbox-body").innerHTML = renderOutboxList(docs);
@@ -939,10 +953,10 @@
       const textBody = await res.text();
       let data = null;
       try { data = textBody ? JSON.parse(textBody) : null; } catch {
-        throw new Error("Keine Mastodon-/GoToSocial-API unter dieser Adresse.");
+        throw new Error(t("errors.noApi"));
       }
-      if (!res.ok) throw new Error((data && data.error) || "App-Registrierung fehlgeschlagen");
-      if (!data || !data.client_id) throw new Error("Keine Mastodon-/GoToSocial-API unter dieser Adresse.");
+      if (!res.ok) throw new Error((data && data.error) || t("errors.appRegisterFailed"));
+      if (!data || !data.client_id) throw new Error(t("errors.noApi"));
       return data;
     };
     let app;
@@ -984,23 +998,23 @@
 
     try {
       if (typeof navigator !== "undefined" && navigator.onLine === false) {
-        $("login-status").textContent = "Offline — keine Netzverbindung. Anmeldung ist nicht möglich.";
+        $("login-status").textContent = t("login.offlineNoLogin");
         return;
       }
       const parsed = parseInstanceInput($("instance-input") ? $("instance-input").value : "");
       if (!parsed.origin) {
-        $("login-status").textContent = parsed.error || "Bitte eine gültige Instanz eintragen.";
+        $("login-status").textContent = tx(parsed.error) || t("errors.instanceRequired");
         return;
       }
       if (!applyInstanceFromInput()) {
-        $("login-status").textContent = "Bitte eine gültige Instanz eintragen.";
+        $("login-status").textContent = t("errors.instanceRequired");
         return;
       }
-      $("login-status").textContent = "App wird registriert…";
+      $("login-status").textContent = t("login.registering");
       const redirect = appBaseUrl();
       const app = await ensureApp(redirect);
       if (typeof navigator !== "undefined" && navigator.onLine === false) {
-        $("login-status").textContent = "Offline — keine Netzverbindung. Anmeldung ist nicht möglich.";
+        $("login-status").textContent = t("login.offlineNoLogin");
         return;
       }
       const pkce = await makePkce();
@@ -1013,7 +1027,7 @@
         code_challenge: pkce.challenge,
         code_challenge_method: "S256",
       });
-      $("login-status").textContent = "Weiterleitung zur Freigabe…";
+      $("login-status").textContent = t("login.redirecting");
       location.href = INSTANCE + "/oauth/authorize?" + params.toString();
     } catch (err) {
       $("login-status").textContent = friendlyConnectError(err);
@@ -1023,12 +1037,12 @@
   async function exchangeCode(rawCode, oob) {
     const code = String(rawCode || ($("oauth-code") && $("oauth-code").value) || "").trim();
     if (!code) {
-      $("login-status").textContent = "Bitte Code einfügen.";
+      $("login-status").textContent = t("login.pasteCode");
       return;
     }
     try {
       if (!INSTANCE && !applyInstanceFromInput()) {
-        $("login-status").textContent = "Bitte eine gültige Instanz eintragen.";
+        $("login-status").textContent = t("errors.instanceRequired");
         return;
       }
       if ($("instance-input") && $("instance-input").value) applyInstanceFromInput();
@@ -1049,14 +1063,14 @@
         body,
       }).then(async (r) => {
         const data = await r.json();
-        if (!r.ok) throw new Error(data.error_description || data.error || "Token fehlgeschlagen");
+        if (!r.ok) throw new Error(data.error_description || data.error || t("errors.tokenFailed"));
         return data;
       });
       sessionStorage.removeItem(LS.pkce);
       state.token = token.access_token;
       localStorage.setItem(LS.token, state.token);
       await refreshMe();
-      $("login-status").textContent = "Verbunden.";
+      $("login-status").textContent = t("login.connected");
       bootApp();
     } catch (err) {
       $("login-status").textContent = friendlyConnectError(err);
@@ -1073,7 +1087,7 @@
       $("login-status").textContent = params.get("error_description") || err;
       return true;
     }
-    $("login-status").textContent = "Token wird geholt…";
+    $("login-status").textContent = t("login.fetchingToken");
     await exchangeCode(code, false);
     return true;
   }
@@ -1141,7 +1155,7 @@
           const full = m.url || m.remote_url || preview;
           const alt = m.description || "";
           const play = type === "video" || type === "gifv" || type === "audio";
-          const label = type === "video" || type === "gifv" ? "Video anzeigen" : type === "audio" ? "Audio anzeigen" : "Bild anzeigen";
+          const label = type === "video" || type === "gifv" ? t("media.showVideo") : type === "audio" ? t("media.showAudio") : t("media.showImage");
           const img = preview && type !== "audio"
             ? `<img alt="${escapeHtml(alt)}" loading="lazy" src="${escapeHtml(preview)}" />`
             : `<span class="media-thumb-fallback" aria-hidden="true">${type === "audio" ? "♪" : "▣"}</span>`;
@@ -1157,16 +1171,16 @@
     const boosted = status.reblog ? status : null;
     const s = status.reblog || status;
     const cw = s.spoiler_text
-      ? `<div class="cw"><strong>${escapeHtml(s.spoiler_text)}</strong><br /><button type="button" data-act="cw">CW zeigen</button></div>`
+      ? `<div class="cw"><strong>${escapeHtml(s.spoiler_text)}</strong><br /><button type="button" data-act="cw">${escapeHtml(t("timeline.cwShow"))}</button></div>`
       : "";
     const body = `<div class="content"${s.spoiler_text ? " hidden" : ""}>${sanitize(s.content)}</div>`;
     const boostLine = boosted
-      ? `<div class="boost-line">↻ <button type="button" class="acct-open-inline" data-acct-open="${escapeHtml(boosted.account.id)}">${escapeHtml(boosted.account.display_name || boosted.account.username)}</button> boosted</div>`
+      ? `<div class="boost-line">↻ <button type="button" class="acct-open-inline" data-acct-open="${escapeHtml(boosted.account.id)}">${escapeHtml(boosted.account.display_name || boosted.account.username)}</button> ${escapeHtml(t("timeline.boosted"))}</div>`
       : "";
     const extraClass = opts.root ? " is-thread-root" : "";
     const own = Boolean(state.me && s.account && s.account.id === state.me.id);
     const ownBtns = own
-      ? `<button type="button" data-act="edit">Bearbeiten</button><button type="button" data-act="delete" class="danger">Löschen</button>`
+      ? `<button type="button" data-act="edit">${escapeHtml(t("common.edit"))}</button><button type="button" data-act="delete" class="danger">${escapeHtml(t("common.delete"))}</button>`
       : "";
     return `<article class="status${extraClass}" data-id="${escapeHtml(s.id)}" data-acct="${escapeHtml(s.account.id)}">
       ${boostLine}
@@ -1176,7 +1190,7 @@
         <button type="button" data-act="reply">↩ ${s.replies_count || 0}</button>
         <button type="button" data-act="boost" class="${s.reblogged ? "on-boost" : ""}">↻ ${s.reblogs_count || 0}</button>
         <button type="button" data-act="fav" class="${s.favourited ? "on-fav" : ""}">★ ${s.favourites_count || 0}</button>
-        <button type="button" data-act="open">Profil</button>
+        <button type="button" data-act="open">${escapeHtml(t("common.profile"))}</button>
         ${ownBtns}
       </div>`}
     </article>`;
@@ -1223,14 +1237,14 @@
 
   function noticeHtml(n) {
     const kind = {
-      follow: "folgt dir",
-      follow_request: "möchte folgen",
-      mention: "hat dich erwähnt",
-      reblog: "hat geboostet",
-      favourite: "hat favorisiert",
-      poll: "Umfrage beendet",
-      status: "neuer Post",
-      update: "Post bearbeitet",
+      follow: t("timeline.notif.follow"),
+      follow_request: t("timeline.notif.followRequest"),
+      mention: t("timeline.notif.mention"),
+      reblog: t("timeline.notif.reblog"),
+      favourite: t("timeline.notif.favourite"),
+      poll: t("timeline.notif.poll"),
+      status: t("timeline.notif.status"),
+      update: t("timeline.notif.update"),
     }[n.type] || n.type;
     const status = n.status ? statusHtml(n.status) : "";
     return `<div class="notice" data-acct="${escapeHtml(n.account.id)}">
@@ -1251,7 +1265,7 @@
   function renderNotifications(el, items) {
     const visible = (items || []).filter((n) => notifMatchesFilter(n, state.notifFilter));
     if (!visible.length) {
-      el.innerHTML = `<div class="empty">Keine Benachrichtigungen.</div>`;
+      el.innerHTML = `<div class="empty">${escapeHtml(t("timeline.notifEmpty"))}</div>`;
       return;
     }
     el.innerHTML = visible.map((n) => noticeHtml(n)).join("");
@@ -1291,11 +1305,11 @@
   }
 
   function trimTimeline(name) {
-    const t = state.timelines[name];
+    const tl = state.timelines[name];
     const el = $(name + "-body");
-    if (!t || t.items.length <= TIMELINE_CAP) return;
-    const drop = t.items.length - TIMELINE_CAP;
-    t.items.splice(TIMELINE_CAP, drop);
+    if (!tl || tl.items.length <= TIMELINE_CAP) return;
+    const drop = tl.items.length - TIMELINE_CAP;
+    tl.items.splice(TIMELINE_CAP, drop);
     if (el) {
       const nodes = [...el.children].filter((n) => n.classList.contains("status") || n.classList.contains("notice"));
       for (let i = 0; i < drop; i++) {
@@ -1303,8 +1317,8 @@
         if (node) node.remove();
       }
     }
-    t.maxId = t.items.length ? t.items[t.items.length - 1].id : null;
-    t.done = false;
+    tl.maxId = tl.items.length ? tl.items[tl.items.length - 1].id : null;
+    tl.done = false;
   }
 
   function appendTimelineNodes(name, fresh) {
@@ -1318,62 +1332,62 @@
   }
 
   function renderTimeline(name, el) {
-    const t = state.timelines[name];
-    if (name === "notifications") renderNotifications(el, t.items);
-    else renderStatusList(el, t.items, "Noch keine Posts.");
+    const tl = state.timelines[name];
+    if (name === "notifications") renderNotifications(el, tl.items);
+    else renderStatusList(el, tl.items, t("timeline.empty"));
   }
 
   async function loadTimeline(name, reset) {
-    const t = state.timelines[name];
-    if ((t.loading && !reset) || (t.done && !reset)) return;
-    t.loading = true;
-    t.seq = (t.seq || 0) + 1;
-    const seq = t.seq;
+    const tl = state.timelines[name];
+    if ((tl.loading && !reset) || (tl.done && !reset)) return;
+    tl.loading = true;
+    tl.seq = (tl.seq || 0) + 1;
+    const seq = tl.seq;
     const el = $(name + "-body");
     if (reset) {
-      t.items = [];
-      t.maxId = null;
-      t.done = false;
-      el.innerHTML = `<div class="empty">Lade…</div>`;
+      tl.items = [];
+      tl.maxId = null;
+      tl.done = false;
+      el.innerHTML = `<div class="empty">${escapeHtml(t("timeline.loading"))}</div>`;
     }
     try {
       let path = timelinePath(name);
-      if (t.maxId) path += "&max_id=" + encodeURIComponent(t.maxId);
+      if (tl.maxId) path += "&max_id=" + encodeURIComponent(tl.maxId);
       const batch = await api(path);
-      if (seq !== t.seq) return;
+      if (seq !== tl.seq) return;
       if (!batch.length) {
-        t.done = true;
-        if (!t.items.length) renderTimeline(name, el);
+        tl.done = true;
+        if (!tl.items.length) renderTimeline(name, el);
       } else {
-        const incremental = t.items.length > 0 && !reset;
-        t.items = t.items.concat(batch);
-        t.maxId = batch[batch.length - 1].id;
+        const incremental = tl.items.length > 0 && !reset;
+        tl.items = tl.items.concat(batch);
+        tl.maxId = batch[batch.length - 1].id;
         if (incremental) appendTimelineNodes(name, batch);
         else renderTimeline(name, el);
         trimTimeline(name);
         if (!incremental || reset) syncTimelineUnread(name);
       }
       if (window.NightDB) {
-        NightDB.saveTimeline(name, t.items);
-        cacheTimelineItems(reset ? t.items : batch);
+        NightDB.saveTimeline(name, tl.items);
+        cacheTimelineItems(reset ? tl.items : batch);
       }
     } catch (err) {
-      if (seq !== t.seq) return;
+      if (seq !== tl.seq) return;
       if (window.NightDB) {
         const cached = await NightDB.loadTimeline(name);
-        if (seq !== t.seq) return;
+        if (seq !== tl.seq) return;
         if (cached.length) {
-          t.items = cached;
-          t.maxId = cached[cached.length - 1].id;
-          t.done = false;
+          tl.items = cached;
+          tl.maxId = cached[cached.length - 1].id;
+          tl.done = false;
           renderTimeline(name, el);
           syncTimelineUnread(name);
           return;
         }
       }
-      el.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+      el.innerHTML = `<div class="error">${escapeHtml(tx(err.message))}</div>`;
     } finally {
-      if (seq === t.seq) t.loading = false;
+      if (seq === tl.seq) tl.loading = false;
     }
   }
 
@@ -1467,21 +1481,21 @@
   }
 
   async function fetchNewer(name) {
-    const t = state.timelines[name];
-    if (!t || t.loading || !t.items.length) return;
-    const sinceId = t.items[0] && t.items[0].id;
+    const tl = state.timelines[name];
+    if (!tl || tl.loading || !tl.items.length) return;
+    const sinceId = tl.items[0] && tl.items[0].id;
     if (!sinceId) return;
     try {
       const batch = await api(timelinePath(name, "&since_id=" + encodeURIComponent(sinceId)));
       if (!Array.isArray(batch) || !batch.length) return;
-      const known = new Set(t.items.map((s) => s.id));
+      const known = new Set(tl.items.map((s) => s.id));
       const fresh = batch.filter((s) => s && s.id && !known.has(s.id));
       if (!fresh.length) return;
-      t.items = fresh.concat(t.items);
+      tl.items = fresh.concat(tl.items);
       prependTicker(name, fresh);
       syncTimelineUnread(name);
       if (window.NightDB) {
-        NightDB.saveTimeline(name, t.items);
+        NightDB.saveTimeline(name, tl.items);
         cacheTimelineItems(fresh);
       }
     } catch {
@@ -1539,31 +1553,31 @@
   function ingestStatus(name, status) {
     const s = unwrapStatus(status);
     if (!s || !s.id) return;
-    const t = state.timelines[name];
-    if (!t) return;
-    if ((t.items || []).some((it) => it && (it.id === s.id || (it.reblog && it.reblog.id === s.id)))) {
+    const tl = state.timelines[name];
+    if (!tl) return;
+    if ((tl.items || []).some((it) => it && (it.id === s.id || (it.reblog && it.reblog.id === s.id)))) {
       replaceStatusEverywhere(s);
       return;
     }
-    t.items = [status].concat(t.items || []);
+    tl.items = [status].concat(tl.items || []);
     prependTicker(name, [status]);
     syncTimelineUnread(name);
     if (window.NightDB) {
-      NightDB.saveTimeline(name, t.items);
+      NightDB.saveTimeline(name, tl.items);
       cacheTimelineItems([status]);
     }
   }
 
   function ingestNotification(n) {
     if (!n || !n.id) return;
-    const t = state.timelines.notifications;
-    if (!t) return;
-    if ((t.items || []).some((it) => it && it.id === n.id)) return;
-    t.items = [n].concat(t.items || []);
+    const tl = state.timelines.notifications;
+    if (!tl) return;
+    if ((tl.items || []).some((it) => it && it.id === n.id)) return;
+    tl.items = [n].concat(tl.items || []);
     if (notifMatchesFilter(n, state.notifFilter)) prependTicker("notifications", [n]);
     syncTimelineUnread("notifications");
     if (window.NightDB) {
-      NightDB.saveTimeline("notifications", t.items);
+      NightDB.saveTimeline("notifications", tl.items);
       cacheTimelineItems([n]);
     }
   }
@@ -1670,8 +1684,8 @@
       const btn = col.querySelector("[data-expand]");
       if (!btn) return;
       btn.setAttribute("aria-pressed", String(on));
-      btn.title = on ? "Verkleinern" : "Vollbild";
-      btn.setAttribute("aria-label", on ? id + " verkleinern" : id + " auf Vollbild");
+      btn.title = on ? t("common.shrink") : t("common.expand");
+      btn.setAttribute("aria-label", on ? t("nav.shrinkCol", { name: id }) : t("nav.expandCol", { name: id }));
       btn.textContent = on ? "⤡" : "⤢";
     });
   }
@@ -2102,8 +2116,8 @@
     state.threadReplyTo = s;
     const prefix = mentionPrefix(s);
     $("thread-reply-to").textContent = prefix
-      ? "Antwort an " + prefix
-      : "Antwort an @" + (s.account.acct || s.account.username);
+      ? t("thread.replyTo", { name: prefix })
+      : t("thread.replyToAcct", { acct: s.account.acct || s.account.username });
     document.querySelectorAll("#thread-body .status").forEach((n) => {
       n.classList.toggle("is-reply-target", n.getAttribute("data-id") === id);
     });
@@ -2144,8 +2158,8 @@
         : "";
       repliesHtml =
         n > 0
-          ? `<div class="thread-replies-empty">Lokal keine Antworten geladen (${n} gemeldet).${remote}</div>`
-          : `<div class="thread-replies-empty">Noch keine Antworten.</div>`;
+          ? `<div class="thread-replies-empty">${escapeHtml(t("thread.repliesMissingLocal", { count: n }))}${remote}</div>`
+          : `<div class="thread-replies-empty">${escapeHtml(t("thread.noReplies"))}</div>`;
     }
     $("thread-body").innerHTML =
       ancestorHtml +
@@ -2159,7 +2173,7 @@
         NightDB.cacheItemMedia(s);
       });
     }
-    $("thread-title").textContent = "Thread · " + (root.account.acct || "Post");
+    $("thread-title").textContent = t("thread.titleWithAcct", { acct: root.account.acct || "Post" });
     if (!$("thread-reply-form").hidden) {
       const keepId = (state.threadReplyTo && state.threadById.has(state.threadReplyTo.id) && state.threadReplyTo.id) || root.id;
       selectThreadReply(keepId);
@@ -2242,8 +2256,8 @@
     }
     const dlg = $("thread-dialog");
     state.threadRootId = id;
-    $("thread-title").textContent = "Thread";
-    $("thread-body").innerHTML = "<p class='hint'>Lade Thread…</p>";
+    $("thread-title").textContent = t("thread.title");
+    $("thread-body").innerHTML = "<p class='hint'>" + escapeHtml(t("thread.loading")) + "</p>";
     $("thread-reply-status").textContent = "";
     if (!opts.keepDraft) {
       if (opts.focusReply) {
@@ -2304,19 +2318,19 @@
 
   function askDiscardReply() {
     return askConfirm({
-      title: "Antwort verwerfen?",
-      message: "Die angefangene Antwort geht verloren.",
-      noLabel: "Weiter schreiben",
-      yesLabel: "Verwerfen",
+      title: t("thread.discardTitle"),
+      message: t("thread.discardMessage"),
+      noLabel: t("thread.keepWriting"),
+      yesLabel: t("common.discard"),
     });
   }
 
   function askMissingAlt() {
     return askConfirm({
-      title: "Kein Alt-Text",
-      message: "Mindestens ein Bild oder Video hat keine Beschreibung. Du kannst zurück und Alt-Text ergänzen, oder den Post trotzdem senden.",
-      noLabel: "Zurück",
-      yesLabel: "Trotzdem senden",
+      title: t("compose.missingAltTitle"),
+      message: t("compose.missingAltMessage"),
+      noLabel: t("common.back"),
+      yesLabel: t("compose.sendAnyway"),
     });
   }
 
@@ -2445,9 +2459,9 @@
     const s = unwrapStatus(updated);
     if (!s || !s.id) return;
     COLS.forEach((name) => {
-      const t = state.timelines[name];
-      if (!t) return;
-      t.items = patchStatusInList(t.items, s);
+      const tl = state.timelines[name];
+      if (!tl) return;
+      tl.items = patchStatusInList(tl.items, s);
       replaceStatusNode($(name + "-body"), s);
     });
     if (state.threadById.has(s.id)) {
@@ -2462,9 +2476,9 @@
   function removeStatusEverywhere(id) {
     if (!id) return;
     COLS.forEach((name) => {
-      const t = state.timelines[name];
-      if (!t) return;
-      t.items = t.items.filter((it) => {
+      const tl = state.timelines[name];
+      if (!tl) return;
+      tl.items = tl.items.filter((it) => {
         if (!it) return false;
         if (it.id === id) return false;
         if (it.reblog && it.reblog.id === id) return false;
@@ -2502,7 +2516,7 @@
       if (!status) status = unwrapStatus(await api("/api/v1/statuses/" + encodeURIComponent(id)));
       else status = unwrapStatus(status);
       if (!status || !state.me || status.account.id !== state.me.id) {
-        throw new Error("Nur eigene Posts können bearbeitet werden.");
+        throw new Error(t("errors.editOwnOnly"));
       }
       let text = "";
       let spoiler = status.spoiler_text || "";
@@ -2550,10 +2564,10 @@
 
   async function deleteOwnStatus(id) {
     const choice = await askConfirm({
-      title: "Post löschen?",
-      message: "Der Post wird auf der Instanz gelöscht. Das lässt sich nicht rückgängig machen.",
-      noLabel: "Abbrechen",
-      yesLabel: "Löschen",
+      title: t("confirm.deletePostTitle"),
+      message: t("confirm.deletePostMessage"),
+      noLabel: t("common.cancel"),
+      yesLabel: t("common.delete"),
     });
     if (choice !== true) return;
     const result = await publishDelete(id);
@@ -2596,7 +2610,7 @@
     state.profileView = null;
     state.tagView = { name: tag, maxId: null, loading: false, done: false, items: [] };
     $("overlay-title").textContent = "#" + tag;
-    $("overlay-body").innerHTML = "<div id='tag-statuses'><p class='hint'>Lade Hashtag…</p></div>";
+    $("overlay-body").innerHTML = "<div id='tag-statuses'><p class='hint'>" + escapeHtml(t("search.tagLoading")) + "</p></div>";
     const dlg = $("overlay-dialog");
     if (!dlg.open) dlg.showModal();
     await loadHashtagPage(true);
@@ -2619,7 +2633,7 @@
       const el = $("tag-statuses");
       if (!Array.isArray(batch) || !batch.length) {
         tv.done = true;
-        if (el && !tv.items.length) el.innerHTML = "<p class='empty'>Keine Posts mit diesem Hashtag.</p>";
+        if (el && !tv.items.length) el.innerHTML = "<p class='empty'>" + escapeHtml(t("search.tagEmpty")) + "</p>";
         return;
       }
       const incremental = tv.items.length > 0 && !reset;
@@ -2637,7 +2651,7 @@
           if (window.NightDB) NightDB.hydrateMedia(node);
         });
       } else {
-        renderStatusList(el, tv.items, "Keine Posts mit diesem Hashtag.");
+        renderStatusList(el, tv.items, t("search.tagEmpty"));
       }
       if (window.NightDB) cacheTimelineItems(batch);
     } catch (err) {
@@ -2659,9 +2673,9 @@
   }
 
   function mediaTitle(type) {
-    if (type === "video" || type === "gifv") return "Video";
-    if (type === "audio") return "Audio";
-    return "Bild";
+    if (type === "video" || type === "gifv") return t("media.video");
+    if (type === "audio") return t("media.audio");
+    return t("media.image");
   }
 
   function isSafeMediaUrl(url) {
@@ -2683,7 +2697,7 @@
         href = local;
       } else {
         const res = await fetch(url);
-        if (!res.ok) throw new Error("Download fehlgeschlagen");
+        if (!res.ok) throw new Error(t("media.downloadFailed"));
         const blob = await res.blob();
         href = URL.createObjectURL(blob);
         revoke = href;
@@ -2768,7 +2782,7 @@
       if (act === "cw") {
         const content = article.querySelector(".content");
         content.hidden = !content.hidden;
-        btn.textContent = content.hidden ? "CW zeigen" : "CW verbergen";
+        btn.textContent = content.hidden ? t("timeline.cwShow") : t("timeline.cwHide");
         return;
       }
       if (act === "open") {
@@ -2897,17 +2911,17 @@
   });
 
   function followLabel(rel) {
-    if (rel.requested) return "Angefragt";
-    if (rel.following) return "Abo beenden";
-    return "Abonnieren";
+    if (rel.requested) return t("profile.requested");
+    if (rel.following) return t("profile.unfollow");
+    return t("profile.follow");
   }
 
   function muteLabel(rel) {
-    return rel.muting ? "Mute aufheben" : "Muten";
+    return rel.muting ? t("profile.unmute") : t("profile.mute");
   }
 
   function blockLabel(rel) {
-    return rel.blocking ? "Block aufheben" : "Blocken";
+    return rel.blocking ? t("profile.unblock") : t("profile.block");
   }
 
   function paintRelButtons(rel) {
@@ -2969,7 +2983,7 @@
       const el = $("profile-statuses");
       if (!Array.isArray(batch) || !batch.length) {
         pv.done = true;
-        if (el && !pv.items.length) el.innerHTML = "<p class='empty'>Keine Posts.</p>";
+        if (el && !pv.items.length) el.innerHTML = "<p class='empty'>" + escapeHtml(t("timeline.noPosts")) + "</p>";
         return;
       }
       const incremental = pv.items.length > 0 && !reset;
@@ -2987,7 +3001,7 @@
           if (window.NightDB) NightDB.hydrateMedia(node);
         });
       } else {
-        renderStatusList(el, pv.items, "Keine Posts.");
+        renderStatusList(el, pv.items, t("timeline.noPosts"));
       }
       if (window.NightDB) cacheTimelineItems(batch);
     } catch (err) {
@@ -3003,8 +3017,8 @@
     state.tagView = null;
     state.profileView = { id, maxId: null, loading: false, done: false, items: [] };
     const dlg = $("overlay-dialog");
-    $("overlay-title").textContent = "Profil";
-    $("overlay-body").innerHTML = "<p class='hint'>Lade Profil…</p>";
+    $("overlay-title").textContent = t("profile.title");
+    $("overlay-body").innerHTML = "<p class='hint'>" + escapeHtml(t("profile.loading")) + "</p>";
     dlg.showModal();
     try {
       const acc = await api("/api/v1/accounts/" + encodeURIComponent(id));
@@ -3019,23 +3033,23 @@
             <div class="display">${escapeHtml(acc.display_name || acc.username)}</div>
             <div class="acct">@${escapeHtml(acc.acct)}</div>
             ${isSelf ? `<div class="profile-actions">
-              <p class="hint">Das bist du.</p>
-              <button type="button" class="danger" id="profile-logout">Logout</button>
+              <p class="hint">${escapeHtml(t("profile.itsYou"))}</p>
+              <button type="button" class="danger" id="profile-logout">${escapeHtml(t("profile.logout"))}</button>
             </div>` : `<div class="profile-actions">
-              <button type="button" class="primary" id="follow-btn">Abonnieren</button>
-              <button type="button" id="mute-btn">Muten</button>
-              <button type="button" class="danger" id="block-btn">Blocken</button>
+              <button type="button" class="primary" id="follow-btn">${escapeHtml(t("profile.follow"))}</button>
+              <button type="button" id="mute-btn">${escapeHtml(t("profile.mute"))}</button>
+              <button type="button" class="danger" id="block-btn">${escapeHtml(t("profile.block"))}</button>
             </div>`}
-            ${!isSelf && rel.blocked_by ? `<p class="hint">Dieser Account hat dich blockiert.</p>` : ""}
+            ${!isSelf && rel.blocked_by ? `<p class="hint">${escapeHtml(t("profile.blockedYou"))}</p>` : ""}
           </div>
         </div>
         <div class="profile-note">${sanitize(acc.note || "")}</div>
         <div class="profile-stats">
-          <div><strong>${acc.statuses_count}</strong>Posts</div>
-          <div><strong>${acc.following_count}</strong>Following</div>
-          <div><strong>${acc.followers_count}</strong>Followers</div>
+          <div><strong>${acc.statuses_count}</strong>${escapeHtml(t("profile.statPosts"))}</div>
+          <div><strong>${acc.following_count}</strong>${escapeHtml(t("profile.statFollowing"))}</div>
+          <div><strong>${acc.followers_count}</strong>${escapeHtml(t("profile.statFollowers"))}</div>
         </div>
-        <div id="profile-statuses"><p class="hint">Lade Posts…</p></div>`;
+        <div id="profile-statuses"><p class="hint">${escapeHtml(t("profile.loadingPosts"))}</p></div>`;
       await loadProfileStatuses(true);
       if (isSelf) {
         const lo = $("profile-logout");
@@ -3060,7 +3074,7 @@
     if (!qEl || !box) return;
     const q = qEl.value.trim();
     if (!q) return;
-    box.innerHTML = "<p class='hint'>Suche…</p>";
+    box.innerHTML = "<p class='hint'>" + escapeHtml(t("search.loading")) + "</p>";
     try {
       const res = await api("/api/v2/search?q=" + encodeURIComponent(q) + "&resolve=true");
       const accounts = (res.accounts || [])
@@ -3080,10 +3094,10 @@
         })
         .join("");
       box.innerHTML =
-        (accounts ? "<h3>Accounts</h3>" + accounts : "") +
-        (tags ? "<h3>Tags</h3>" + tags : "") +
-        (statuses ? "<h3>Posts</h3>" + statuses : "") ||
-        "<p class='empty'>Nichts gefunden.</p>";
+        (accounts ? "<h3>" + escapeHtml(t("search.accounts")) + "</h3>" + accounts : "") +
+        (tags ? "<h3>" + escapeHtml(t("search.tags")) + "</h3>" + tags : "") +
+        (statuses ? "<h3>" + escapeHtml(t("search.posts")) + "</h3>" + statuses : "") ||
+        "<p class='empty'>" + escapeHtml(t("search.empty")) + "</p>";
     } catch (err) {
       box.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
     }
@@ -3092,11 +3106,11 @@
   function openSearch() {
     state.tagView = null;
     state.profileView = null;
-    $("overlay-title").textContent = "Suche";
+    $("overlay-title").textContent = t("search.title");
     $("overlay-body").innerHTML = `
       <div class="search-box">
-        <input id="search-q" type="search" placeholder="Accounts, Hashtags, Posts…" />
-        <button type="button" class="primary" id="search-go">Los</button>
+        <input id="search-q" type="search" placeholder="${escapeHtml(t("search.placeholder"))}" />
+        <button type="button" class="primary" id="search-go">${escapeHtml(t("search.go"))}</button>
       </div>
       <div id="search-results"></div>`;
     $("overlay-dialog").showModal();
@@ -3108,10 +3122,10 @@
     const status = $("compose-text").value.trim();
     if (state.editingStatusId) {
       if (!status && !state.editingMediaIds.length) {
-        $("compose-status").textContent = "Text oder Anhang fehlt.";
+        $("compose-status").textContent = t("compose.missingTextOrAttach");
         return;
       }
-      $("compose-status").textContent = "Speichere…";
+      $("compose-status").textContent = t("compose.saving");
       try {
         const payload = {
           status: status || "",
@@ -3134,7 +3148,7 @@
       return;
     }
     if (!status && !state.composeAttach.length) {
-      $("compose-status").textContent = "Text oder Anhang fehlt.";
+      $("compose-status").textContent = t("compose.missingTextOrAttach");
       return;
     }
     if (state.composeAttach.length && attachAltMissing(state.composeAttach)) {
@@ -3147,7 +3161,7 @@
         return;
       }
     }
-    $("compose-status").textContent = "Sende…";
+    $("compose-status").textContent = t("compose.sending");
     try {
       const payload = {
         status: status || "",
@@ -3317,7 +3331,7 @@
       }
     }
     const text = raw ? ensureReplyMentions(raw, state.threadReplyTo) : ensureReplyMentions("", state.threadReplyTo);
-    $("thread-reply-status").textContent = "Sende…";
+    $("thread-reply-status").textContent = t("compose.sending");
     try {
       const payload = {
         status: text,
@@ -3536,11 +3550,56 @@
       .catch(() => {});
   }
 
+  function bindLangSwitch() {
+    document.querySelectorAll("[data-lang]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const code = btn.getAttribute("data-lang");
+        if (!code || !I18n.setLocale) return;
+        I18n.setLocale(code);
+      });
+    });
+  }
+
+  function repaintLocaleSensitive() {
+    if (I18n.applyDom) I18n.applyDom();
+    paintCarrierBtn();
+    if (state.conn === "online") paintConn("is-connected", t("status.connected"));
+    else if (state.conn === "carrier-lost") paintConn("is-carrier-lost", t("status.carrierLost"));
+    else paintConn("is-offline", t("status.offline"));
+    paintComposeMode();
+    paintComposeCount();
+    paintThreadReplyCount();
+    refreshOutboxBadge();
+    refreshDraftsBadge();
+    // Re-render open column bodies so dynamic strings (CW, notifs) follow locale.
+    COLS.forEach((name) => {
+      const el = $(name + "-body");
+      if (el && state.timelines[name] && state.timelines[name].items && state.timelines[name].items.length) {
+        renderTimeline(name, el);
+      }
+    });
+  }
+
+  document.addEventListener("nb:locale", () => {
+    repaintLocaleSensitive();
+  });
+
+  bindLangSwitch();
+
   startRelativeAgeTicker();
 
   startSwUpdates();
 
   (async () => {
+    try {
+      if (I18n.load) await I18n.load();
+    } catch (err) {
+      console.warn("i18n load failed", err);
+    }
+    const loc = I18n.detect ? I18n.detect() : "de";
+    if (I18n.setLocale) I18n.setLocale(loc);
+    else if (I18n.applyDom) I18n.applyDom();
+
     await initInstance();
     applyMaxChars(state.maxChars);
     startConnWatch();
@@ -3556,7 +3615,7 @@
             bootApp();
           } else {
             logout();
-            $("login-status").textContent = "Session ungültig — bitte neu anmelden.";
+            $("login-status").textContent = t("login.sessionInvalid");
           }
         });
     } else {

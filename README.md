@@ -1,6 +1,6 @@
 # Nightboard '83
 
-Nightboard '83 is a static web client for [Mastodon](https://docs.joinmastodon.org/client/intro/)-compatible servers, written with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, CSS, and JavaScript files with no build step and no backend of its own. The interface is German, in an 1980s CRT / neon style, and can be installed as a Progressive Web App.
+Nightboard '83 is a static web client for [Mastodon](https://docs.joinmastodon.org/client/intro/)-compatible servers, written with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, CSS, and JavaScript files with no build step and no backend of its own. The interface ships with German and English UI strings (default German), in an 1980s CRT / neon style, and can be installed as a Progressive Web App.
 
 Offline is the core idea: last timelines and media stay cached, compose and reply go to an outbox that flushes when the connection returns, drafts stay local, and the connection status next to the hostname is honest (verbunden / carrier lost / nicht verbunden). These offline pieces are core, not an add-on.
 
@@ -116,6 +116,16 @@ All of this lives in the browser, not on your instance:
 - Timeline cache, media blobs, outbox, drafts: IndexedDB databases `nightboard83-cache`, `nightboard83-media`, `nightboard83-outbox`, `nightboard83-drafts` (PouchDB)
 
 Clearing site data logs you out and deletes drafts and queued posts.
+
+
+## UI languages (i18n)
+
+Visible UI strings live in **`i18n/de.json`** and **`i18n/en.json`** (flat JSON, dot-separated keys). German (`de`) is the content source; English is a first pass for review.
+
+- Runtime helper: `js/i18n.js` — `t(key)`, `setLocale`, `detect` (localStorage `nightboard83.locale`, then `navigator`, default **de**). Fallback chain: current → `en` → `de`.
+- Key shape for Technical Writers: `area.leaf` in camelCase English identifiers (`login.authorize`, `status.carrierLost`, `compose.contentWarning`). Interpolation `{name}`; plurals `key.one` / `key.other`.
+- Language switch: **DE | EN** on the login card and in the top bar. No machine translation in-repo — edit the JSON files directly.
+- Service worker precaches both catalogs (and `js/i18n.js`).
 
 ## Tests
 

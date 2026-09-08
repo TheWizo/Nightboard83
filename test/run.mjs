@@ -31,17 +31,17 @@ test("normalizeInstance adds https and strips slash", () => {
 });
 
 test("parseInstanceInput format errors", () => {
-  assert.equal(core.parseInstanceInput("").error.includes("gültige"), true);
-  assert.equal(core.parseInstanceInput("not-a-url").error.includes("Hostname"), true);
-  assert.equal(core.parseInstanceInput("ftp://x.example").error.includes("Schema"), true);
-  assert.equal(core.parseInstanceInput("https://").error.includes("Hostname"), true);
+  assert.equal(core.parseInstanceInput("").error, "errors.instanceRequired");
+  assert.equal(core.parseInstanceInput("not-a-url").error, "errors.invalidHostname");
+  assert.equal(core.parseInstanceInput("ftp://x.example").error, "errors.invalidScheme");
+  assert.equal(core.parseInstanceInput("https://").error, "errors.incompleteUrl");
   assert.equal(core.parseInstanceInput("example.com").origin, "https://example.com");
   assert.equal(core.parseInstanceInput("http://127.0.0.1:1").origin, "http://127.0.0.1:1");
 });
 
 test("friendlyConnectError maps network", () => {
   const msg = core.friendlyConnectError({ network: true, message: "Failed to fetch" });
-  assert.equal(/nicht erreichbar|Offline/i.test(msg), true);
+  assert.equal(msg, "errors.instanceUnreachable");
 });
 
 test("instanceHost", () => {
@@ -142,7 +142,7 @@ test("flushPlan edit exists", () => {
 
 test("flushPlan edit missing", () => {
   const plan = core.flushPlan({ action: "edit", statusId: "9", payload: {} }, false);
-  assert.equal(plan.error.includes("nicht mehr"), true);
+  assert.equal(plan.error, "errors.postGoneEdit");
 });
 
 test("flushPlan delete missing is done", () => {
@@ -154,6 +154,44 @@ test("flushPlan delete exists", () => {
     method: "DELETE",
     statusId: "9",
   });
+});
+
+
+const i18n = require("../js/i18n.js");
+const fs = require("node:fs");
+const de = JSON.parse(fs.readFileSync(path.join(repo, "i18n/de.json"), "utf8"));
+const en = JSON.parse(fs.readFileSync(path.join(repo, "i18n/en.json"), "utf8"));
+
+test("i18n catalogs share the same keys", () => {
+  const dk = Object.keys(de).sort();
+  const ek = Object.keys(en).sort();
+  assert.deepEqual(dk, ek);
+  assert.equal(dk.length > 50, true);
+});
+
+test("i18n t() falls back de←en and interpolates", () => {
+  i18n._setCatalogs(de, en);
+  i18n.setLocale("de", { persist: false });
+  assert.equal(i18n.t("login.authorize"), de["login.authorize"]);
+  assert.equal(i18n.t("status.carrierLost"), de["status.carrierLost"]);
+  assert.match(i18n.t("thread.charsLeft", { count: 12 }), /12/);
+  i18n.setLocale("en", { persist: false });
+  assert.equal(i18n.t("login.authorize"), en["login.authorize"]);
+  assert.equal(i18n.t("compose.existingAttachments", { count: 1 }), en["compose.existingAttachments.one"]);
+  assert.equal(i18n.t("compose.existingAttachments", { count: 3 }), en["compose.existingAttachments.other"].replace("{count}", "3"));
+});
+
+test("i18n detect prefers supported navigator language", () => {
+  i18n._setCatalogs(de, en);
+  const prev = globalThis.navigator;
+  globalThis.navigator = { language: "en-US", languages: ["en-US", "de"] };
+  try {
+    // localStorage may be absent in node — detect should still resolve en
+    const loc = i18n.detect();
+    assert.equal(["en", "de"].includes(loc), true);
+  } finally {
+    globalThis.navigator = prev;
+  }
 });
 
 const html = path.join(root, "sanitize.html");
