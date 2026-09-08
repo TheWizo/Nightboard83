@@ -354,5 +354,83 @@
       "expectedSha256Hash": "c32321866c35c09113c742e07eaa0811bbbb3b1e4c0dd6730324d69185231124",
       "size": 25315747
     }
+  },
+  "enzh": {
+    "model": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/a7ff7d5e-e67e-406c-a34b-a7edea35b10e.bin",
+      "size": 43849787,
+      "expectedSha256Hash": "4e5accc141373565ddc8fa1565bceaa8d0c3482a82cab8131c719ebcc6c2157c"
+    },
+    "lex": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/da8fccc0-31df-4665-9703-96d36606e019.bin",
+      "size": 6506248,
+      "expectedSha256Hash": "4a5e5827788060f1d718a8132b69440929387514a045796e9b77f935db68c055"
+    },
+    "srcvocab": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/ea98c52c-58dc-45d5-af23-38f2b029d020.spm",
+      "size": 806952,
+      "expectedSha256Hash": "bd9b65504acc6d9726dd281f7defc2adb7c2c22d0688fe2f84697de25197c8c5"
+    },
+    "trgvocab": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/bddbda68-d4d2-4317-a0a1-119caa47525e.spm",
+      "size": 772004,
+      "expectedSha256Hash": "aded6993c36e440284d11cec3f6b8aef9c0e43188a772d80be342a713adf223d"
+    }
+  },
+  "zhen": {
+    "model": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/715efbde-c974-4696-981a-83c0c5f82ad5.bin",
+      "size": 43977787,
+      "expectedSha256Hash": "5cd149601802fc8a18124a1c1306144dbbedc058630c4ddb2d53aa76fa9c7c06"
+    },
+    "lex": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/ae5f53d2-59ec-4aad-944d-999e50d6a65c.bin",
+      "size": 9219192,
+      "expectedSha256Hash": "8524dd4c93ffd7f0ae7be32f77a7c14fea7cdbbebe34ea6ad0ec368d5ddd8b13"
+    },
+    "vocab": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/17ff5d42-6d4c-42f8-ad3c-b8042b5bafa7.spm",
+      "size": 1359697,
+      "expectedSha256Hash": "dff594318ab7d8b7b60b844ab98ebe6b932ae8045fab15235404c787715965b3"
+    }
+  },
+  "enja": {
+    "model": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/4e19636e-4644-4072-8a05-9ef695d4a3ae.bin",
+      "size": 43849787,
+      "expectedSha256Hash": "59ae659f9bb63e4f81f474fe3c03d3f4499434b5f9e779fab7c12a45f31fd562"
+    },
+    "lex": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/87258444-8fac-4d3c-a175-9275e9d10ffa.bin",
+      "size": 4128360,
+      "expectedSha256Hash": "edfb7eb47b98a2689b804ab3614c31b24f1257aa54b1154da3d85e1ae8152d9f"
+    },
+    "srcvocab": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/cdea5422-fe0d-4941-a653-ca090423e8f8.spm",
+      "size": 796275,
+      "expectedSha256Hash": "970c98d174fc01e0339fbabbf45af36a4be3f26f819ec1a5ea1189f71e091889"
+    },
+    "trgvocab": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/5c1a663f-5736-4100-b681-c6737fe79cb5.spm",
+      "size": 827144,
+      "expectedSha256Hash": "3b3d9f8f3a034d98d0a476f1794fa79c01e4e98a967ceb6777a66ba2d03ec1e1"
+    }
+  },
+  "jaen": {
+    "model": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/2b066368-11b5-4cee-92e8-e6156b334f80.bin",
+      "size": 43977787,
+      "expectedSha256Hash": "3a603e20bfe1be86071913f9e23ab5129075bc0a8490151020ac4821e4f17302"
+    },
+    "lex": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/4e6b3270-8a2f-491d-b717-f99749328622.bin",
+      "size": 9348172,
+      "expectedSha256Hash": "525f412f0d210536c2933c78ae395fa0bf2b5ee6cc5dda61ebc2e79410ebaee4"
+    },
+    "vocab": {
+      "name": "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/6f4898e3-ebaa-4a79-a1af-93a4f65b96fa.spm",
+      "size": 1443222,
+      "expectedSha256Hash": "5cb217758bae05877bb3f0c2f612e4e7c1e4cb03c10db11f4a47098d7ae62919"
+    }
   }
 }

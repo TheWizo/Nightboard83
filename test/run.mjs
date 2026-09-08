@@ -253,6 +253,36 @@ test("translate.shouldOffer lang gate", () => {
   assert.equal(translate.shouldOffer("", "short", "de"), false);
 });
 
+test("translate.canTranslate registry + en pivot", () => {
+  assert.equal(translate.canTranslate("en", "de"), true);
+  assert.equal(translate.canTranslate("de", "en"), true);
+  assert.equal(translate.canTranslate("es", "en"), true);
+  assert.equal(translate.canTranslate("de", "es"), true); // pivot via en
+  assert.equal(translate.canTranslate("en", "en"), false);
+  assert.equal(translate.canTranslate("ko", "de"), false); // no ko in registry
+});
+
+test("translate.shouldOffer only when pair available", () => {
+  assert.equal(translate.shouldOffer("en", "Hello world this is a longer english post", "de"), true);
+  assert.equal(translate.shouldOffer("es", "Este es un texto suficientemente largo en espanol para probar", "de"), true);
+  assert.equal(translate.shouldOffer("zh", "这是一段足够长的中文文本用于测试翻译按钮显示", "de"), true);
+  assert.equal(translate.shouldOffer("ja", "これは翻訳ボタン表示のテスト用に十分な長さの日本語テキストです", "en"), true);
+  assert.equal(translate.shouldOffer("zh", "这是一段足够长的中文文本用于测试翻译按钮显示", "zh"), false);
+  assert.equal(translate.shouldOffer("ko", "이것은 충분히 긴 한국어 텍스트입니다 번역 테스트", "de"), false);
+  assert.equal(translate.shouldOffer("de", "Das ist ein längerer deutscher Beitrag ohne Fremdsprache", "de"), false);
+});
+
+test("translate zh/ja pairs explicit", () => {
+  assert.equal(translate.canTranslate("zh", "en"), true);
+  assert.equal(translate.canTranslate("en", "zh"), true);
+  assert.equal(translate.canTranslate("ja", "en"), true);
+  assert.equal(translate.canTranslate("en", "ja"), true);
+  assert.equal(translate.canTranslate("zh", "de"), true); // pivot
+  assert.equal(translate.canTranslate("ja", "de"), true); // pivot
+  assert.equal(translate.KNOWN_LANGS.includes("zh"), true);
+  assert.equal(translate.KNOWN_LANGS.includes("ja"), true);
+});
+
 test("translate.detectFromText prefers de umlauts", () => {
   assert.equal(translate.detectFromText("Das ist ein schöner Tag für die Arbeit und nicht fürs Sofa."), "de");
   assert.equal(translate.detectFromText("This is clearly an english sentence with the words and that you have."), "en");

@@ -125,8 +125,12 @@ Clearing site data logs you out and deletes drafts and queued posts.
 Posts can be translated **entirely in the browser** with the [Bergamot](https://browser.mt/) WASM engine (Firefox Translations stack). Post text never leaves the device — there is no cloud translation API.
 
 - Engine and worker: `assets/bergamot/` (lazy-loaded on first use)
-- Language models: downloaded on demand from the Bergamot model registry, then cached in the Cache API (`nightboard83-bergamot-models`)
-- A “Translate” control appears only when the post language differs from the UI locale
+- Language models: downloaded on demand, then cached in the Cache API (`nightboard83-bergamot-models`)
+  - Classic pairs (en↔de, en↔es, fr, it, pt, ru, …): [Bergamot S3](https://bergamot.s3.amazonaws.com/models/index.json) (responses are gzip-encoded; the app decompresses and verifies SHA-256 locally)
+  - **zh** and **ja** (en↔zh, en↔ja): Mozilla Firefox Translations models via `firefox-settings-attachments.cdn.mozilla.net` (not on Bergamot S3; added from the official Remote Settings catalog)
+- Direct pairs or **pivot via English** (e.g. de↔es, de↔zh) when both legs exist in `assets/bergamot/registry.json`
+- A “Translate” control appears **only** when `canTranslate(src, uiLang)` is true (source ≠ UI **and** a registry path exists). Unsupported pairs never show the icon
+- Errors: `translate.unsupportedPair` (no path), `translate.downloadFailed` (model/network/hash), `translate.unavailable` (no WASM/Workers), `translate.error` (generic fallback)
 - If WebAssembly or Workers are unavailable, the app stays usable and shows `translate.unavailable`
 
 ## UI languages (i18n)

@@ -244,6 +244,8 @@
   "translate.loading": "Translating…",
   "translate.unavailable": "Translation unavailable",
   "translate.error": "Translation failed",
+  "translate.unsupportedPair": "Language pair not supported",
+  "translate.downloadFailed": "Couldn’t load language model",
   "translate.downloading": "Loading language model…",
   "translate.sameLanguage": "Already in your language",
   "a11y.translate": "Translate post",

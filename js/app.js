@@ -1371,7 +1371,10 @@
       content.innerHTML = originalHtml;
       content.classList.remove("nb-translating", "nb-translated");
       const code = err && err.code;
-      const msg = code === "unavailable" ? t("translate.unavailable") : t("translate.error");
+      let msg = t("translate.error");
+      if (code === "unsupportedPair") msg = t("translate.unsupportedPair");
+      else if (code === "downloadFailed") msg = t("translate.downloadFailed");
+      else if (code === "unavailable") msg = t("translate.unavailable");
       const note = document.createElement("p");
       note.className = "nb-translate-error";
       note.textContent = msg;

@@ -10,8 +10,24 @@
   const ENGINE_BASE = "./assets/bergamot/";
   const REGISTRY_URL = ENGINE_BASE + "registry.json";
 
-  /** Language pairs present in the shipped registry (direct; pivot via en otherwise). */
-  const KNOWN_LANGS = ["bg", "cs", "de", "en", "es", "et", "fr", "it", "pt", "ru", "uk"];
+  /**
+   * Direct registry pair keys (from+to, 4 chars) shipped in registry.json.
+   * Includes Mozilla Firefox Translations zh/ja (CDN), plus classic Bergamot S3 pairs.
+   * Pivot via en covers e.g. de↔es, de↔zh, es↔ja.
+   */
+  const REGISTRY_PAIR_KEYS = [
+    "bgen", "csen", "deen", "enbg", "encs", "ende", "enes", "enet", "enfr", "enit",
+    "enja", "enpt", "enru", "enuk", "enzh", "esen", "eten", "fren", "iten", "jaen",
+    "pten", "ruen", "uken", "zhen",
+  ];
+
+  const KNOWN_LANGS = Array.from(
+    new Set(
+      REGISTRY_PAIR_KEYS.flatMap((k) => [k.slice(0, 2), k.slice(2, 4)])
+    )
+  ).sort();
+
+  const FALLBACK_PAIRS = new Set(REGISTRY_PAIR_KEYS);
 
   let enginePromise = null;
   let translator = null;
@@ -99,6 +115,12 @@
     return normalizeLang(from) + normalizeLang(to);
   }
 
+  function codedError(code, message) {
+    const err = new Error(message || code);
+    err.code = code;
+    return err;
+  }
+
   async function loadRegistryPairs() {
     if (registryPairs) return registryPairs;
     const set = new Set();
@@ -113,37 +135,39 @@
     } catch {
       /* ignore — fall back to known list */
     }
-    if (!set.size) {
-      KNOWN_LANGS.forEach((a) => {
-        KNOWN_LANGS.forEach((b) => {
-          if (a !== b) set.add(a + b);
-        });
-      });
-    }
-    registryPairs = set;
-    return set;
+    registryPairs = set.size ? set : new Set(FALLBACK_PAIRS);
+    return registryPairs;
   }
 
-  async function canTranslatePair(from, to) {
+  /**
+   * Sync: true when a direct pair or en-pivot path exists in the registry.
+   * Uses loaded registry when available, otherwise shipped FALLBACK_PAIRS.
+   */
+  function canTranslate(from, to) {
     const a = normalizeLang(from);
     const b = normalizeLang(to);
     if (!a || !b || a === b) return false;
-    const pairs = await loadRegistryPairs();
+    const pairs = registryPairs || FALLBACK_PAIRS;
     if (pairs.has(a + b)) return true;
     if (a !== "en" && b !== "en" && pairs.has(a + "en") && pairs.has("en" + b)) return true;
     return false;
   }
 
+  async function canTranslatePair(from, to) {
+    await loadRegistryPairs();
+    return canTranslate(from, to);
+  }
+
   /**
    * Whether the translate control should appear for this post.
-   * Sync gate: known source ≠ target. Pair availability checked async on click.
+   * Requires resolved source ≠ UI target AND an actual translation path.
    */
   function shouldOffer(statusLanguage, text, target) {
     const src = resolveSourceLang(statusLanguage, text);
     const tgt = normalizeLang(target) || targetLocale();
     if (!src || !tgt) return false;
     if (src === tgt) return false;
-    return true;
+    return canTranslate(src, tgt);
   }
 
   async function openModelCache() {
@@ -155,14 +179,37 @@
     }
   }
 
+  async function sha256Hex(buffer) {
+    const digest = await crypto.subtle.digest("SHA-256", buffer);
+    const bytes = new Uint8Array(digest);
+    let out = "";
+    for (let i = 0; i < bytes.length; i++) {
+      out += bytes[i].toString(16).padStart(2, "0");
+    }
+    return out;
+  }
+
+  /**
+   * Bergamot S3 serves models with Content-Encoding: gzip while registry hashes
+   * are for the decompressed payload. SRI therefore fails in browsers — we
+   * fetch without integrity, gunzip when needed, then verify SHA-256 ourselves.
+   */
+  async function gunzipIfNeeded(buffer) {
+    const u8 = new Uint8Array(buffer);
+    if (u8.length < 2 || u8[0] !== 0x1f || u8[1] !== 0x8b) return buffer;
+    if (typeof DecompressionStream === "undefined") {
+      throw codedError("downloadFailed", "gzip DecompressionStream unavailable");
+    }
+    const stream = new Blob([buffer]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return await new Response(stream).arrayBuffer();
+  }
+
   async function ensureEngine(onProgress) {
     if (translator) return translator;
     if (enginePromise) return enginePromise;
     if (!wasmSupported()) {
       unavailableReason = "wasm";
-      const err = new Error("unavailable");
-      err.code = "unavailable";
-      throw err;
+      throw codedError("unavailable", "unavailable");
     }
     enginePromise = (async () => {
       if (onProgress) onProgress("downloading");
@@ -173,6 +220,7 @@
         constructor(options) {
           super(options);
         }
+
         async fetch(url, checksum, extra) {
           const cache = await openModelCache();
           if (cache) {
@@ -184,20 +232,54 @@
             }
           }
           if (onProgress) onProgress("downloading");
-          const buf = await super.fetch(url, checksum, extra);
-          if (cache && buf) {
+
+          const controller = new AbortController();
+          const abort = () => controller.abort();
+          const timeout = this.downloadTimeout ? setTimeout(abort, this.downloadTimeout) : null;
+          try {
+            if (extra && extra.signal) extra.signal.addEventListener("abort", abort);
+            let response;
             try {
-              await cache.put(
-                url,
-                new Response(buf.slice(0), {
-                  headers: { "Content-Type": "application/octet-stream" },
-                })
-              );
-            } catch {
-              /* ignore quota */
+              response = await fetch(url, {
+                credentials: "omit",
+                signal: controller.signal,
+              });
+            } catch (netErr) {
+              throw codedError("downloadFailed", (netErr && netErr.message) || "downloadFailed");
             }
+            if (!response || !response.ok) {
+              throw codedError("downloadFailed", "HTTP " + (response && response.status));
+            }
+            let buf = await response.arrayBuffer();
+            try {
+              buf = await gunzipIfNeeded(buf);
+            } catch (gzErr) {
+              if (gzErr && gzErr.code) throw gzErr;
+              throw codedError("downloadFailed", (gzErr && gzErr.message) || "gunzipFailed");
+            }
+            if (checksum) {
+              const hex = await sha256Hex(buf);
+              if (hex !== String(checksum).toLowerCase()) {
+                throw codedError("downloadFailed", "checksum mismatch");
+              }
+            }
+            if (cache && buf) {
+              try {
+                await cache.put(
+                  url,
+                  new Response(buf.slice(0), {
+                    headers: { "Content-Type": "application/octet-stream" },
+                  })
+                );
+              } catch {
+                /* ignore quota */
+              }
+            }
+            return buf;
+          } finally {
+            if (timeout) clearTimeout(timeout);
+            if (extra && extra.signal) extra.signal.removeEventListener("abort", abort);
           }
-          return buf;
         }
       }
 
@@ -217,8 +299,13 @@
       return tr;
     })().catch((err) => {
       enginePromise = null;
-      unavailableReason = "error";
-      throw err;
+      if (err && err.code === "unavailable") {
+        unavailableReason = "wasm";
+      } else {
+        unavailableReason = "error";
+      }
+      if (err && err.code) throw err;
+      throw codedError("downloadFailed", (err && err.message) || "downloadFailed");
     });
     return enginePromise;
   }
@@ -229,22 +316,34 @@
     const input = String(text || "");
     if (!input.trim()) return "";
     if (!src || !tgt) {
-      const err = new Error("unavailable");
-      err.code = "unavailable";
-      throw err;
+      throw codedError("unavailable", "unavailable");
     }
     if (src === tgt) return input;
-    const ok = await canTranslatePair(src, tgt);
-    if (!ok) {
-      const err = new Error("unavailable");
-      err.code = "unavailable";
-      throw err;
+
+    await loadRegistryPairs();
+    if (!canTranslate(src, tgt)) {
+      throw codedError("unsupportedPair", "unsupportedPair");
     }
-    const tr = await ensureEngine(opts && opts.onProgress);
-    if (opts && opts.onProgress) opts.onProgress("loading");
-    const html = opts && opts.html === true;
-    const res = await tr.translate({ from: src, to: tgt, text: input, html: html });
-    return (res && res.target && res.target.text) || "";
+    if (!wasmSupported()) {
+      unavailableReason = "wasm";
+      throw codedError("unavailable", "unavailable");
+    }
+
+    try {
+      const tr = await ensureEngine(opts && opts.onProgress);
+      if (opts && opts.onProgress) opts.onProgress("loading");
+      const html = opts && opts.html === true;
+      const res = await tr.translate({ from: src, to: tgt, text: input, html: html });
+      return (res && res.target && res.target.text) || "";
+    } catch (err) {
+      if (err && err.code) throw err;
+      const msg = String((err && err.message) || err || "");
+      if (/wasm|WebAssembly|Worker/i.test(msg)) {
+        unavailableReason = "wasm";
+        throw codedError("unavailable", msg);
+      }
+      throw codedError("downloadFailed", msg || "downloadFailed");
+    }
   }
 
   function isAvailable() {
@@ -255,6 +354,13 @@
     return unavailableReason;
   }
 
+  // Warm registry so shouldOffer can use live keys once ready.
+  try {
+    loadRegistryPairs().catch(() => {});
+  } catch {
+    /* ignore */
+  }
+
   const api = {
     normalizeLang,
     langsEqual,
@@ -262,6 +368,7 @@
     detectFromText,
     resolveSourceLang,
     shouldOffer,
+    canTranslate,
     canTranslatePair,
     wasmSupported,
     isAvailable,
@@ -269,7 +376,9 @@
     translate,
     ensureEngine,
     KNOWN_LANGS,
+    REGISTRY_PAIR_KEYS,
     MODEL_CACHE,
+    pairKey,
   };
 
   root.NBTranslate = api;
