@@ -244,6 +244,8 @@
   "translate.loading": "Übersetze…",
   "translate.unavailable": "Übersetzung nicht verfügbar",
   "translate.error": "Übersetzung fehlgeschlagen",
+  "translate.unsupportedPair": "Sprachpaar nicht unterstützt",
+  "translate.downloadFailed": "Sprachmodell konnte nicht geladen werden",
   "translate.downloading": "Lade Sprachmodell…",
   "translate.sameLanguage": "Bereits in deiner Sprache",
   "a11y.translate": "Beitrag übersetzen",
