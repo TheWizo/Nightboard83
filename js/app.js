@@ -22,6 +22,7 @@
   };
 
   const I18n = window.NBI18n || {};
+  const Tr = window.NBTranslate || {};
   function t(key, vars) {
     return I18n.t ? I18n.t(key, vars) : String(key || "");
   }
@@ -1233,6 +1234,154 @@
     </div>`;
   }
 
+  /** Per-status translation UI state for this session (id → record). */
+  const translateCache = new Map();
+
+  function statusPlainForDetect(s) {
+    try {
+      return htmlToPlain(s && s.content ? s.content : "");
+    } catch {
+      return String((s && s.content) || "").replace(/<[^>]+>/g, " ");
+    }
+  }
+
+  function translateBtnHtml(s) {
+    if (!Tr || !Tr.shouldOffer) return "";
+    const plain = statusPlainForDetect(s);
+    const target = Tr.targetLocale ? Tr.targetLocale() : (I18n.getLocale ? I18n.getLocale() : "de");
+    if (!Tr.shouldOffer(s.language, plain, target)) return "";
+    const cached = translateCache.get(s.id);
+    if (cached && cached.showing === "translation") {
+      return `<button type="button" class="nb-translate is-active" data-act="translate" aria-label="${escapeHtml(t("a11y.showOriginal"))}" title="${escapeHtml(t("translate.showOriginal"))}"><span class="nb-translate-glyph" aria-hidden="true">⇄</span>${escapeHtml(t("translate.showOriginal"))}</button>`;
+    }
+    const label = cached && cached.translatedHtml ? t("translate.showTranslation") : t("translate.action");
+    const aria = cached && cached.translatedHtml ? t("a11y.showTranslation") : t("a11y.translate");
+    return `<button type="button" class="nb-translate" data-act="translate" aria-label="${escapeHtml(aria)}" title="${escapeHtml(label)}"><span class="nb-translate-glyph" aria-hidden="true">あ</span>${escapeHtml(label)}</button>`;
+  }
+
+  const FLIP_GLYPHS = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ§$%&#@*+=<>?/\\|";
+
+  function startFlipAnimation(contentEl) {
+    if (!contentEl) return;
+    const plain = (contentEl.textContent || "").replace(/\s+/g, " ").trim();
+    const sample = plain.slice(0, 80) || "TRANSLATING";
+    contentEl.classList.add("nb-translating");
+    contentEl.classList.remove("nb-translated", "nb-translate-error");
+    let html = "";
+    for (let i = 0; i < sample.length; i++) {
+      const ch = sample[i];
+      if (ch === " ") {
+        html += " ";
+        continue;
+      }
+      const g = FLIP_GLYPHS[i % FLIP_GLYPHS.length];
+      html += `<span class="nb-flip" style="--i:${i}">${escapeHtml(g)}</span>`;
+    }
+    contentEl.innerHTML = html || `<span class="nb-flip" style="--i:0">§</span>`;
+  }
+
+  function paintTranslateButton(article, record) {
+    if (!article) return;
+    const btn = article.querySelector('button[data-act="translate"]');
+    if (!btn) return;
+    if (record && record.showing === "translation") {
+      btn.classList.add("is-active");
+      btn.innerHTML = `<span class="nb-translate-glyph" aria-hidden="true">⇄</span>${escapeHtml(t("translate.showOriginal"))}`;
+      btn.setAttribute("aria-label", t("a11y.showOriginal"));
+      btn.title = t("translate.showOriginal");
+    } else {
+      btn.classList.remove("is-active");
+      const has = record && record.translatedHtml;
+      const label = has ? t("translate.showTranslation") : t("translate.action");
+      const aria = has ? t("a11y.showTranslation") : t("a11y.translate");
+      btn.innerHTML = `<span class="nb-translate-glyph" aria-hidden="true">あ</span>${escapeHtml(label)}`;
+      btn.setAttribute("aria-label", aria);
+      btn.title = label;
+    }
+    btn.disabled = false;
+  }
+
+  async function handleTranslateClick(article, btn) {
+    const id = article.getAttribute("data-id");
+    if (!id) return;
+    const content = article.querySelector(".content");
+    if (!content) return;
+    let record = translateCache.get(id);
+    if (record && record.translatedHtml) {
+      if (record.showing === "translation") {
+        content.innerHTML = record.originalHtml;
+        content.classList.remove("nb-translated", "nb-translating", "nb-translate-error");
+        record.showing = "original";
+        paintTranslateButton(article, record);
+        return;
+      }
+      content.innerHTML = record.translatedHtml;
+      content.classList.add("nb-translated");
+      content.classList.remove("nb-translating", "nb-translate-error");
+      record.showing = "translation";
+      paintTranslateButton(article, record);
+      return;
+    }
+
+    if (!Tr || !Tr.isAvailable || !Tr.isAvailable()) {
+      content.classList.add("nb-translate-error");
+      const note = document.createElement("p");
+      note.className = "nb-translate-error";
+      note.textContent = t("translate.unavailable");
+      content.appendChild(note);
+      return;
+    }
+
+    const originalHtml = content.innerHTML;
+    const fromAttr = article.getAttribute("data-status-lang") || "";
+    const plain = statusPlainForDetect({ content: originalHtml, language: fromAttr });
+    const from = Tr.resolveSourceLang ? Tr.resolveSourceLang(fromAttr, plain) : fromAttr;
+    const to = Tr.targetLocale ? Tr.targetLocale() : (I18n.getLocale ? I18n.getLocale() : "de");
+    if (Tr.langsEqual && Tr.langsEqual(from, to)) {
+      btn.title = t("translate.sameLanguage");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = t("translate.loading");
+    startFlipAnimation(content);
+
+    try {
+      const translated = await Tr.translate(originalHtml, from, to, {
+        html: true,
+        onProgress: (phase) => {
+          if (phase === "downloading") btn.textContent = t("translate.downloading");
+          else btn.textContent = t("translate.loading");
+        },
+      });
+      const safe = sanitize(translated || "");
+      record = {
+        originalHtml,
+        translatedHtml: safe,
+        showing: "translation",
+        from,
+        to,
+      };
+      translateCache.set(id, record);
+      content.innerHTML = safe;
+      content.classList.remove("nb-translating", "nb-translate-error");
+      content.classList.add("nb-translated");
+      paintTranslateButton(article, record);
+    } catch (err) {
+      content.innerHTML = originalHtml;
+      content.classList.remove("nb-translating", "nb-translated");
+      const code = err && err.code;
+      const msg = code === "unavailable" ? t("translate.unavailable") : t("translate.error");
+      const note = document.createElement("p");
+      note.className = "nb-translate-error";
+      note.textContent = msg;
+      content.appendChild(note);
+      paintTranslateButton(article, null);
+      btn.disabled = false;
+    }
+  }
+
+
   function statusHtml(status, opts = {}) {
     const boosted = status.reblog ? status : null;
     const s = status.reblog || status;
@@ -1248,7 +1397,10 @@
     const ownBtns = own
       ? `<button type="button" data-act="edit">${escapeHtml(t("common.edit"))}</button><button type="button" data-act="delete" class="danger">${escapeHtml(t("common.delete"))}</button>`
       : "";
-    return `<article class="status${extraClass}" data-id="${escapeHtml(s.id)}" data-acct="${escapeHtml(s.account.id)}">
+    const langCode = (Tr.normalizeLang && Tr.normalizeLang(s.language)) || "";
+    const langAttr = langCode ? ` data-status-lang="${escapeHtml(langCode)}"` : "";
+    const translateBtn = opts.hideActions ? "" : translateBtnHtml(s);
+    return `<article class="status${extraClass}" data-id="${escapeHtml(s.id)}" data-acct="${escapeHtml(s.account.id)}"${langAttr}>
       ${boostLine}
       <div class="status-head">${accountLine(s.account)}</div>
       ${cw}${body}${pollBlock(s, opts)}${mediaBlock(s)}
@@ -1256,6 +1408,7 @@
         <button type="button" data-act="reply">↩ ${s.replies_count || 0}</button>
         <button type="button" data-act="boost" class="${s.reblogged ? "on-boost" : ""}">↻ ${s.reblogs_count || 0}</button>
         <button type="button" data-act="fav" class="${s.favourited ? "on-fav" : ""}">★ ${s.favourites_count || 0}</button>
+        ${translateBtn}
         <button type="button" data-act="open">${escapeHtml(t("common.profile"))}</button>
         ${ownBtns}
       </div>`}
@@ -2964,6 +3117,12 @@
         submitPollVote(article, btn, act);
         return;
       }
+      if (act === "translate") {
+        ev.preventDefault();
+        ev.stopPropagation();
+        handleTranslateClick(article, btn);
+        return;
+      }
       actOnStatus(article.getAttribute("data-id"), act, btn);
       return;
     }
@@ -3732,7 +3891,7 @@
   }
 
   function bindLangSwitch() {
-    document.querySelectorAll("[data-lang]").forEach((btn) => {
+    document.querySelectorAll(".lang-switch [data-lang]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const code = btn.getAttribute("data-lang");
         if (!code || !I18n.setLocale) return;
@@ -3742,6 +3901,7 @@
   }
 
   function repaintLocaleSensitive() {
+    translateCache.clear();
     if (I18n.applyDom) I18n.applyDom();
     paintCarrierBtn();
     if (state.conn === "online") paintConn("is-connected", t("status.connected"));

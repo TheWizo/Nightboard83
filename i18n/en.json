@@ -237,5 +237,16 @@
   "outbox.newPost": "New post",
   "outbox.save": "Save",
   "drafts.open": "Open",
-  "drafts.mediaOnly": "(media only)"
+  "drafts.mediaOnly": "(media only)",
+  "translate.action": "Translate",
+  "translate.showOriginal": "Original",
+  "translate.showTranslation": "Translation",
+  "translate.loading": "Translating…",
+  "translate.unavailable": "Translation unavailable",
+  "translate.error": "Translation failed",
+  "translate.downloading": "Loading language model…",
+  "translate.sameLanguage": "Already in your language",
+  "a11y.translate": "Translate post",
+  "a11y.showOriginal": "Show original text",
+  "a11y.showTranslation": "Show translation"
 }

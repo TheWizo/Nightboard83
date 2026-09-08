@@ -1,0 +1,8 @@
+Bergamot WASM translator (MPL-2.0)
+
+Vendored from @browsermt/bergamot-translator 0.4.9
+https://github.com/browsermt/bergamot-translator
+
+Models are fetched on demand from the Bergamot model registry
+(URLs listed in registry.json) and cached in the browser.
+Post text is never uploaded.

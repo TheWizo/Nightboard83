@@ -1533,3 +1533,53 @@ dialog[open] { display: flex; flex-direction: column; }
 .top-actions .lang-switch {
   align-self: center;
 }
+
+/* —— Local Bergamot translate (CRT / neon) —— */
+.actions button.nb-translate {
+  color: var(--cyan);
+  letter-spacing: 0.04em;
+}
+.actions button.nb-translate.is-active {
+  color: var(--pink);
+  text-shadow: 0 0 8px #f92aad66;
+}
+.actions button.nb-translate:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.actions button.nb-translate .nb-translate-glyph {
+  display: inline-block;
+  margin-right: 4px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  vertical-align: 1px;
+}
+.content.nb-translating {
+  position: relative;
+  color: var(--cyan);
+  text-shadow: 0 0 6px #03edf955;
+  min-height: 1.2em;
+}
+.content.nb-translating .nb-flip {
+  display: inline-block;
+  transform-style: preserve-3d;
+  animation: nb-letter-flip 0.55s steps(2, end) infinite;
+  animation-delay: calc(var(--i, 0) * 28ms);
+  color: var(--mint);
+}
+.content.nb-translated {
+  border-left: 2px solid var(--cyan);
+  padding-left: 8px;
+  box-shadow: inset 2px 0 12px #03edf912;
+}
+.content.nb-translate-error {
+  color: var(--red);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+@keyframes nb-letter-flip {
+  0% { transform: rotateX(0deg); filter: brightness(1.2); }
+  50% { transform: rotateX(90deg); filter: brightness(1.6) hue-rotate(40deg); }
+  100% { transform: rotateX(0deg); filter: brightness(1); }
+}

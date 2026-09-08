@@ -237,5 +237,16 @@
   "outbox.newPost": "Neuer Post",
   "outbox.save": "Speichern",
   "drafts.open": "Öffnen",
-  "drafts.mediaOnly": "(nur Medien)"
+  "drafts.mediaOnly": "(nur Medien)",
+  "translate.action": "Übersetzen",
+  "translate.showOriginal": "Original",
+  "translate.showTranslation": "Übersetzung",
+  "translate.loading": "Übersetze…",
+  "translate.unavailable": "Übersetzung nicht verfügbar",
+  "translate.error": "Übersetzung fehlgeschlagen",
+  "translate.downloading": "Lade Sprachmodell…",
+  "translate.sameLanguage": "Bereits in deiner Sprache",
+  "a11y.translate": "Beitrag übersetzen",
+  "a11y.showOriginal": "Originaltext anzeigen",
+  "a11y.showTranslation": "Übersetzung anzeigen"
 }

@@ -229,6 +229,44 @@ test("i18n detect prefers supported navigator language", () => {
   }
 });
 
+
+const translate = require("../js/translate.js");
+
+test("translate.normalizeLang strips region and rejects und", () => {
+  assert.equal(translate.normalizeLang("de-DE"), "de");
+  assert.equal(translate.normalizeLang("EN"), "en");
+  assert.equal(translate.normalizeLang("und"), "");
+  assert.equal(translate.normalizeLang(""), "");
+});
+
+test("translate.langsEqual", () => {
+  assert.equal(translate.langsEqual("de", "de-AT"), true);
+  assert.equal(translate.langsEqual("de", "en"), false);
+  assert.equal(translate.langsEqual("", "en"), false);
+});
+
+test("translate.shouldOffer lang gate", () => {
+  assert.equal(translate.shouldOffer("en", "Hello world this is a longer english post", "de"), true);
+  assert.equal(translate.shouldOffer("de", "Hallo Welt das ist ein längerer Text", "de"), false);
+  assert.equal(translate.shouldOffer("und", "Hallo Welt das ist ein längerer deutscher Text und nicht", "de"), false);
+  assert.equal(translate.shouldOffer("", "Hello world this is clearly an english sentence with the and that", "de"), true);
+  assert.equal(translate.shouldOffer("", "short", "de"), false);
+});
+
+test("translate.detectFromText prefers de umlauts", () => {
+  assert.equal(translate.detectFromText("Das ist ein schöner Tag für die Arbeit und nicht fürs Sofa."), "de");
+  assert.equal(translate.detectFromText("This is clearly an english sentence with the words and that you have."), "en");
+});
+
+test("translate.toggle showing state machine", () => {
+  function nextShowing(showing) {
+    return showing === "translation" ? "original" : "translation";
+  }
+  assert.equal(nextShowing("translation"), "original");
+  assert.equal(nextShowing("original"), "translation");
+  assert.equal(nextShowing(undefined), "translation");
+});
+
 const html = path.join(root, "sanitize.html");
 const chrome = spawnSync("chromium", ["--headless=new", "--disable-gpu", "--no-sandbox", "--virtual-time-budget=4000", "--dump-dom", pathToFileURL(html).href], {
   encoding: "utf8",
