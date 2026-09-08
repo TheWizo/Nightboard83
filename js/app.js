@@ -162,6 +162,7 @@
   }
 
   const state = {
+    ageTimer: 0,
     token: localStorage.getItem(LS.token) || "",
     me: null,
     timelines: {
@@ -1104,10 +1105,13 @@
     return Core.sanitize ? Core.sanitize(html) : escapeHtml(html);
   }
 
-  function relTime(iso) {
-    const d = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (d < 60) return Math.max(0, Math.floor(d)) + "s";
-    if (d < 3600) return Math.floor(d / 60) + "m";
+  function relTime(iso, nowMs) {
+    if (Core.relativeAgeLabel) return Core.relativeAgeLabel(iso, nowMs);
+    const now = nowMs == null ? Date.now() : Number(nowMs);
+    const d = Math.max(0, (now - new Date(iso).getTime()) / 1000);
+    if (d < 60) return Math.floor(d) + "s";
+    if (d < 5 * 60) return Math.floor(d / 60) + "m";
+    if (d < 3600) return Math.floor(d / (5 * 60)) * 5 + "m";
     if (d < 86400) return Math.floor(d / 3600) + "h";
     return Math.floor(d / 86400) + "d";
   }
@@ -1180,7 +1184,28 @@
 
   function paintTime(root, iso) {
     const el = root.querySelector(".time");
-    if (el) el.textContent = relTime(iso);
+    if (!el || !iso) return;
+    el.setAttribute("data-created-at", iso);
+    el.textContent = relTime(iso);
+  }
+
+  function tickRelativeAges() {
+    const now = Date.now();
+    document.querySelectorAll(".time[data-created-at]").forEach((el) => {
+      const iso = el.getAttribute("data-created-at");
+      if (!iso) return;
+      const next = relTime(iso, now);
+      if (el.textContent !== next) el.textContent = next;
+    });
+  }
+
+  function startRelativeAgeTicker() {
+    if (state.ageTimer) return;
+    tickRelativeAges();
+    state.ageTimer = setInterval(() => {
+      if (document.hidden) return;
+      tickRelativeAges();
+    }, 1000);
   }
 
   function renderStatusList(el, items, emptyText) {
@@ -3510,6 +3535,8 @@
       .then(watchReg)
       .catch(() => {});
   }
+
+  startRelativeAgeTicker();
 
   startSwUpdates();
 

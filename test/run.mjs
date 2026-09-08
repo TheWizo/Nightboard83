@@ -100,6 +100,24 @@ test("mentionAcctFromHref", () => {
   assert.equal(core.mentionAcctFromHref("https://ex.test/users/carol", "https://app.test/", "ex.test"), "carol");
 });
 
+test("relativeAgeLabel steps", () => {
+  const now = Date.parse("2026-09-08T12:00:00.000Z");
+  const at = (secAgo) => new Date(now - secAgo * 1000).toISOString();
+  assert.equal(core.relativeAgeLabel(at(0), now), "0s");
+  assert.equal(core.relativeAgeLabel(at(12), now), "12s");
+  assert.equal(core.relativeAgeLabel(at(59), now), "59s");
+  assert.equal(core.relativeAgeLabel(at(60), now), "1m");
+  assert.equal(core.relativeAgeLabel(at(179), now), "2m");
+  assert.equal(core.relativeAgeLabel(at(299), now), "4m");
+  assert.equal(core.relativeAgeLabel(at(300), now), "5m");
+  assert.equal(core.relativeAgeLabel(at(599), now), "5m");
+  assert.equal(core.relativeAgeLabel(at(600), now), "10m");
+  assert.equal(core.relativeAgeLabel(at(3599), now), "55m");
+  assert.equal(core.relativeAgeLabel(at(3600), now), "1h");
+  assert.equal(core.relativeAgeLabel(at(86400), now), "1d");
+  assert.equal(core.relativeAgeLabel("nope", now), "");
+});
+
 test("appBaseUrl strips index.html", () => {
   assert.equal(core.appBaseUrl({ origin: "https://nb.test", pathname: "/app/index.html" }), "https://nb.test/app/");
   assert.equal(core.appBaseUrl({ origin: "https://nb.test", pathname: "/" }), "https://nb.test/");

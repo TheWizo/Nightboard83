@@ -95,6 +95,18 @@
     return sa !== sb;
   }
 
+  function relativeAgeLabel(iso, nowMs) {
+    const now = nowMs == null ? Date.now() : Number(nowMs);
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t) || !Number.isFinite(now)) return "";
+    const d = Math.max(0, (now - t) / 1000);
+    if (d < 60) return Math.floor(d) + "s";
+    if (d < 5 * 60) return Math.floor(d / 60) + "m";
+    if (d < 3600) return Math.floor(d / (5 * 60)) * 5 + "m";
+    if (d < 86400) return Math.floor(d / 3600) + "h";
+    return Math.floor(d / 86400) + "d";
+  }
+
   function appBaseUrl(loc) {
     loc = loc || (typeof location !== "undefined" ? location : null);
     if (!loc) return "";
@@ -229,6 +241,7 @@
     isNetworkError,
     isMissingStatus,
     idNewer,
+    relativeAgeLabel,
     appBaseUrl,
     tagNameFromHref,
     mentionAcctFromHref,
