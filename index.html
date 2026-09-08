@@ -139,7 +139,7 @@
           Instanz
           <input id="instance-input" type="text" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="mastodon.example" />
         </label>
-        <p>Anmeldung per OAuth — Freigabe im gleichen Fenster, danach kommst du automatisch zurück.</p>
+        <p>Anmeldung per OAuth — Freigabe im gleichen Fenster, danach kommst du automatisch zurück. Bei GTS-Fehler „redirect_uri not found in session“: Cookies der Instanz löschen und erneut autorisieren (kein GTS-Neustart währenddessen).</p>
         <div class="row">
           <button type="button" class="primary" id="btn-oauth">Autorisieren</button>
         </div>
