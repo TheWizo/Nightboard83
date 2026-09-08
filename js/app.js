@@ -945,25 +945,14 @@
     return { verifier, challenge: bytesToB64Url(digest) };
   }
 
-  // GoToSocial keeps a short-lived cookie session. If it still has userid but no
-  // oauth params (abandoned login, back-button retry, prior error), AuthorizeGET
-  // skips saving redirect_uri from the query string and returns
-  // "key redirect_uri not found in session". A no-cors credentialed hit to the
-  // bare authorize endpoint forces that error path and clears the stale session
-  // before we start a fresh authorize with full query params.
-  async function clearStaleGtsOAuthSession() {
-    try {
-      await fetch(INSTANCE + "/oauth/authorize", {
-        method: "GET",
-        mode: "no-cors",
-        credentials: "include",
-        cache: "no-store",
-      });
-    } catch {
-      /* opaque / network — safe to continue */
-    }
-  }
-
+  // GoToSocial (memstore) keeps oauth params only in a server-side session
+  // (cookie is just an id; SameSite=Lax; Max-Age ~120s). After login it redirects
+  // to bare /oauth/authorize and reloads redirect_uri from that session.
+  // A cross-origin no-cors fetch from this app cannot clear/set that cookie, so
+  // we do not attempt a preflight — navigate straight to authorize with full query.
+  // If GTS was restarted (or load-balanced without sticky memstore) mid-login,
+  // GTS shows "key redirect_uri not found in session"; clear site data for the
+  // instance and retry without restarting GTS during the flow.
   async function startOAuth() {
 
     try {
@@ -971,8 +960,6 @@
         $("login-status").textContent = "Bitte eine gültige Instanz eintragen.";
         return;
       }
-      $("login-status").textContent = "Sitzung wird vorbereitet…";
-      await clearStaleGtsOAuthSession();
       $("login-status").textContent = "App wird registriert…";
       const redirect = appBaseUrl();
       const app = await ensureApp(redirect);
