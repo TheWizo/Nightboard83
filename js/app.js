@@ -1172,13 +1172,17 @@
     const poll = status && status.poll;
     if (!poll || !Array.isArray(poll.options) || !poll.options.length) return "";
     const closed = Core.pollIsClosed ? Core.pollIsClosed(poll) : Boolean(poll.expired);
-    const voted = Boolean(poll.voted) || (Array.isArray(poll.own_votes) && poll.own_votes.length > 0);
-    const showResults = closed || voted;
+    const isOwnPoll = Boolean(state.me && status.account && status.account.id === state.me.id);
+    const voted = Core.pollUserVoted
+      ? Core.pollUserVoted(poll)
+      : Boolean(poll.voted) || (Array.isArray(poll.own_votes) && poll.own_votes.length > 0);
+    // Authors see live tallies without voting; GTS forbids self-votes.
+    const showResults = closed || voted || isOwnPoll;
     const total = Core.pollTotalVotes ? Core.pollTotalVotes(poll) : Number(poll.votes_count) || 0;
     const own = new Set(Core.pollOwnVotes ? Core.pollOwnVotes(poll) : []);
     const multiple = Boolean(poll.multiple);
     const hideActions = Boolean(opts.hideActions);
-    const canVote = !hideActions && !closed && !voted && Boolean(state.token);
+    const canVote = !hideActions && !closed && !voted && !isOwnPoll && Boolean(state.token);
     const hidden = status.spoiler_text ? " hidden" : "";
     const optionsHtml = poll.options
       .map((opt, i) => {
@@ -1214,7 +1218,8 @@
     }
     const hints = [];
     if (multiple) hints.push(`<span class="poll-hint">${escapeHtml(t("timeline.poll.multiple"))}</span>`);
-    if (voted && !closed) hints.push(`<span>${escapeHtml(t("timeline.poll.voted"))}</span>`);
+    if (isOwnPoll && !closed) hints.push(`<span class="poll-hint">${escapeHtml(t("timeline.poll.own"))}</span>`);
+    else if (voted && !closed) hints.push(`<span>${escapeHtml(t("timeline.poll.voted"))}</span>`);
     if (expiry) hints.push(`<span>${escapeHtml(expiry)}</span>`);
     hints.push(`<span>${escapeHtml(countLabel)}</span>`);
     const submit =
@@ -2462,16 +2467,25 @@
   }
 
 
+  function normalizePollPayload(poll) {
+    if (!poll || typeof poll !== "object" || !Array.isArray(poll.options)) return null;
+    if (Core.pollUserVoted && poll.voted && !Core.pollUserVoted(poll)) {
+      return Object.assign({}, poll, { voted: false });
+    }
+    return poll;
+  }
+
   async function applyPollToStatus(statusId, poll) {
     if (!statusId || !poll) return;
+    const normalized = normalizePollPayload(poll) || poll;
     const local = findLocalStatus(statusId);
     if (local) {
-      replaceStatusEverywhere(Object.assign({}, unwrapStatus(local), { poll }));
+      replaceStatusEverywhere(Object.assign({}, unwrapStatus(local), { poll: normalized }));
       return;
     }
     try {
       const s = unwrapStatus(await api("/api/v1/statuses/" + encodeURIComponent(statusId)));
-      if (s) replaceStatusEverywhere(Object.assign({}, s, { poll: poll || s.poll }));
+      if (s) replaceStatusEverywhere(Object.assign({}, s, { poll: normalized || s.poll }));
     } catch (err) {
       alert(err.message);
     }
@@ -2483,6 +2497,11 @@
     const pollId = pollEl.getAttribute("data-poll-id");
     const statusId = pollEl.getAttribute("data-status-id") || article.getAttribute("data-id");
     if (!pollId || !statusId) return;
+    const acctId = article.getAttribute("data-acct");
+    if (state.me && acctId && acctId === String(state.me.id)) {
+      alert(t("timeline.poll.own"));
+      return;
+    }
     let choices = [];
     if (act === "poll-vote") {
       const choice = Number(btn.getAttribute("data-choice"));
@@ -2498,10 +2517,16 @@
       el.disabled = true;
     });
     try {
-      const poll = await api("/api/v1/polls/" + encodeURIComponent(pollId) + "/votes", {
+      const raw = await api("/api/v1/polls/" + encodeURIComponent(pollId) + "/votes", {
         method: "POST",
         body: { choices },
       });
+      const poll = normalizePollPayload(raw);
+      if (!poll) throw new Error(t("common.error"));
+      // Successful foreign vote must reflect a real ballot (own_votes or voted with tallies).
+      if (Core.pollUserVoted && !Core.pollUserVoted(poll)) {
+        throw new Error(t("common.error"));
+      }
       await applyPollToStatus(statusId, poll);
     } catch (err) {
       controls.forEach((el) => {
@@ -2511,7 +2536,7 @@
       if (submit) {
         submit.disabled = pollEl.querySelectorAll(".poll-option.is-selected").length === 0;
       }
-      alert(err.message);
+      alert(err && err.message ? err.message : t("common.error"));
     }
   }
 
