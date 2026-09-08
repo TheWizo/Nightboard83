@@ -3372,9 +3372,19 @@
         await typeLine(log, "HOLD — BUFFER NOT EMPTY", "is-warn");
         setUpdateBar(100);
         wantReload = true;
+        await typeLine(log, "DEFERRED — CONTINUE WRITING", "is-found");
+        await sleep(420);
+        // Modal blocks Compose/Reply — dismiss so the user can finish the draft.
+        // Keep waiting in the background; activate/reload runs after canReload().
+        if (dlg.open) dlg.close();
+        try {
+          if ($("compose-dialog") && $("compose-dialog").open && $("compose-text")) {
+            $("compose-text").focus();
+          } else if ($("thread-dialog") && $("thread-dialog").open && $("thread-reply-text")) {
+            $("thread-reply-text").focus();
+          }
+        } catch { /* focus best-effort */ }
         while (!canReload()) await sleep(400);
-        await typeLine(log, "BUFFER CLEAR — RESUME", "is-found");
-        await sleep(360);
       }
     }
 
