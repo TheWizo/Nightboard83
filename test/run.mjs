@@ -157,6 +157,31 @@ test("flushPlan delete exists", () => {
 });
 
 
+
+test("pollPercent / pollTotalVotes / pollOwnVotes / pollIsClosed", () => {
+  assert.equal(core.pollPercent(1, 4), 25);
+  assert.equal(core.pollPercent(0, 4), 0);
+  assert.equal(core.pollPercent(2, 0), 0);
+  assert.equal(core.pollTotalVotes({ votes_count: 7 }), 7);
+  assert.equal(core.pollTotalVotes({}), 0);
+  assert.deepEqual(core.pollOwnVotes({ own_votes: [0, 2] }), [0, 2]);
+  assert.deepEqual(core.pollOwnVotes({ own_votes: ["1"] }), [1]);
+  assert.equal(core.pollIsClosed({ expired: true }), true);
+  assert.equal(core.pollIsClosed({ expires_at: "2099-01-01T00:00:00.000Z" }, Date.parse("2026-01-01T00:00:00.000Z")), false);
+  assert.equal(core.pollIsClosed({ expires_at: "2020-01-01T00:00:00.000Z" }, Date.parse("2026-01-01T00:00:00.000Z")), true);
+});
+
+test("relativeFutureLabel steps", () => {
+  const now = Date.parse("2026-01-01T00:00:00.000Z");
+  const at = (sec) => new Date(now + sec * 1000).toISOString();
+  assert.equal(core.relativeFutureLabel(at(12), now), "12s");
+  assert.equal(core.relativeFutureLabel(at(60), now), "1m");
+  assert.equal(core.relativeFutureLabel(at(300), now), "5m");
+  assert.equal(core.relativeFutureLabel(at(3600), now), "1h");
+  assert.equal(core.relativeFutureLabel(at(86400), now), "1d");
+  assert.equal(core.relativeFutureLabel("nope", now), "");
+});
+
 const i18n = require("../js/i18n.js");
 const fs = require("node:fs");
 const de = JSON.parse(fs.readFileSync(path.join(repo, "i18n/de.json"), "utf8"));

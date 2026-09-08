@@ -1167,6 +1167,67 @@
     );
   }
 
+
+  function pollBlock(status, opts = {}) {
+    const poll = status && status.poll;
+    if (!poll || !Array.isArray(poll.options) || !poll.options.length) return "";
+    const closed = Core.pollIsClosed ? Core.pollIsClosed(poll) : Boolean(poll.expired);
+    const voted = Boolean(poll.voted) || (Array.isArray(poll.own_votes) && poll.own_votes.length > 0);
+    const showResults = closed || voted;
+    const total = Core.pollTotalVotes ? Core.pollTotalVotes(poll) : Number(poll.votes_count) || 0;
+    const own = new Set(Core.pollOwnVotes ? Core.pollOwnVotes(poll) : []);
+    const multiple = Boolean(poll.multiple);
+    const hideActions = Boolean(opts.hideActions);
+    const canVote = !hideActions && !closed && !voted && Boolean(state.token);
+    const hidden = status.spoiler_text ? " hidden" : "";
+    const optionsHtml = poll.options
+      .map((opt, i) => {
+        const title = escapeHtml(opt && opt.title != null ? String(opt.title) : "");
+        const votes = Number(opt && opt.votes_count) || 0;
+        const pct = showResults && Core.pollPercent ? Core.pollPercent(votes, total) : 0;
+        const isOwn = own.has(i);
+        const classes = ["poll-option"];
+        if (isOwn) classes.push("is-own");
+        const bar = showResults ? `<span class="poll-bar" style="width:${pct}%"></span>` : "";
+        const pctLabel = showResults ? `<span class="poll-option-pct">${pct}%</span>` : "";
+        const aria = escapeHtml(t("timeline.poll.optionAria", { title: opt && opt.title != null ? String(opt.title) : "" }));
+        if (canVote && multiple) {
+          return `<button type="button" class="${classes.join(" ")}" data-act="poll-toggle" data-choice="${i}" aria-pressed="false" aria-label="${aria}"><span class="poll-option-title">${title}</span>${pctLabel}${bar}</button>`;
+        }
+        if (canVote) {
+          return `<button type="button" class="${classes.join(" ")}" data-act="poll-vote" data-choice="${i}" aria-label="${aria}"><span class="poll-option-title">${title}</span>${pctLabel}${bar}</button>`;
+        }
+        return `<div class="${classes.join(" ")}" role="listitem" aria-label="${aria}"><span class="poll-option-title">${title}</span>${pctLabel}${bar}</div>`;
+      })
+      .join("");
+    const voters = poll.voters_count != null ? Number(poll.voters_count) : null;
+    const countLabel =
+      multiple && Number.isFinite(voters) && voters >= 0
+        ? t("timeline.poll.voters", { count: voters })
+        : t("timeline.poll.votes", { count: total });
+    let expiry = "";
+    if (closed) {
+      expiry = t("timeline.poll.ended");
+    } else if (poll.expires_at) {
+      const rel = Core.relativeFutureLabel ? Core.relativeFutureLabel(poll.expires_at) : "";
+      expiry = rel ? t("timeline.poll.endsIn", { rel }) : "";
+    }
+    const hints = [];
+    if (multiple) hints.push(`<span class="poll-hint">${escapeHtml(t("timeline.poll.multiple"))}</span>`);
+    if (voted && !closed) hints.push(`<span>${escapeHtml(t("timeline.poll.voted"))}</span>`);
+    if (expiry) hints.push(`<span>${escapeHtml(expiry)}</span>`);
+    hints.push(`<span>${escapeHtml(countLabel)}</span>`);
+    const submit =
+      canVote && multiple
+        ? `<button type="button" class="poll-submit" data-act="poll-submit" disabled>${escapeHtml(t("timeline.poll.vote"))}</button>`
+        : "";
+    return `<div class="poll" data-poll-id="${escapeHtml(poll.id)}" data-status-id="${escapeHtml(status.id)}" data-multiple="${multiple ? "1" : "0"}"${hidden} role="group">
+      <div class="poll-options"${showResults ? ' role="list"' : ""}>${optionsHtml}</div>
+      ${submit}
+      <div class="poll-meta">${hints.join("")}</div>
+    </div>`;
+  }
+
   function statusHtml(status, opts = {}) {
     const boosted = status.reblog ? status : null;
     const s = status.reblog || status;
@@ -1185,7 +1246,7 @@
     return `<article class="status${extraClass}" data-id="${escapeHtml(s.id)}" data-acct="${escapeHtml(s.account.id)}">
       ${boostLine}
       <div class="status-head">${accountLine(s.account)}</div>
-      ${cw}${body}${mediaBlock(s)}
+      ${cw}${body}${pollBlock(s, opts)}${mediaBlock(s)}
       ${opts.hideActions ? "" : `<div class="actions">
         <button type="button" data-act="reply">↩ ${s.replies_count || 0}</button>
         <button type="button" data-act="boost" class="${s.reblogged ? "on-boost" : ""}">↻ ${s.reblogs_count || 0}</button>
@@ -1548,6 +1609,20 @@
     if (typeof payload !== "string" || !payload) return payload;
     if (event === "delete") return payload;
     try { return JSON.parse(payload); } catch { return payload; }
+  }
+
+
+  function ensurePostedOnTimelines(status) {
+    const s = unwrapStatus(status);
+    if (!s || !s.id || status && status.queued) return;
+    ingestStatus("home", s);
+    const vis = s.visibility || "public";
+    if (vis === "public" || vis === "unlisted") {
+      ingestStatus("local", s);
+    }
+    if (vis === "public") {
+      ingestStatus("federated", s);
+    }
   }
 
   function ingestStatus(name, status) {
@@ -2386,6 +2461,60 @@
     closeThread();
   }
 
+
+  async function applyPollToStatus(statusId, poll) {
+    if (!statusId || !poll) return;
+    const local = findLocalStatus(statusId);
+    if (local) {
+      replaceStatusEverywhere(Object.assign({}, unwrapStatus(local), { poll }));
+      return;
+    }
+    try {
+      const s = unwrapStatus(await api("/api/v1/statuses/" + encodeURIComponent(statusId)));
+      if (s) replaceStatusEverywhere(Object.assign({}, s, { poll: poll || s.poll }));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function submitPollVote(article, btn, act) {
+    const pollEl = (btn && btn.closest(".poll")) || (article && article.querySelector(".poll"));
+    if (!pollEl || !article) return;
+    const pollId = pollEl.getAttribute("data-poll-id");
+    const statusId = pollEl.getAttribute("data-status-id") || article.getAttribute("data-id");
+    if (!pollId || !statusId) return;
+    let choices = [];
+    if (act === "poll-vote") {
+      const choice = Number(btn.getAttribute("data-choice"));
+      if (!Number.isInteger(choice) || choice < 0) return;
+      choices = [choice];
+    } else {
+      choices = [...pollEl.querySelectorAll(".poll-option.is-selected")].map((el) => Number(el.getAttribute("data-choice")))
+        .filter((n) => Number.isInteger(n) && n >= 0);
+    }
+    if (!choices.length) return;
+    const controls = pollEl.querySelectorAll("button");
+    controls.forEach((el) => {
+      el.disabled = true;
+    });
+    try {
+      const poll = await api("/api/v1/polls/" + encodeURIComponent(pollId) + "/votes", {
+        method: "POST",
+        body: { choices },
+      });
+      await applyPollToStatus(statusId, poll);
+    } catch (err) {
+      controls.forEach((el) => {
+        el.disabled = false;
+      });
+      const submit = pollEl.querySelector('[data-act="poll-submit"]');
+      if (submit) {
+        submit.disabled = pollEl.querySelectorAll(".poll-option.is-selected").length === 0;
+      }
+      alert(err.message);
+    }
+  }
+
   async function actOnStatus(id, act, btn) {
     try {
       if (act === "fav") {
@@ -2781,12 +2910,33 @@
       if (!article) return;
       if (act === "cw") {
         const content = article.querySelector(".content");
-        content.hidden = !content.hidden;
-        btn.textContent = content.hidden ? t("timeline.cwShow") : t("timeline.cwHide");
+        const nextHidden = !content.hidden;
+        content.hidden = nextHidden;
+        article.querySelectorAll(".poll").forEach((el) => {
+          el.hidden = nextHidden;
+        });
+        btn.textContent = nextHidden ? t("timeline.cwShow") : t("timeline.cwHide");
         return;
       }
       if (act === "open") {
         openProfile(article.getAttribute("data-acct"));
+        return;
+      }
+      if (act === "poll-toggle") {
+        if (btn.disabled) return;
+        const on = !btn.classList.contains("is-selected");
+        btn.classList.toggle("is-selected", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+        const pollEl = btn.closest(".poll");
+        const submit = pollEl && pollEl.querySelector('[data-act="poll-submit"]');
+        if (submit) {
+          const n = pollEl.querySelectorAll(".poll-option.is-selected").length;
+          submit.disabled = n === 0;
+        }
+        return;
+      }
+      if (act === "poll-vote" || act === "poll-submit") {
+        submitPollVote(article, btn, act);
         return;
       }
       actOnStatus(article.getAttribute("data-id"), act, btn);
@@ -3177,9 +3327,12 @@
       if (result && result.queued) {
         openOutbox();
       } else {
-        loadTimeline("home", true);
-        loadTimeline("local", true);
-        loadTimeline("federated", true);
+        await Promise.all([
+          loadTimeline("home", true),
+          loadTimeline("local", true),
+          loadTimeline("federated", true),
+        ]);
+        ensurePostedOnTimelines(result);
       }
     } catch (err) {
       $("compose-status").textContent = err.message;
@@ -3346,9 +3499,12 @@
         openOutbox();
       } else {
         await openThread(rootId);
-        loadTimeline("home", true);
-        loadTimeline("local", true);
-        loadTimeline("federated", true);
+        await Promise.all([
+          loadTimeline("home", true),
+          loadTimeline("local", true),
+          loadTimeline("federated", true),
+        ]);
+        ensurePostedOnTimelines(result);
       }
     } catch (err) {
       $("thread-reply-status").textContent = err.message;
