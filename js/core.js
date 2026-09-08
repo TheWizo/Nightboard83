@@ -231,6 +231,50 @@
     return doc.body.firstChild.innerHTML;
   }
 
+
+  function pollPercent(votes, total) {
+    const v = Number(votes);
+    const t = Number(total);
+    if (!Number.isFinite(v) || !Number.isFinite(t) || t <= 0 || v <= 0) return 0;
+    return Math.round((100 * v) / t);
+  }
+
+  function pollTotalVotes(poll) {
+    if (!poll || typeof poll !== "object") return 0;
+    const n = Number(poll.votes_count);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+
+  function pollIsClosed(poll, nowMs) {
+    if (!poll || typeof poll !== "object") return true;
+    if (poll.expired) return true;
+    if (!poll.expires_at) return false;
+    const t = new Date(poll.expires_at).getTime();
+    if (!Number.isFinite(t)) return false;
+    const now = nowMs == null ? Date.now() : Number(nowMs);
+    return Number.isFinite(now) && now >= t;
+  }
+
+  function pollOwnVotes(poll) {
+    if (!poll || !Array.isArray(poll.own_votes)) return [];
+    return poll.own_votes
+      .map((n) => Number(n))
+      .filter((n) => Number.isInteger(n) && n >= 0);
+  }
+
+  /** Compact remaining-time label for future ISO timestamps (mirrors relativeAgeLabel steps). */
+  function relativeFutureLabel(iso, nowMs) {
+    const now = nowMs == null ? Date.now() : Number(nowMs);
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t) || !Number.isFinite(now)) return "";
+    const d = Math.max(0, (t - now) / 1000);
+    if (d < 60) return Math.floor(d) + "s";
+    if (d < 5 * 60) return Math.floor(d / 60) + "m";
+    if (d < 3600) return Math.floor(d / (5 * 60)) * 5 + "m";
+    if (d < 86400) return Math.floor(d / 3600) + "h";
+    return Math.floor(d / 86400) + "d";
+  }
+
   const api = {
     instanceHost,
     parseInstanceInput,
@@ -242,6 +286,11 @@
     isMissingStatus,
     idNewer,
     relativeAgeLabel,
+    relativeFutureLabel,
+    pollPercent,
+    pollTotalVotes,
+    pollIsClosed,
+    pollOwnVotes,
     appBaseUrl,
     tagNameFromHref,
     mentionAcctFromHref,

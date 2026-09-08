@@ -844,6 +844,81 @@ button.acct-open-inline:hover {
   margin: 8px 0 0 50px;
 }
 .cw button { margin-top: 6px; }
+
+.poll {
+  margin: 8px 0 0 50px;
+  border: 1px solid var(--line);
+  background: #191621aa;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+.poll-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: #241b2fcc;
+  color: var(--fg);
+  padding: 6px 8px;
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+.poll-option:hover { border-color: var(--cyan); }
+.poll-option:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.poll-option.is-selected { border-color: var(--pink); box-shadow: inset 0 0 0 1px var(--pink); }
+.poll-option.is-own { border-color: var(--cyan); }
+.poll-option-title {
+  position: relative;
+  z-index: 1;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+.poll-option-pct {
+  position: relative;
+  z-index: 1;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.poll-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #03edf933, #ff7edb22);
+  pointer-events: none;
+}
+.poll-option.is-own .poll-bar {
+  background: linear-gradient(90deg, #03edf955, #72f1b833);
+}
+.poll-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.3;
+}
+.poll-meta .poll-hint { color: var(--cyan); }
+.poll-submit {
+  justify-self: start;
+  border: 1px solid var(--pink);
+  background: transparent;
+  color: var(--pink);
+  padding: 4px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.poll-submit:hover { background: #ff7edb22; }
+.poll-submit:disabled { opacity: 0.45; cursor: default; }
+
 .media {
   margin: 8px 0 0 50px;
   display: grid;
@@ -1419,7 +1494,7 @@ dialog[open] { display: flex; flex-direction: column; }
   .col { border-right: 0; border-bottom: 1px solid var(--line); }
   .col.is-last-visible { border-right: 0; border-bottom: 0; }
   .columns.is-expanded .col.is-expanded { border-bottom: 0; }
-  .content, .cw, .media, .actions { margin-left: 0; }
+  .content, .cw, .media, .poll, .actions { margin-left: 0; }
 }
 @media (max-width: 600px) {
   .login-wordmark { font-size: 24px; padding-right: 2.3em; }
