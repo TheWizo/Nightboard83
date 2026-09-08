@@ -68,8 +68,15 @@
     const origin = loc.origin || "";
     let path = String(loc.pathname || "/");
     if (/\/index\.html$/i.test(path)) path = path.replace(/index\.html$/i, "");
-    if (!path.endsWith("/")) path = path.replace(/\/[^/]*$/, "/");
+    // Directory paths (no "." in final segment) must keep the segment and gain a
+    // trailing slash. Only strip a final segment when it looks like a file name.
+    if (!path.endsWith("/")) {
+      const last = path.split("/").pop() || "";
+      if (last.includes(".")) path = path.slice(0, path.length - last.length);
+      else path += "/";
+    }
     if (!path.startsWith("/")) path = "/" + path;
+    if (path !== "/" && !path.endsWith("/")) path += "/";
     return origin + path;
   }
 

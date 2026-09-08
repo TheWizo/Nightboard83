@@ -90,6 +90,12 @@ test("appBaseUrl strips index.html", () => {
   assert.equal(core.appBaseUrl({ origin: "https://nb.test", pathname: "/" }), "https://nb.test/");
 });
 
+test("appBaseUrl keeps subdirectory without trailing slash", () => {
+  assert.equal(core.appBaseUrl({ origin: "https://nb.test", pathname: "/Nightboard83" }), "https://nb.test/Nightboard83/");
+  assert.equal(core.appBaseUrl({ origin: "https://nb.test", pathname: "/Nightboard83/" }), "https://nb.test/Nightboard83/");
+  assert.equal(core.appBaseUrl({ origin: "https://nb.test", pathname: "/app" }), "https://nb.test/app/");
+});
+
 test("flushPlan create", () => {
   assert.deepEqual(core.flushPlan({ action: "create", payload: { status: "hi" } }, true), { method: "POST" });
 });
