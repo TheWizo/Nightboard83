@@ -2,7 +2,7 @@
 
 Nightboard '83 is a static web client for [Mastodon](https://docs.joinmastodon.org/client/intro/)-compatible servers, written with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, CSS, and JavaScript files with no build step and no backend of its own. The interface is German, in an 1980s CRT / neon style, and can be installed as a Progressive Web App.
 
-Offline is the core idea: last timelines and media stay cached, compose and reply go to an outbox that flushes when the connection returns, drafts stay local, and the connection status next to the hostname is honest (connected / carrier lost / not connected). These offline pieces are core, not an add-on.
+Offline is the core idea: last timelines and media stay cached, compose and reply go to an outbox that flushes when the connection returns, drafts stay local, and the connection status next to the hostname is honest (verbunden / carrier lost / nicht verbunden). These offline pieces are core, not an add-on.
 
 The client talks to the instance you configure (or type in at login) using OAuth 2.0 with PKCE. After you authorize, the instance redirects back to Nightboard. A paste-the-code fallback remains for stubborn servers.
 
@@ -12,13 +12,13 @@ Nightboard '83 appears under the **BlackNeon** label (marketing / About only —
 
 ## Features
 
-- Three independently scrollable columns: **Home**, **Local**, and **Notifications**
+- Four independently scrollable columns: **Home**, **Local**, **Federated** (public timeline), and **Notifications**
 - Collapse columns to header icons; restore by clicking the icon
 - Search for accounts, hashtags, and posts
 - Offline cache (last timelines and media) via PouchDB / IndexedDB
 - Outbox: compose or reply while offline, send automatically when the connection returns
 - Drafts stored locally; a drafts icon appears in the header when any exist
-- Connection status next to the instance hostname (connected / carrier lost / not connected)
+- Connection status next to the instance hostname (verbunden / carrier lost / nicht verbunden)
 - PWA with chrome 3D **NB '83** icons
 - Threads with replies, boosts, favourites, and a reply composer
 - Profiles: follow / unfollow, mute, block

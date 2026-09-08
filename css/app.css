@@ -586,12 +586,16 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 .dock-icon.is-home { color: #ffd6f4; }
 .dock-icon.is-local { color: #d6fbff; }
+.dock-icon.is-federated { color: #fff3c2; }
 .dock-icon.is-notes { color: #e4ffe8; }
 .dock-icon.has-unread.is-home {
   text-shadow: 0 0 4px #fff, 0 0 8px #ff7edb, 0 0 16px #ff7edb, 0 0 28px #ff7edbee;
 }
 .dock-icon.has-unread.is-local {
   text-shadow: 0 0 4px #fff, 0 0 8px #03edf9, 0 0 16px #03edf9, 0 0 28px #03edf9ee;
+}
+.dock-icon.has-unread.is-federated {
+  text-shadow: 0 0 4px #fff, 0 0 8px #fede5d, 0 0 16px #fede5d, 0 0 28px #fede5dee;
 }
 .dock-icon.has-unread.is-notes {
   text-shadow: 0 0 4px #fff, 0 0 8px #72f1b8, 0 0 16px #72f1b8, 0 0 28px #72f1b8ee;
@@ -609,6 +613,13 @@ button:disabled { opacity: 0.5; cursor: default; }
     drop-shadow(0 0 5px #9af7ff)
     drop-shadow(0 0 12px #03edf9)
     drop-shadow(0 0 22px #03edf9);
+}
+.dock-icon.has-unread.is-federated svg {
+  filter:
+    drop-shadow(0 0 2px #fff)
+    drop-shadow(0 0 5px #ffe79a)
+    drop-shadow(0 0 12px #fede5d)
+    drop-shadow(0 0 22px #fede5d);
 }
 .dock-icon.has-unread.is-notes svg {
   filter:
@@ -719,6 +730,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 .col-head.home h2 { color: var(--pink); text-shadow: 1px 0 0 #03edf955, 0 0 8px #ff7edb55; }
 .col-head.local h2 { color: var(--cyan); text-shadow: -1px 0 0 #ff7edb55, 0 0 8px #03edf955; }
+.col-head.federated h2 { color: var(--yellow); text-shadow: 1px 0 0 #ff7edb55, 0 0 8px #fede5d55; }
 .col-head.notes h2 { color: var(--mint); text-shadow: 1px 0 0 #03edf955, 0 0 8px #72f1b855; }
 .col-body {
   overflow-x: hidden;

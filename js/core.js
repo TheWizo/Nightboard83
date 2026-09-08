@@ -6,18 +6,51 @@
     try { return new URL(url).host; } catch { return ""; }
   }
 
-  function normalizeInstance(raw) {
+  function parseInstanceInput(raw) {
     let v = String(raw || "").trim();
-    if (!v) return "";
-    v = v.replace(/\/+$/, "");
-    if (!/^https?:\/\//i.test(v)) v = "https://" + v;
-    try {
-      const u = new URL(v);
-      if (!u.hostname) return "";
-      return u.origin;
-    } catch {
-      return "";
+    if (!v) return { origin: "", error: "Bitte eine gültige Instanz eintragen." };
+    if (/^https?:$/i.test(v) || /^https?:\/\/$/i.test(v)) {
+      return { origin: "", error: "Unvollständige URL — Hostname fehlt (Schema allein reicht nicht)." };
     }
+    if (/^[a-z][a-z0-9+.-]*:/i.test(v) && !/^https?:\/\//i.test(v)) {
+      return { origin: "", error: "Ungültiges URL-Schema — bitte http:// oder https:// nutzen." };
+    }
+    const candidate = (/^https?:\/\//i.test(v) ? v : "https://" + v).replace(/\/+$/, "");
+    let u;
+    try {
+      u = new URL(candidate);
+    } catch {
+      return { origin: "", error: "Ungültige Instanz-URL (Format)." };
+    }
+    if (!u.hostname) {
+      return { origin: "", error: "Ungültige Instanz-URL — Hostname fehlt." };
+    }
+    const host = u.hostname;
+    const isLocalhost = host === "localhost";
+    const isIpv4 = /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
+    const isIpv6 = host.includes(":");
+    if (!isLocalhost && !isIpv4 && !isIpv6 && !host.includes(".")) {
+      return { origin: "", error: "Ungültiger Hostname — bitte Domain (mit Punkt) oder IP angeben." };
+    }
+    return { origin: u.origin, error: "" };
+  }
+
+  function normalizeInstance(raw) {
+    return parseInstanceInput(raw).origin || "";
+  }
+
+  function friendlyConnectError(err) {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return "Offline — keine Netzverbindung. Anmeldung und App-Registrierung sind nicht möglich.";
+    }
+    if (isNetworkError(err)) {
+      return "Instanz nicht erreichbar (Netzwerk, DNS oder blockierte Anfrage).";
+    }
+    const msg = String((err && err.message) || err || "").trim();
+    if (!msg || /failed to fetch|networkerror|load failed/i.test(msg)) {
+      return "Instanz nicht erreichbar (Netzwerk, DNS oder blockierte Anfrage).";
+    }
+    return msg;
   }
 
   function pollIntervalMs(cfg) {
@@ -188,7 +221,9 @@
 
   const api = {
     instanceHost,
+    parseInstanceInput,
     normalizeInstance,
+    friendlyConnectError,
     pollIntervalMs,
     maxCharsFromInstance,
     isNetworkError,

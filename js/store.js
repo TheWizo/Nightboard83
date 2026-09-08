@@ -115,7 +115,7 @@ window.NightDB = (() => {
       return doc.data || null;
     } catch {
       try {
-        for (const name of ["home", "local"]) {
+        for (const name of ["home", "local", "federated"]) {
           const doc = await cache.get("item:" + name + ":" + id);
           if (doc && doc.data) return doc.data.reblog || doc.data;
         }
@@ -128,7 +128,7 @@ window.NightDB = (() => {
 
   async function removeStatus(id) {
     if (!cache || !id) return;
-    const keys = ["status:" + id, "item:home:" + id, "item:local:" + id];
+    const keys = ["status:" + id, "item:home:" + id, "item:local:" + id, "item:federated:" + id];
     for (const key of keys) {
       try {
         const doc = await cache.get(key);
@@ -137,7 +137,7 @@ window.NightDB = (() => {
         /* ignore */
       }
     }
-    for (const name of ["home", "local", "notifications"]) {
+    for (const name of ["home", "local", "federated", "notifications"]) {
       try {
         const idx = await cache.get("index:" + name);
         if (!idx || !Array.isArray(idx.ids)) continue;

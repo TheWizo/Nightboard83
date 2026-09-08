@@ -7,7 +7,7 @@
   const Core = window.NBCore || {};
   const SCOPES = "read write follow";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
-  const COLS = ["home", "local", "notifications"];
+  const COLS = ["home", "local", "federated", "notifications"];
   const TIMELINE_CAP = 300;
   const DEFAULT_MAX_CHARS = 5000;
   const LS = {
@@ -30,6 +30,18 @@
     return Core.normalizeInstance ? Core.normalizeInstance(raw) : "";
   }
 
+  function parseInstanceInput(raw) {
+    if (Core.parseInstanceInput) return Core.parseInstanceInput(raw);
+    const origin = normalizeInstance(raw);
+    return origin
+      ? { origin, error: "" }
+      : { origin: "", error: "Bitte eine gültige Instanz eintragen." };
+  }
+
+  function friendlyConnectError(err) {
+    return Core.friendlyConnectError ? Core.friendlyConnectError(err) : String((err && err.message) || err || "Fehler");
+  }
+
   function appBaseUrl() {
     return Core.appBaseUrl ? Core.appBaseUrl(location) : (location.origin + "/");
   }
@@ -49,12 +61,12 @@
   }
 
   function applyInstanceFromInput() {
-    const url = normalizeInstance($("instance-input") ? $("instance-input").value : "");
-    if (!url) return "";
+    const parsed = parseInstanceInput($("instance-input") ? $("instance-input").value : "");
+    if (!parsed.origin) return "";
     const prev = localStorage.getItem(LS.instance) || "";
-    if (prev && prev !== url) localStorage.removeItem(LS.app);
-    setInstance(url, true);
-    return url;
+    if (prev && prev !== parsed.origin) localStorage.removeItem(LS.app);
+    setInstance(parsed.origin, true);
+    return parsed.origin;
   }
 
   async function loadConfig() {
@@ -155,11 +167,12 @@
     timelines: {
       home: { items: [], maxId: null, loading: false, done: false },
       local: { items: [], maxId: null, loading: false, done: false },
+      federated: { items: [], maxId: null, loading: false, done: false },
       notifications: { items: [], maxId: null, loading: false, done: false },
     },
     replyTo: null,
     expandedCol: null,
-    collapsed: { home: true, local: true, notifications: true },
+    collapsed: { home: true, local: true, federated: true, notifications: true },
     colBusy: false,
     threadRootId: null,
     threadReplyTo: null,
@@ -176,8 +189,8 @@
     editingMediaIds: [],
     composeClosing: false,
     carrierWanted: true,
-    unread: { home: false, local: false, notifications: false },
-    seen: { home: "", local: "", notifications: "" },
+    unread: { home: false, local: false, federated: false, notifications: false },
+    seen: { home: "", local: "", federated: "", notifications: "" },
     maxChars: DEFAULT_MAX_CHARS,
     tagView: null,
     profileView: null,
@@ -265,7 +278,7 @@
       state.carrierTimer = null;
     }
     state.conn = "offline";
-    paintConn("is-offline", "not connected");
+    paintConn("is-offline", "nicht verbunden");
   }
 
   function pickUp() {
@@ -291,7 +304,7 @@
     state.carrierTimer = null;
     if (state.conn !== "carrier-lost") return;
     state.conn = "offline";
-    paintConn("is-offline", "not connected");
+    paintConn("is-offline", "nicht verbunden");
   }
 
   function setConn(next) {
@@ -310,7 +323,7 @@
         state.carrierTimer = null;
       }
       state.conn = "online";
-      paintConn("is-connected", "connected");
+      paintConn("is-connected", "verbunden");
       tryFlushOutbox();
       if (state.token && state.carrierWanted) startStreaming();
       return;
@@ -321,7 +334,7 @@
         state.carrierTimer = null;
       }
       state.conn = "offline";
-      paintConn("is-offline", "not connected");
+      paintConn("is-offline", "nicht verbunden");
       stopStreaming();
     }
   }
@@ -330,7 +343,7 @@
     if (!state.carrierWanted) {
       if (state.conn !== "offline") {
         state.conn = "offline";
-        paintConn("is-offline", "not connected");
+        paintConn("is-offline", "nicht verbunden");
       }
       return;
     }
@@ -806,6 +819,7 @@
       if (sent) {
         loadTimeline("home", true);
         loadTimeline("local", true);
+        loadTimeline("federated", true);
       }
     }
   }
@@ -909,13 +923,25 @@
         scopes: SCOPES,
         website: appBaseUrl() || location.origin,
       });
-      const res = await fetch(INSTANCE + "/api/v1/apps", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-        body,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "App-Registrierung fehlgeschlagen");
+      let res;
+      try {
+        res = await fetch(INSTANCE + "/api/v1/apps", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+          body,
+        });
+      } catch (err) {
+        const e = err instanceof Error ? err : new Error(String(err || "Failed to fetch"));
+        e.network = true;
+        throw e;
+      }
+      const textBody = await res.text();
+      let data = null;
+      try { data = textBody ? JSON.parse(textBody) : null; } catch {
+        throw new Error("Keine Mastodon-/GoToSocial-API unter dieser Adresse.");
+      }
+      if (!res.ok) throw new Error((data && data.error) || "App-Registrierung fehlgeschlagen");
+      if (!data || !data.client_id) throw new Error("Keine Mastodon-/GoToSocial-API unter dieser Adresse.");
       return data;
     };
     let app;
@@ -956,6 +982,15 @@
   async function startOAuth() {
 
     try {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        $("login-status").textContent = "Offline — keine Netzverbindung. Anmeldung ist nicht möglich.";
+        return;
+      }
+      const parsed = parseInstanceInput($("instance-input") ? $("instance-input").value : "");
+      if (!parsed.origin) {
+        $("login-status").textContent = parsed.error || "Bitte eine gültige Instanz eintragen.";
+        return;
+      }
       if (!applyInstanceFromInput()) {
         $("login-status").textContent = "Bitte eine gültige Instanz eintragen.";
         return;
@@ -963,6 +998,10 @@
       $("login-status").textContent = "App wird registriert…";
       const redirect = appBaseUrl();
       const app = await ensureApp(redirect);
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        $("login-status").textContent = "Offline — keine Netzverbindung. Anmeldung ist nicht möglich.";
+        return;
+      }
       const pkce = await makePkce();
       sessionStorage.setItem(LS.pkce, pkce.verifier);
       const params = new URLSearchParams({
@@ -976,7 +1015,7 @@
       $("login-status").textContent = "Weiterleitung zur Freigabe…";
       location.href = INSTANCE + "/oauth/authorize?" + params.toString();
     } catch (err) {
-      $("login-status").textContent = err.message;
+      $("login-status").textContent = friendlyConnectError(err);
     }
   }
 
@@ -1019,7 +1058,7 @@
       $("login-status").textContent = "Verbunden.";
       bootApp();
     } catch (err) {
-      $("login-status").textContent = err.message;
+      $("login-status").textContent = friendlyConnectError(err);
     }
   }
 
@@ -1187,7 +1226,7 @@
   function renderNotifications(el, items) {
     const visible = (items || []).filter((n) => notifMatchesFilter(n, state.notifFilter));
     if (!visible.length) {
-      el.innerHTML = `<div class="empty">Keine Notifications.</div>`;
+      el.innerHTML = `<div class="empty">Keine Benachrichtigungen.</div>`;
       return;
     }
     el.innerHTML = visible.map((n) => noticeHtml(n)).join("");
@@ -1340,6 +1379,7 @@
     let path;
     if (name === "home") path = "/api/v1/timelines/home?limit=30";
     else if (name === "local") path = "/api/v1/timelines/public?local=true&limit=30";
+    else if (name === "federated") path = "/api/v1/timelines/public?limit=30";
     else {
       path = "/api/v1/notifications?limit=30";
       notifExcludeTypes(state.notifFilter).forEach((t) => {
@@ -1427,7 +1467,7 @@
   async function pollNewPosts() {
     if (!state.carrierWanted || !state.token || detailWindowOpen() || document.hidden) return;
     if (state.usingStream) return;
-    await Promise.all([fetchNewer("home"), fetchNewer("local"), fetchNewer("notifications")]);
+    await Promise.all([fetchNewer("home"), fetchNewer("local"), fetchNewer("federated"), fetchNewer("notifications")]);
   }
 
   function startPolling() {
@@ -1518,7 +1558,8 @@
       return;
     }
     if (event === "update" && data) {
-      ingestStatus(source === "local" ? "local" : "home", data);
+      const col = source === "local" || source === "federated" || source === "home" ? source : "home";
+      ingestStatus(col, data);
     }
   }
 
@@ -1568,6 +1609,7 @@
     const sockets = [
       openStream("user", "home"),
       openStream("public:local", "local"),
+      openStream("public", "federated"),
     ].filter(Boolean);
     state.streams = sockets;
     if (!sockets.length) return;
@@ -1610,7 +1652,9 @@
   }
 
   function allCollapsed() {
-    return { home: true, local: true, notifications: true };
+    const out = {};
+    COLS.forEach((id) => { out[id] = true; });
+    return out;
   }
 
   function readCollapsed() {
@@ -1619,13 +1663,19 @@
       localStorage.setItem(LS.collapsed, JSON.stringify(COLS));
       return allCollapsed();
     }
-    const out = { home: false, local: false, notifications: false };
+    const out = {};
+    COLS.forEach((id) => { out[id] = false; });
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         parsed.forEach((id) => {
           if (id in out) out[id] = true;
         });
+        // Prefs from before federated existed: keep new column collapsed.
+        if (!parsed.includes("federated") && "federated" in out) {
+          const legacy = parsed.every((id) => id === "home" || id === "local" || id === "notifications");
+          if (legacy) out.federated = true;
+        }
         return out;
       }
     } catch { /* default all minimized */ }
@@ -1637,11 +1687,15 @@
   }
 
   function emptySeen() {
-    return { home: "", local: "", notifications: "" };
+    const out = {};
+    COLS.forEach((id) => { out[id] = ""; });
+    return out;
   }
 
   function emptyUnread() {
-    return { home: false, local: false, notifications: false };
+    const out = {};
+    COLS.forEach((id) => { out[id] = false; });
+    return out;
   }
 
   function loadSeenState() {
@@ -1656,12 +1710,14 @@
       state.seen = {
         home: String(data.home || ""),
         local: String(data.local || ""),
+        federated: String(data.federated || ""),
         notifications: String(data.notifications || ""),
       };
       const u = data.unread || {};
       state.unread = {
         home: Boolean(u.home),
         local: Boolean(u.local),
+        federated: Boolean(u.federated),
         notifications: Boolean(u.notifications),
       };
     } catch {
@@ -1677,10 +1733,12 @@
       instance: INSTANCE,
       home: state.seen.home || "",
       local: state.seen.local || "",
+      federated: state.seen.federated || "",
       notifications: state.seen.notifications || "",
       unread: {
         home: Boolean(state.unread.home),
         local: Boolean(state.unread.local),
+        federated: Boolean(state.unread.federated),
         notifications: Boolean(state.unread.notifications),
       },
     }));
@@ -3082,6 +3140,7 @@
       } else {
         loadTimeline("home", true);
         loadTimeline("local", true);
+        loadTimeline("federated", true);
       }
     } catch (err) {
       $("compose-status").textContent = err.message;
@@ -3099,6 +3158,7 @@
     applyMaxChars(state.maxChars);
     loadTimeline("home", true);
     loadTimeline("local", true);
+    loadTimeline("federated", true);
     loadTimeline("notifications", true);
     if (state.carrierWanted) startLiveUpdates();
     refreshOutboxBadge();
@@ -3249,6 +3309,7 @@
         await openThread(rootId);
         loadTimeline("home", true);
         loadTimeline("local", true);
+        loadTimeline("federated", true);
       }
     } catch (err) {
       $("thread-reply-status").textContent = err.message;
@@ -3262,6 +3323,7 @@
 
   bindColumnScroll("home");
   bindColumnScroll("local");
+  bindColumnScroll("federated");
   bindColumnScroll("notifications");
 
   function startSwUpdates() {

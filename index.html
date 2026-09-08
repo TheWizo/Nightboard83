@@ -59,6 +59,23 @@
           </svg>
           <span>Local</span>
         </button>
+        <button type="button" class="dock-icon is-federated" data-restore="federated" hidden>
+          <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
+            <rect x="6" y="1" width="4" height="2" fill="currentColor"/>
+            <rect x="3" y="3" width="2" height="2" fill="currentColor"/>
+            <rect x="11" y="3" width="2" height="2" fill="currentColor"/>
+            <rect x="1" y="5" width="2" height="6" fill="currentColor"/>
+            <rect x="13" y="5" width="2" height="6" fill="currentColor"/>
+            <rect x="3" y="7" width="10" height="2" fill="currentColor"/>
+            <rect x="7" y="3" width="2" height="10" fill="currentColor"/>
+            <rect x="3" y="11" width="2" height="2" fill="currentColor"/>
+            <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
+            <rect x="5" y="13" width="6" height="2" fill="currentColor"/>
+            <rect x="0" y="7" width="2" height="2" fill="currentColor"/>
+            <rect x="14" y="7" width="2" height="2" fill="currentColor"/>
+          </svg>
+          <span>Föd</span>
+        </button>
         <button type="button" class="dock-icon is-notes" data-restore="notifications" hidden>
           <svg viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">
             <rect x="3" y="1" width="10" height="2" fill="currentColor"/>
@@ -134,7 +151,7 @@
       <div class="login-stack">
       <h1 class="login-wordmark"><span class="login-name">Nightboard</span><span class="login-year">'83</span></h1>
       <div class="login-card">
-        <h2>Connect to the grid</h2>
+        <h2>Mit dem Grid verbinden</h2>
         <label>
           Instanz
           <input id="instance-input" type="text" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="mastodon.example" />
@@ -146,7 +163,7 @@
         <details class="oauth-fallback">
           <summary>Fallback: Code einfügen</summary>
           <label>
-            Authorization Code
+            Autorisierungscode
             <input id="oauth-code" type="text" autocomplete="off" placeholder="Code aus dem Browser-Tab einfügen" />
           </label>
           <div class="row">
@@ -195,25 +212,41 @@
         </header>
         <div class="col-body" id="local-body"></div>
       </section>
-      <section class="col" data-col="notifications">
-        <header class="col-head notes">
-          <h2>Notifications</h2>
+      <section class="col" data-col="federated">
+        <header class="col-head federated">
+          <h2>Föderiert</h2>
           <div class="col-head-actions">
-            <select id="notif-filter" title="Filter" aria-label="Notification-Filter">
-              <option value="all">Alle</option>
-              <option value="mention">Mentions</option>
-              <option value="follow">Follows</option>
-              <option value="reblog">Boosts</option>
-              <option value="favourite">Favs</option>
-            </select>
-            <button type="button" class="icon-btn" id="notif-clear" title="Alle als gelesen markieren" aria-label="Notifications als gelesen markieren">✓</button>
-            <button type="button" class="icon-btn" data-collapse="notifications" title="Einklappen" aria-label="Notifications einklappen">
+            <button type="button" class="icon-btn" data-collapse="federated" title="Einklappen" aria-label="Föderiert einklappen">
               <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
                 <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
                 <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
               </svg>
             </button>
-            <button type="button" class="icon-btn" data-expand="notifications" title="Vollbild" aria-pressed="false" aria-label="Notifications auf Vollbild">⤢</button>
+            <button type="button" class="icon-btn" data-expand="federated" title="Vollbild" aria-pressed="false" aria-label="Föderiert auf Vollbild">⤢</button>
+            <button type="button" class="icon-btn" data-refresh="federated" title="Aktualisieren">↻</button>
+          </div>
+        </header>
+        <div class="col-body" id="federated-body"></div>
+      </section>
+      <section class="col" data-col="notifications">
+        <header class="col-head notes">
+          <h2>Benachrichtigungen</h2>
+          <div class="col-head-actions">
+            <select id="notif-filter" title="Filter" aria-label="Benachrichtigungs-Filter">
+              <option value="all">Alle</option>
+              <option value="mention">Erwähnungen</option>
+              <option value="follow">Follows</option>
+              <option value="reblog">Boosts</option>
+              <option value="favourite">Favs</option>
+            </select>
+            <button type="button" class="icon-btn" id="notif-clear" title="Alle als gelesen markieren" aria-label="Benachrichtigungen als gelesen markieren">✓</button>
+            <button type="button" class="icon-btn" data-collapse="notifications" title="Einklappen" aria-label="Benachrichtigungen einklappen">
+              <svg class="collapse-glyph" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
+                <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
+                <rect x="3" y="9" width="6" height="4" fill="currentColor"/>
+              </svg>
+            </button>
+            <button type="button" class="icon-btn" data-expand="notifications" title="Vollbild" aria-pressed="false" aria-label="Benachrichtigungen auf Vollbild">⤢</button>
             <button type="button" class="icon-btn" data-refresh="notifications" title="Aktualisieren">↻</button>
           </div>
         </header>
