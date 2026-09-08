@@ -4,10 +4,15 @@ Nightboard '83 is a static web client for [Mastodon](https://docs.joinmastodon.o
 
 The client talks to the instance you configure (or type in at login) using OAuth 2.0 with PKCE. After you authorize, the instance redirects back to Nightboard. A paste-the-code fallback remains for stubborn servers.
 
+**Homepage:** [https://nightboard83.de](https://nightboard83.de) · **App:** [https://blackneon.net/Nightboard83](https://blackneon.net/Nightboard83)
+
+Nightboard '83 appears under the **BlackNeon** label (marketing / About only — not a publisher). Copyright remains with Ralf Wissing; see `LICENSE`.
+
 ## Features
 
 - Three independently scrollable columns: **Home**, **Local**, and **Notifications**
-- Collapse columns to header icons (Atari TOS-style zoom); restore by clicking the icon
+- Collapse columns to header icons; restore by clicking the icon
+- Search for accounts, hashtags, and posts
 - Threads with replies, boosts, favourites, and a reply composer
 - Profiles: follow / unfollow, mute, block
 - Compose posts with optional content warning, visibility, and image or video attachments
