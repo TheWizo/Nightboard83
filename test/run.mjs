@@ -27,6 +27,21 @@ test("normalizeInstance adds https and strips slash", () => {
   assert.equal(core.normalizeInstance("https://x.test/"), "https://x.test");
   assert.equal(core.normalizeInstance(""), "");
   assert.equal(core.normalizeInstance("not a host"), "");
+  assert.equal(core.normalizeInstance("not-a-url"), "");
+});
+
+test("parseInstanceInput format errors", () => {
+  assert.equal(core.parseInstanceInput("").error.includes("gültige"), true);
+  assert.equal(core.parseInstanceInput("not-a-url").error.includes("Hostname"), true);
+  assert.equal(core.parseInstanceInput("ftp://x.example").error.includes("Schema"), true);
+  assert.equal(core.parseInstanceInput("https://").error.includes("Hostname"), true);
+  assert.equal(core.parseInstanceInput("example.com").origin, "https://example.com");
+  assert.equal(core.parseInstanceInput("http://127.0.0.1:1").origin, "http://127.0.0.1:1");
+});
+
+test("friendlyConnectError maps network", () => {
+  const msg = core.friendlyConnectError({ network: true, message: "Failed to fetch" });
+  assert.equal(/nicht erreichbar|Offline/i.test(msg), true);
 });
 
 test("instanceHost", () => {
