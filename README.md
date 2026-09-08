@@ -118,6 +118,17 @@ All of this lives in the browser, not on your instance:
 Clearing site data logs you out and deletes drafts and queued posts.
 
 
+
+
+## Local post translation (Bergamot)
+
+Posts can be translated **entirely in the browser** with the [Bergamot](https://browser.mt/) WASM engine (Firefox Translations stack). Post text never leaves the device — there is no cloud translation API.
+
+- Engine and worker: `assets/bergamot/` (lazy-loaded on first use)
+- Language models: downloaded on demand from the Bergamot model registry, then cached in the Cache API (`nightboard83-bergamot-models`)
+- A “Translate” control appears only when the post language differs from the UI locale
+- If WebAssembly or Workers are unavailable, the app stays usable and shows `translate.unavailable`
+
 ## UI languages (i18n)
 
 Visible UI strings live in **`i18n/de.json`** and **`i18n/en.json`** (flat JSON, dot-separated keys). German (`de`) is the content source; English is a first pass for review.
@@ -142,3 +153,4 @@ Covers instance parsing, ID comparison, outbox flush decisions, and (if Chromium
 - Application code: **GNU Affero GPL v3 or later**, Copyright 2026 Ralf Wissing — see `LICENSE`
 - Fonts in `fonts/` (Press Start 2P, VT323, Caveat): **SIL Open Font License 1.1** — see `fonts/OFL.txt`
 - PouchDB (`js/pouchdb.min.js`): **Apache License 2.0**
+- Bergamot translator (`assets/bergamot/`): **Mozilla Public License 2.0**
