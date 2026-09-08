@@ -90,6 +90,7 @@
   "timeline.poll.voters.other": "{count} voters",
   "timeline.poll.ended": "Ended",
   "timeline.poll.endsIn": "{rel} left",
+  "timeline.poll.own": "Your poll",
   "timeline.poll.voted": "You voted",
   "timeline.poll.multiple": "Multiple choice",
   "timeline.poll.optionAria": "{title}",

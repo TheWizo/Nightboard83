@@ -171,6 +171,16 @@ test("pollPercent / pollTotalVotes / pollOwnVotes / pollIsClosed", () => {
   assert.equal(core.pollIsClosed({ expires_at: "2020-01-01T00:00:00.000Z" }, Date.parse("2026-01-01T00:00:00.000Z")), true);
 });
 
+test("pollUserVoted ignores GTS own-poll voted quirk", () => {
+  assert.equal(core.pollUserVoted({ voted: true, own_votes: [], votes_count: 0 }), false);
+  assert.equal(core.pollUserVoted({ voted: true, own_votes: [], votes_count: 0, options: [] }), false);
+  assert.equal(core.pollUserVoted({ voted: false, own_votes: [], votes_count: 0 }), false);
+  assert.equal(core.pollUserVoted({ voted: true, own_votes: [1], votes_count: 1 }), true);
+  assert.equal(core.pollUserVoted({ voted: false, own_votes: [0], votes_count: 0 }), true);
+  assert.equal(core.pollUserVoted({ voted: true, own_votes: [], votes_count: 3 }), true);
+  assert.equal(core.pollUserVoted(null), false);
+});
+
 test("relativeFutureLabel steps", () => {
   const now = Date.parse("2026-01-01T00:00:00.000Z");
   const at = (sec) => new Date(now + sec * 1000).toISOString();

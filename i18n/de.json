@@ -90,6 +90,7 @@
   "timeline.poll.voters.other": "{count} Teilnehmer",
   "timeline.poll.ended": "Beendet",
   "timeline.poll.endsIn": "noch {rel}",
+  "timeline.poll.own": "Eigene Umfrage",
   "timeline.poll.voted": "Du hast abgestimmt",
   "timeline.poll.multiple": "Mehrfachauswahl",
   "timeline.poll.optionAria": "{title}",

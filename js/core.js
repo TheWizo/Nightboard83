@@ -262,6 +262,17 @@
       .filter((n) => Number.isInteger(n) && n >= 0);
   }
 
+  /** True only for a real user vote. Ignores GTS quirk voted:true with empty own_votes and 0 votes. */
+  function pollUserVoted(poll) {
+    if (!poll || typeof poll !== "object") return false;
+    const own = pollOwnVotes(poll);
+    if (own.length > 0) return true;
+    if (!poll.voted) return false;
+    // Spurious after rejected own-poll vote (GTS): voted:true, own_votes:[], votes_count:0
+    if (pollTotalVotes(poll) === 0) return false;
+    return true;
+  }
+
   /** Compact remaining-time label for future ISO timestamps (mirrors relativeAgeLabel steps). */
   function relativeFutureLabel(iso, nowMs) {
     const now = nowMs == null ? Date.now() : Number(nowMs);
@@ -291,6 +302,7 @@
     pollTotalVotes,
     pollIsClosed,
     pollOwnVotes,
+    pollUserVoted,
     appBaseUrl,
     tagNameFromHref,
     mentionAcctFromHref,
