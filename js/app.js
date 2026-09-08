@@ -2294,13 +2294,11 @@
       if (act === "fav") {
         const on = btn.classList.contains("on-fav");
         const s = await api(`/api/v1/statuses/${id}/${on ? "unfavourite" : "favourite"}`, { method: "POST" });
-        btn.classList.toggle("on-fav", s.favourited);
-        btn.textContent = "★ " + (s.favourites_count || 0);
+        replaceStatusEverywhere(unwrapStatus(s));
       } else if (act === "boost") {
         const on = btn.classList.contains("on-boost");
         const s = await api(`/api/v1/statuses/${id}/${on ? "unreblog" : "reblog"}`, { method: "POST" });
-        btn.classList.toggle("on-boost", s.reblogged);
-        btn.textContent = "↻ " + (s.reblogs_count || 0);
+        replaceStatusEverywhere(unwrapStatus(s));
       } else if (act === "reply") {
         if ($("thread-dialog").open && state.threadById.has(id)) {
           openReplyComposer(id);
