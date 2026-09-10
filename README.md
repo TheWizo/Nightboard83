@@ -24,6 +24,7 @@ Nightboard '83 appears under the **BlackNeon** label (marketing / About only —
 - Profiles: follow / unfollow, mute, block
 - Compose posts with optional content warning, visibility, and image or video attachments
 - Configurable polling for new posts
+- Two color themes: **default** (synthwave/CRT) and **cyberpunk-dark** (blue-black, red-orange, beveled), selectable via `config.json`
 
 ## Requirements
 
@@ -79,7 +80,11 @@ Edit `config.json` in the program directory. The file is fetched at startup (`ca
 ```json
 {
   "instance": "fediverse2.blackneon.net",
-  "poll_minutes": 2
+  "poll_minutes": 2,
+  "lang_switch": true,
+  "federated": true,
+  "local": true,
+  "theme": "default"
 }
 ```
 
@@ -90,7 +95,7 @@ Edit `config.json` in the program directory. The file is fetched at startup (`ca
 | `lang_switch` | boolean | `true` | Show the **DE | EN** language switcher on the login card and in the top bar. Set to `false` to hide it; the UI still uses the detected/locale-stored language. Aliases: `langSwitch`, `language_switch`, `showLangSwitch`. |
 | `federated` | boolean | `true` | Show the **Federated** (public timeline) column and its dock icon. Set to `false` to remove the column entirely — it is not loaded, polled, or streamed. Aliases: `federatedTimeline`, `federated_timeline`, `showFederated`. |
 | `local` | boolean | `true` | Show the **Local** column and its dock icon. Set to `false` to remove the column entirely — it is not loaded, polled, or streamed. Aliases: `localTimeline`, `local_timeline`, `showLocal`. |
-| `theme` | string | `default` | Color theme. `default` is the original synthwave/CRT palette. `cyberpunk-dark` switches to a colder blue-black palette with subtler scanlines. Unknown values fall back to `default`. Alias: `skin`. |
+| `theme` | string | `default` | Color theme. `default` is the original synthwave/CRT palette. `cyberpunk-dark` switches to a blue-black background with red-orange accents, beveled corners, and warm-toned icons. Unknown values fall back to `default`. Alias: `skin`. |
 
 The login form can still point at a different instance. The last successful instance is stored in `localStorage` (`nightboard83.instance`) and wins over `config.json` on later visits. Changing the instance on login registers a new OAuth app on that server.
 
@@ -108,9 +113,7 @@ Tokens and the registered app credentials stay in `localStorage` on that browser
 
 ## Progressive Web App
 
-`manifest.webmanifest` and `sw.js` enable install-to-homescreen. Icons are a chrome 3D **NB '83** wordmark over a synthwave grid. The maskable 512×512 asset keeps extra padding so Android adaptive shapes do not crop the lettering. Favicon is 32×32; iOS uses the 180×180 apple-touch icon.
-
-Install from the browser’s install prompt (Chrome: the install icon in the address bar, or the menu). On iOS Safari: Share → Add to Home Screen.
+`manifest.webmanifest` and `sw.js` enable install-to-homescreen. Install from the browser's install prompt, or on iOS Safari: Share → Add to Home Screen.
 
 ## Local data
 
@@ -121,30 +124,18 @@ All of this lives in the browser, not on your instance:
 
 Clearing site data logs you out and deletes drafts and queued posts.
 
-
-
-
 ## Local post translation (Bergamot)
 
-Posts can be translated **entirely in the browser** with the [Bergamot](https://browser.mt/) WASM engine (Firefox Translations stack). Post text never leaves the device — there is no cloud translation API.
+Posts can be translated **entirely in the browser** with the [Bergamot](https://browser.mt/) WASM engine. Post text never leaves the device.
 
-- Engine and worker: `assets/bergamot/` (lazy-loaded on first use)
-- Language models: downloaded on demand, then cached in the Cache API (`nightboard83-bergamot-models`)
-  - Classic pairs (en↔de, en↔es, fr, it, pt, ru, …): [Bergamot S3](https://bergamot.s3.amazonaws.com/models/index.json) (responses are gzip-encoded; the app decompresses and verifies SHA-256 locally)
-  - **zh** and **ja** (en↔zh, en↔ja): Mozilla Firefox Translations models via `firefox-settings-attachments.cdn.mozilla.net` (not on Bergamot S3; added from the official Remote Settings catalog)
-- Direct pairs or **pivot via English** (e.g. de↔es, de↔zh) when both legs exist in `assets/bergamot/registry.json`
-- A “Translate” control appears **only** when `canTranslate(src, uiLang)` is true (source ≠ UI **and** a registry path exists). Unsupported pairs never show the icon
-- Errors: `translate.unsupportedPair` (no path), `translate.downloadFailed` (model/network/hash), `translate.unavailable` (no WASM/Workers), `translate.error` (generic fallback)
-- If WebAssembly or Workers are unavailable, the app stays usable and shows `translate.unavailable`
+- Engine and models: `assets/bergamot/` (lazy-loaded; models cached in Cache API)
+- 24 language pairs (en↔de, es, fr, it, pt, ru, cs, bg, uk, zh, ja); pivot via English when no direct pair exists
+- A "Translate" control appears only when source ≠ UI language and a registry path exists
+- Falls back gracefully if WebAssembly or Workers are unavailable
 
 ## UI languages (i18n)
 
-Visible UI strings live in **`i18n/de.json`** and **`i18n/en.json`** (flat JSON, dot-separated keys). German (`de`) is the content source; English is a first pass for review.
-
-- Runtime helper: `js/i18n.js` — `t(key)`, `setLocale`, `detect` (localStorage `nightboard83.locale`, then `navigator`, default **de**). Fallback chain: current → `en` → `de`.
-- Key shape for Technical Writers: `area.leaf` in camelCase English identifiers (`login.authorize`, `status.carrierLost`, `compose.contentWarning`). Interpolation `{name}`; plurals `key.one` / `key.other`.
-- Language switch: **DE | EN** on the login card and in the top bar. No machine translation in-repo — edit the JSON files directly.
-- Service worker precaches both catalogs (and `js/i18n.js`).
+UI strings live in `i18n/de.json` and `i18n/en.json` (flat JSON, dot-separated keys). German is the content source; English is a first pass. Runtime helper: `js/i18n.js` — `t(key)`, `setLocale`, `detect` (localStorage → navigator → default `de`). Fallback chain: current → `en` → `de`. The **DE | EN** switch can be hidden via `config.json` (`lang_switch: false`).
 
 ## Tests
 
@@ -154,7 +145,7 @@ From the project root:
 node test/run.mjs
 ```
 
-Covers instance parsing, ID comparison, outbox flush decisions, and (if Chromium is available) HTML sanitizing.
+Covers instance parsing, ID comparison, outbox flush decisions, poll logic, i18n fallback/interpolation, translation pair gating, and (if Chromium is available) HTML sanitizing, language switch, federated/local column flags, and theme switching.
 
 ## License
 
