@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>pending</title>
+<pre id="out">running</pre>
+<section class="col" data-col="local" id="col"></section>
+<button class="dock-icon" data-restore="local" id="dock"></button>
+<section class="col" data-col="home" id="home-col"></section>
+<button class="dock-icon" data-restore="home" id="home-dock"></button>
+<script src="../js/core.js"></script>
+<script>
+function fail(msg) {
+  document.title = "FAIL";
+  document.getElementById("out").textContent = String(msg);
+}
+try {
+  const c = window.NBCore;
+  if (typeof c.applyLocalFlag !== "function") throw new Error("applyLocalFlag missing");
+  if (typeof c.localEnabled !== "function") throw new Error("localEnabled missing");
+
+  // default (key absent) -> shown, localEnabled true
+  c.applyLocalFlag({});
+  if (document.getElementById("col").hidden) throw new Error("default should show col");
+  if (document.getElementById("dock").hidden) throw new Error("default should show dock");
+  if (c.localEnabled({}) !== true) throw new Error("localEnabled default");
+
+  // explicit true -> shown
+  c.applyLocalFlag({ local: true });
+  if (document.getElementById("col").hidden) throw new Error("true should show col");
+  if (document.getElementById("dock").hidden) throw new Error("true should show dock");
+  if (c.localEnabled({ local: true }) !== true) throw new Error("localEnabled true");
+
+  // false -> hidden
+  c.applyLocalFlag({ local: false });
+  if (!document.getElementById("col").hidden) throw new Error("false should hide col");
+  if (!document.getElementById("dock").hidden) throw new Error("false should hide dock");
+  if (c.localEnabled({ local: false }) !== false) throw new Error("localEnabled false");
+
+  // alias localTimeline false -> hidden
+  c.applyLocalFlag({ localTimeline: false });
+  if (!document.getElementById("col").hidden) throw new Error("alias should hide col");
+  if (c.localEnabled({ localTimeline: false }) !== false) throw new Error("alias localEnabled false");
+
+  // other columns untouched
+  if (document.getElementById("home-col").hidden) throw new Error("home col touched");
+  if (document.getElementById("home-dock").hidden) throw new Error("home dock touched");
+
+  // null -> shown (treated like absent)
+  c.applyLocalFlag({ local: null });
+  if (document.getElementById("col").hidden) throw new Error("null should show col");
+  if (document.getElementById("dock").hidden) throw new Error("null should show dock");
+  if (c.localEnabled({ local: null }) !== true) throw new Error("null localEnabled true");
+
+  // re-enable after hidden
+  c.applyLocalFlag({ local: true });
+  if (document.getElementById("col").hidden) throw new Error("re-enable should show col");
+  if (document.getElementById("dock").hidden) throw new Error("re-enable should show dock");
+
+  document.title = "PASS";
+  document.getElementById("out").textContent = "PASS";
+} catch (e) {
+  fail(e && e.stack || e);
+}
+</script>

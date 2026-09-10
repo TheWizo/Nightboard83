@@ -112,6 +112,10 @@
       COLS = COLS.filter((id) => id !== "federated");
     }
     if (Core.applyFederatedFlag) Core.applyFederatedFlag(cfg);
+    if (Core.localEnabled && !Core.localEnabled(cfg)) {
+      COLS = COLS.filter((id) => id !== "local");
+    }
+    if (Core.applyLocalFlag) Core.applyLocalFlag(cfg);
   }
 
   function maxCharsFromInstance(data) {
@@ -1890,7 +1894,7 @@
     if (!state.token || !state.carrierWanted || state.conn !== "online") return;
     const sockets = [
       openStream("user", "home"),
-      openStream("public:local", "local"),
+      COLS.includes("local") && openStream("public:local", "local"),
       COLS.includes("federated") && openStream("public", "federated"),
     ].filter(Boolean);
     state.streams = sockets;

@@ -311,6 +311,21 @@
     dock.forEach((el) => { el.hidden = !show; });
   }
 
+  function localEnabled(cfg) {
+    const raw = cfg && (cfg.local ?? cfg.localTimeline ?? cfg.local_timeline ?? cfg.showLocal);
+    return raw === undefined || raw === null ? true : Boolean(raw);
+  }
+
+  function applyLocalFlag(cfg, root) {
+    const doc = root || (typeof document !== "undefined" ? document : null);
+    if (!doc || !doc.querySelectorAll) return;
+    const show = localEnabled(cfg);
+    const col = doc.querySelector('[data-col="local"]');
+    if (col) col.hidden = !show;
+    const dock = doc.querySelectorAll('.dock-icon[data-restore="local"]');
+    dock.forEach((el) => { el.hidden = !show; });
+  }
+
   const api = {
     instanceHost,
     parseInstanceInput,
@@ -337,6 +352,8 @@
     applyLangSwitch,
     federatedEnabled,
     applyFederatedFlag,
+    localEnabled,
+    applyLocalFlag,
   };
 
   root.NBCore = api;

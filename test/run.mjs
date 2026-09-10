@@ -320,6 +320,7 @@ function chromiumTest(name, htmlFile) {
 chromiumTest("sanitize", "sanitize.html");
 chromiumTest("lang-switch", "lang-switch.html");
 chromiumTest("federated-flag", "federated-flag.html");
+chromiumTest("local-flag", "local-flag.html");
 
 if (failed) {
   console.error(failed + " failed");
