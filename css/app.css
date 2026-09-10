@@ -1750,26 +1750,34 @@ body.theme-cyberpunk-dark .col-head {
   background: #0d1117dd;
 }
 body.theme-cyberpunk-dark .col-head h2 {
-  text-shadow: 0 0 8px currentColor;
+  color: #ff7744;
+  text-shadow: 0 0 8px #ff5533;
 }
 body.theme-cyberpunk-dark .col-head.home h2 {
-  color: var(--pink);
-  text-shadow: 1px 0 0 #ff335555, 0 0 8px #ff008055;
+  color: #ff6633;
+  text-shadow: 0 0 8px #ff5522;
 }
 body.theme-cyberpunk-dark .col-head.local h2 {
-  color: var(--cyan);
-  text-shadow: -1px 0 0 #ff008055, 0 0 8px #ff335555;
+  color: #ff8844;
+  text-shadow: 0 0 8px #ff6633;
 }
 body.theme-cyberpunk-dark .col-head.federated h2 {
-  color: var(--yellow);
-  text-shadow: 1px 0 0 #ff008055, 0 0 8px #ffb00055;
+  color: #ffaa55;
+  text-shadow: 0 0 8px #ff8833;
 }
 body.theme-cyberpunk-dark .col-head.notes h2 {
-  color: var(--mint);
-  text-shadow: 1px 0 0 #ff335555, 0 0 8px #00ff9f55;
+  color: #ff9933;
+  text-shadow: 0 0 8px #ff7722;
 }
-body.theme-cyberpunk-dark .col-head .icon-btn {
-  text-shadow: 0 0 6px #ff335544;
+body.theme-cyberpunk-dark .col-head .icon-btn,
+body.theme-cyberpunk-dark .icon-btn {
+  color: #ff7744;
+  text-shadow: 0 0 6px #ff5533;
+}
+body.theme-cyberpunk-dark .col-head .icon-btn:hover,
+body.theme-cyberpunk-dark .icon-btn:hover {
+  color: #ffaa66;
+  text-shadow: 0 0 10px #ff6633, 0 0 4px #ff5522;
 }
 body.theme-cyberpunk-dark .col-head-actions select {
   background: #0d1117;
