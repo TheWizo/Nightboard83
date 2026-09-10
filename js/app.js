@@ -90,7 +90,10 @@
     try {
       const res = await fetch("./config.json", { cache: "no-store" });
       if (!res.ok) return {};
-      const data = await res.json();
+      let text = await res.text();
+      // Allow # and // comments in config.json — strip them before parsing
+      text = text.replace(/^\s*#.*$/gm, "").replace(/^\s*\/\/.*$/gm, "");
+      const data = JSON.parse(text);
       return data && typeof data === "object" ? data : {};
     } catch {
       return {};
