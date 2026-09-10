@@ -1,8 +1,12 @@
 {
   "instance": "fediverse2.blackneon.net",
   "poll_minutes": 2,
+  #Soll der DE / EN Switch angezeigt werden?
   "lang_switch": false,
+  #Soll die föderierte Timeline angezeigt werden?
   "federated": false,
+  #Soll die lokale Timeline angezeigt werden?
   "local": false,
+  #Entweder default für den lila-cyber Look oder cyberpunk-dark für ein düsteres theme
   "theme": "cyberpunk-dark"
 }
