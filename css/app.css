@@ -2137,3 +2137,137 @@ body.theme-cyberpunk-dark .sw-update-bar {
 body.theme-cyberpunk-dark .media-play {
   box-shadow: 0 0 8px #ff335544;
 }
+
+/* Beveled corners — clip-path cuts for a sharper cyberpunk aesthetic.
+   Uses polygon() to slice corners at 45 degrees. Border-radius is zeroed
+   because clip-path overrides the visible shape. */
+body.theme-cyberpunk-dark #app {
+  border-radius: 0;
+  clip-path: polygon(
+    0 12px, 12px 0,
+    calc(100% - 12px) 0, 100% 12px,
+    100% calc(100% - 8px), calc(100% - 8px) 100%,
+    8px 100%, 0 calc(100% - 8px)
+  );
+}
+body.theme-cyberpunk-dark #app::before {
+  border-radius: 0;
+}
+body.theme-cyberpunk-dark dialog {
+  border-radius: 0;
+  clip-path: polygon(
+    0 8px, 8px 0,
+    calc(100% - 8px) 0, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 8px) 100%,
+    8px 100%, 0 calc(100% - 8px)
+  );
+}
+body.theme-cyberpunk-dark dialog::after {
+  border-radius: 0;
+}
+body.theme-cyberpunk-dark .login-card {
+  border-radius: 0;
+  clip-path: polygon(
+    0 10px, 10px 0,
+    calc(100% - 10px) 0, 100% 10px,
+    100% calc(100% - 10px), calc(100% - 10px) 100%,
+    10px 100%, 0 calc(100% - 10px)
+  );
+}
+body.theme-cyberpunk-dark button {
+  border-radius: 0;
+  clip-path: polygon(
+    0 4px, 4px 0,
+    calc(100% - 4px) 0, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 0 calc(100% - 4px)
+  );
+}
+body.theme-cyberpunk-dark .poll {
+  border-radius: 0;
+  clip-path: polygon(
+    0 6px, 6px 0,
+    calc(100% - 6px) 0, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 0 calc(100% - 6px)
+  );
+}
+body.theme-cyberpunk-dark .poll-option {
+  border-radius: 0;
+  clip-path: polygon(
+    0 4px, 4px 0,
+    calc(100% - 4px) 0, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 0 calc(100% - 4px)
+  );
+}
+body.theme-cyberpunk-dark .login-card input,
+body.theme-cyberpunk-dark .login-card textarea,
+body.theme-cyberpunk-dark #overlay-body input,
+body.theme-cyberpunk-dark #compose-form > input,
+body.theme-cyberpunk-dark #compose-form > textarea,
+body.theme-cyberpunk-dark .attach-alt textarea,
+body.theme-cyberpunk-dark .outbox-edit,
+body.theme-cyberpunk-dark #thread-reply-text {
+  border-radius: 0;
+  clip-path: polygon(
+    0 4px, 4px 0,
+    calc(100% - 4px) 0, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 0 calc(100% - 4px)
+  );
+}
+body.theme-cyberpunk-dark .avatar {
+  border-radius: 0;
+  clip-path: polygon(
+    0 5px, 5px 0,
+    calc(100% - 5px) 0, 100% 5px,
+    100% calc(100% - 5px), calc(100% - 5px) 100%,
+    5px 100%, 0 calc(100% - 5px)
+  );
+}
+body.theme-cyberpunk-dark button.media-thumb {
+  border-radius: 0;
+  clip-path: polygon(
+    0 6px, 6px 0,
+    calc(100% - 6px) 0, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 0 calc(100% - 6px)
+  );
+}
+body.theme-cyberpunk-dark .col-head-actions select {
+  border-radius: 0;
+  clip-path: polygon(
+    0 3px, 3px 0,
+    calc(100% - 3px) 0, 100% 3px,
+    100% calc(100% - 3px), calc(100% - 3px) 100%,
+    3px 100%, 0 calc(100% - 3px)
+  );
+}
+body.theme-cyberpunk-dark .sw-update-bar {
+  border-radius: 0;
+  clip-path: polygon(
+    0 4px, 4px 0,
+    calc(100% - 4px) 0, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 0 calc(100% - 4px)
+  );
+}
+body.theme-cyberpunk-dark .profile-head img {
+  border-radius: 0;
+  clip-path: polygon(
+    0 6px, 6px 0,
+    calc(100% - 6px) 0, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 0 calc(100% - 6px)
+  );
+}
+body.theme-cyberpunk-dark .lang-switch {
+  border-radius: 0;
+  clip-path: polygon(
+    0 3px, 3px 0,
+    calc(100% - 3px) 0, 100% 3px,
+    100% calc(100% - 3px), calc(100% - 3px) 100%,
+    3px 100%, 0 calc(100% - 3px)
+  );
+}
