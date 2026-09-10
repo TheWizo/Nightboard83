@@ -2085,12 +2085,46 @@ body.theme-cyberpunk-dark .sw-update-bar i {
 /* Desktop logo */
 body.theme-cyberpunk-dark .desktop-logo {
   background: #0a0e14;
-  box-shadow: inset 0 0 8px #ff335522, 0 0 10px #00ff9f88;
+  box-shadow: inset 0 0 8px #ff335522, 0 0 10px #ff553366;
 }
-body.theme-cyberpunk-dark .desktop-logo span {
+/* Desktop wordmark — non-italic, pixel, red-orange, aggressive */
+body.theme-cyberpunk-dark .desktop-logo .login-name {
+  font-style: normal;
+  font-family: var(--font-ui);
+  letter-spacing: 0;
+  transform: none;
+  background: none;
+  background-image: none;
+  background-clip: border-box;
+  -webkit-background-clip: border-box;
+  -webkit-text-fill-color: #ff5533;
+  color: #ff5533;
+  -webkit-text-stroke: 0;
+  paint-order: normal;
+  filter: none;
   text-shadow:
-    #0a0e14 7px 9px,
-    0 0 10px #ff335588;
+    2px 0 0 #0a0e14,
+    -2px 0 0 #0a0e14,
+    0 2px 0 #0a0e14,
+    0 -2px 0 #0a0e14,
+    4px 4px 0 #cc2211,
+    0 0 14px #ff5533,
+    0 0 28px #ff3322,
+    0 0 48px #ff221188;
+}
+body.theme-cyberpunk-dark .desktop-logo .login-year {
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 1em;
+  transform: none;
+  color: #ff8833;
+  text-shadow:
+    2px 0 0 #0a0e14,
+    -2px 0 0 #0a0e14,
+    0 2px 0 #0a0e14,
+    3px 3px 0 #cc4411,
+    0 0 12px #ff7733,
+    0 0 24px #ff6611;
 }
 
 /* Ticker */
