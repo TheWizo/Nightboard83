@@ -116,6 +116,7 @@
       COLS = COLS.filter((id) => id !== "local");
     }
     if (Core.applyLocalFlag) Core.applyLocalFlag(cfg);
+    if (Core.applyTheme) Core.applyTheme(cfg);
   }
 
   function maxCharsFromInstance(data) {

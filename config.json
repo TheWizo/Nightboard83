@@ -3,5 +3,6 @@
   "poll_minutes": 2,
   "lang_switch": false,
   "federated": false,
-  "local": true
+  "local": false,
+  "theme": "default"
 }

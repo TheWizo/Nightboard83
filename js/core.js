@@ -326,6 +326,23 @@
     dock.forEach((el) => { el.hidden = !show; });
   }
 
+  const THEMES = ["default", "cyberpunk-dark"];
+
+  function normalizeTheme(cfg) {
+    const raw = String((cfg && (cfg.theme ?? cfg.skin)) || "").trim().toLowerCase();
+    return THEMES.indexOf(raw) !== -1 ? raw : "default";
+  }
+
+  function applyTheme(cfg, root) {
+    const doc = root || (typeof document !== "undefined" ? document : null);
+    if (!doc || !doc.body) return;
+    const theme = normalizeTheme(cfg);
+    THEMES.forEach((t) => {
+      if (t !== "default") doc.body.classList.remove("theme-" + t);
+    });
+    if (theme !== "default") doc.body.classList.add("theme-" + theme);
+  }
+
   const api = {
     instanceHost,
     parseInstanceInput,
@@ -354,6 +371,9 @@
     applyFederatedFlag,
     localEnabled,
     applyLocalFlag,
+    normalizeTheme,
+    applyTheme,
+    THEMES,
   };
 
   root.NBCore = api;

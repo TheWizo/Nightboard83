@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>pending</title>
+<pre id="out">running</pre>
+<script src="../js/core.js"></script>
+<script>
+function fail(msg) {
+  document.title = "FAIL";
+  document.getElementById("out").textContent = String(msg);
+}
+try {
+  const c = window.NBCore;
+  if (typeof c.applyTheme !== "function") throw new Error("applyTheme missing");
+  if (typeof c.normalizeTheme !== "function") throw new Error("normalizeTheme missing");
+  if (!Array.isArray(c.THEMES)) throw new Error("THEMES missing");
+
+  // default (key absent) -> no theme class
+  c.applyTheme({});
+  if (document.body.classList.contains("theme-cyberpunk-dark")) throw new Error("default should not add class");
+  if (c.normalizeTheme({}) !== "default") throw new Error("normalizeTheme default");
+
+  // explicit default
+  c.applyTheme({ theme: "default" });
+  if (document.body.classList.contains("theme-cyberpunk-dark")) throw new Error("explicit default should not add class");
+
+  // cyberpunk-dark -> class added
+  c.applyTheme({ theme: "cyberpunk-dark" });
+  if (!document.body.classList.contains("theme-cyberpunk-dark")) throw new Error("cyberpunk-dark should add class");
+  if (c.normalizeTheme({ theme: "cyberpunk-dark" }) !== "cyberpunk-dark") throw new Error("normalizeTheme cyberpunk-dark");
+
+  // alias skin
+  c.applyTheme({ skin: "cyberpunk-dark" });
+  if (!document.body.classList.contains("theme-cyberpunk-dark")) throw new Error("skin alias should add class");
+
+  // unknown theme -> default, class removed
+  c.applyTheme({ theme: "hot-pink" });
+  if (document.body.classList.contains("theme-cyberpunk-dark")) throw new Error("unknown should remove class");
+  if (c.normalizeTheme({ theme: "hot-pink" }) !== "default") throw new Error("normalizeTheme unknown -> default");
+
+  // case insensitive
+  c.applyTheme({ theme: "CyberPunk-Dark" });
+  if (!document.body.classList.contains("theme-cyberpunk-dark")) throw new Error("case insensitive should add class");
+
+  // null -> default
+  c.applyTheme({ theme: null });
+  if (document.body.classList.contains("theme-cyberpunk-dark")) throw new Error("null should remove class");
+
+  // back to cyberpunk-dark then default cleans up
+  c.applyTheme({ theme: "cyberpunk-dark" });
+  c.applyTheme({ theme: "default" });
+  if (document.body.classList.contains("theme-cyberpunk-dark")) throw new Error("switch back should remove class");
+
+  document.title = "PASS";
+  document.getElementById("out").textContent = "PASS";
+} catch (e) {
+  fail(e && e.stack || e);
+}
+</script>
