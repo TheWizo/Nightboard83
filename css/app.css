@@ -1873,58 +1873,58 @@ body.theme-cyberpunk-dark .lang-switch {
   border-color: var(--line);
 }
 
-/* Dock icons — no pink/lavender */
-body.theme-cyberpunk-dark .dock-icon.is-home { color: #ff80c0; }
-body.theme-cyberpunk-dark .dock-icon.is-local { color: #80f0ff; }
-body.theme-cyberpunk-dark .dock-icon.is-federated { color: #ffc060; }
-body.theme-cyberpunk-dark .dock-icon.is-notes { color: #80ffcc; }
+/* Dock icons — warm cyberpunk tones */
+body.theme-cyberpunk-dark .dock-icon.is-home { color: #ff8800; }
+body.theme-cyberpunk-dark .dock-icon.is-local { color: #ffb000; }
+body.theme-cyberpunk-dark .dock-icon.is-federated { color: #cc3333; }
+body.theme-cyberpunk-dark .dock-icon.is-notes { color: #cc2222; }
 
 body.theme-cyberpunk-dark .dock-icon.has-unread.is-home {
-  text-shadow: 0 0 4px #fff, 0 0 8px #ff0080, 0 0 16px #ff0080, 0 0 28px #ff0080ee;
+  text-shadow: 0 0 4px #fff, 0 0 8px #ff8800, 0 0 16px #ff8800, 0 0 28px #ff8800ee;
 }
 body.theme-cyberpunk-dark .dock-icon.has-unread.is-local {
-  text-shadow: 0 0 4px #fff, 0 0 8px #00f0ff, 0 0 16px #00f0ff, 0 0 28px #00f0ffee;
-}
-body.theme-cyberpunk-dark .dock-icon.has-unread.is-federated {
   text-shadow: 0 0 4px #fff, 0 0 8px #ffb000, 0 0 16px #ffb000, 0 0 28px #ffb000ee;
 }
+body.theme-cyberpunk-dark .dock-icon.has-unread.is-federated {
+  text-shadow: 0 0 4px #fff, 0 0 8px #cc3333, 0 0 16px #cc3333, 0 0 28px #cc3333ee;
+}
 body.theme-cyberpunk-dark .dock-icon.has-unread.is-notes {
-  text-shadow: 0 0 4px #fff, 0 0 8px #00ff9f, 0 0 16px #00ff9f, 0 0 28px #00ff9fee;
+  text-shadow: 0 0 4px #fff, 0 0 8px #cc2222, 0 0 16px #cc2222, 0 0 28px #cc2222ee;
 }
 
 body.theme-cyberpunk-dark .dock-icon.has-unread.is-home svg {
   filter:
     drop-shadow(0 0 2px #fff)
-    drop-shadow(0 0 5px #ff80c0)
-    drop-shadow(0 0 12px #ff0080)
-    drop-shadow(0 0 22px #ff0080);
+    drop-shadow(0 0 5px #ffaa44)
+    drop-shadow(0 0 12px #ff8800)
+    drop-shadow(0 0 22px #ff8800);
 }
 body.theme-cyberpunk-dark .dock-icon.has-unread.is-local svg {
   filter:
     drop-shadow(0 0 2px #fff)
-    drop-shadow(0 0 5px #80f0ff)
-    drop-shadow(0 0 12px #00f0ff)
-    drop-shadow(0 0 22px #00f0ff);
+    drop-shadow(0 0 5px #ffcc44)
+    drop-shadow(0 0 12px #ffb000)
+    drop-shadow(0 0 22px #ffb000);
 }
 body.theme-cyberpunk-dark .dock-icon.has-unread.is-federated svg {
   filter:
     drop-shadow(0 0 2px #fff)
-    drop-shadow(0 0 5px #ffc060)
-    drop-shadow(0 0 12px #ffb000)
-    drop-shadow(0 0 22px #ffb000);
+    drop-shadow(0 0 5px #ff5566)
+    drop-shadow(0 0 12px #cc3333)
+    drop-shadow(0 0 22px #cc3333);
 }
 body.theme-cyberpunk-dark .dock-icon.has-unread.is-notes svg {
   filter:
     drop-shadow(0 0 2px #fff)
-    drop-shadow(0 0 5px #80ffcc)
-    drop-shadow(0 0 12px #00ff9f)
-    drop-shadow(0 0 22px #00ff9f);
+    drop-shadow(0 0 5px #ff4455)
+    drop-shadow(0 0 12px #cc2222)
+    drop-shadow(0 0 22px #cc2222);
 }
 body.theme-cyberpunk-dark .dock-icon:hover,
 body.theme-cyberpunk-dark .dock-icon:focus-visible {
-  background: #00f0ff;
+  background: #ffb000;
   color: #0a0e14;
-  border-color: #00f0ff;
+  border-color: #ffb000;
 }
 
 /* Statusbar */
@@ -2090,3 +2090,16 @@ body.theme-cyberpunk-dark .nb-translate-panel {
 body.theme-cyberpunk-dark .content.nb-translate-error {
   text-shadow: 0 0 6px #ff335555;
 }
+
+/* SVG icon fill overrides — maps the default palette to warm cyberpunk tones:
+   cyan/mint → orange, yellow → amber, pink/red → dark red, dark bg → new bg */
+body.theme-cyberpunk-dark svg rect[fill="#03edf9"] { fill: #ff6600; }
+body.theme-cyberpunk-dark svg rect[fill="#72f1b8"] { fill: #ff8800; }
+body.theme-cyberpunk-dark svg rect[fill="#fede5d"] { fill: #ffb000; }
+body.theme-cyberpunk-dark svg rect[fill="#ff7edb"] { fill: #cc2222; }
+body.theme-cyberpunk-dark svg rect[fill="#fe4450"] { fill: #cc1111; }
+body.theme-cyberpunk-dark svg rect[fill="#191621"] { fill: #0a0e14; }
+body.theme-cyberpunk-dark svg rect[fill="#3d3158"] { fill: #1a2a44; }
+body.theme-cyberpunk-dark svg rect[fill="#d8ffe8"] { fill: #ffaa44; }
+body.theme-cyberpunk-dark svg rect[fill="#ffd0d4"] { fill: #ff6677; }
+body.theme-cyberpunk-dark svg rect[fill="#ffe6e8"] { fill: #ff8899; }
