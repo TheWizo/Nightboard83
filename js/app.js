@@ -7,7 +7,7 @@
   const Core = window.NBCore || {};
   const SCOPES = "read write follow";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
-  const COLS = ["home", "local", "federated", "notifications"];
+  let COLS = ["home", "local", "federated", "notifications"];
   const TIMELINE_CAP = 300;
   const DEFAULT_MAX_CHARS = 5000;
   const LS = {
@@ -108,6 +108,10 @@
     setInstance(fromLs || fromCfg, Boolean(fromLs));
     POLL_MS = pollIntervalMs(cfg);
     if (Core.applyLangSwitch) Core.applyLangSwitch(cfg);
+    if (Core.federatedEnabled && !Core.federatedEnabled(cfg)) {
+      COLS = COLS.filter((id) => id !== "federated");
+    }
+    if (Core.applyFederatedFlag) Core.applyFederatedFlag(cfg);
   }
 
   function maxCharsFromInstance(data) {
@@ -1561,6 +1565,7 @@
   }
 
   async function loadTimeline(name, reset) {
+    if (!COLS.includes(name)) return;
     const tl = state.timelines[name];
     if ((tl.loading && !reset) || (tl.done && !reset)) return;
     tl.loading = true;
@@ -1704,6 +1709,7 @@
   }
 
   async function fetchNewer(name) {
+    if (!COLS.includes(name)) return;
     const tl = state.timelines[name];
     if (!tl || tl.loading || !tl.items.length) return;
     const sinceId = tl.items[0] && tl.items[0].id;
@@ -1885,7 +1891,7 @@
     const sockets = [
       openStream("user", "home"),
       openStream("public:local", "local"),
-      openStream("public", "federated"),
+      COLS.includes("federated") && openStream("public", "federated"),
     ].filter(Boolean);
     state.streams = sockets;
     if (!sockets.length) return;

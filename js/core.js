@@ -296,6 +296,21 @@
     });
   }
 
+  function federatedEnabled(cfg) {
+    const raw = cfg && (cfg.federated ?? cfg.federatedTimeline ?? cfg.federated_timeline ?? cfg.showFederated);
+    return raw === undefined || raw === null ? true : Boolean(raw);
+  }
+
+  function applyFederatedFlag(cfg, root) {
+    const doc = root || (typeof document !== "undefined" ? document : null);
+    if (!doc || !doc.querySelectorAll) return;
+    const show = federatedEnabled(cfg);
+    const col = doc.querySelector('[data-col="federated"]');
+    if (col) col.hidden = !show;
+    const dock = doc.querySelectorAll('.dock-icon[data-restore="federated"]');
+    dock.forEach((el) => { el.hidden = !show; });
+  }
+
   const api = {
     instanceHost,
     parseInstanceInput,
@@ -320,6 +335,8 @@
     escapeHtml,
     sanitize,
     applyLangSwitch,
+    federatedEnabled,
+    applyFederatedFlag,
   };
 
   root.NBCore = api;

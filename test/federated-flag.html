@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>pending</title>
+<pre id="out">running</pre>
+<section class="col" data-col="federated" id="col"></section>
+<button class="dock-icon" data-restore="federated" id="dock"></button>
+<section class="col" data-col="home" id="home-col"></section>
+<button class="dock-icon" data-restore="home" id="home-dock"></button>
+<script src="../js/core.js"></script>
+<script>
+function fail(msg) {
+  document.title = "FAIL";
+  document.getElementById("out").textContent = String(msg);
+}
+try {
+  const c = window.NBCore;
+  if (typeof c.applyFederatedFlag !== "function") throw new Error("applyFederatedFlag missing");
+  if (typeof c.federatedEnabled !== "function") throw new Error("federatedEnabled missing");
+
+  // default (key absent) -> shown, federatedEnabled true
+  c.applyFederatedFlag({});
+  if (document.getElementById("col").hidden) throw new Error("default should show col");
+  if (document.getElementById("dock").hidden) throw new Error("default should show dock");
+  if (c.federatedEnabled({}) !== true) throw new Error("federatedEnabled default");
+
+  // explicit true -> shown
+  c.applyFederatedFlag({ federated: true });
+  if (document.getElementById("col").hidden) throw new Error("true should show col");
+  if (document.getElementById("dock").hidden) throw new Error("true should show dock");
+  if (c.federatedEnabled({ federated: true }) !== true) throw new Error("federatedEnabled true");
+
+  // false -> hidden
+  c.applyFederatedFlag({ federated: false });
+  if (!document.getElementById("col").hidden) throw new Error("false should hide col");
+  if (!document.getElementById("dock").hidden) throw new Error("false should hide dock");
+  if (c.federatedEnabled({ federated: false }) !== false) throw new Error("federatedEnabled false");
+
+  // alias federatedTimeline false -> hidden
+  c.applyFederatedFlag({ federatedTimeline: false });
+  if (!document.getElementById("col").hidden) throw new Error("alias should hide col");
+  if (c.federatedEnabled({ federatedTimeline: false }) !== false) throw new Error("alias federatedEnabled false");
+
+  // other columns untouched
+  if (document.getElementById("home-col").hidden) throw new Error("home col touched");
+  if (document.getElementById("home-dock").hidden) throw new Error("home dock touched");
+
+  // null -> shown (treated like absent)
+  c.applyFederatedFlag({ federated: null });
+  if (document.getElementById("col").hidden) throw new Error("null should show col");
+  if (document.getElementById("dock").hidden) throw new Error("null should show dock");
+  if (c.federatedEnabled({ federated: null }) !== true) throw new Error("null federatedEnabled true");
+
+  // re-enable after hidden
+  c.applyFederatedFlag({ federated: true });
+  if (document.getElementById("col").hidden) throw new Error("re-enable should show col");
+  if (document.getElementById("dock").hidden) throw new Error("re-enable should show dock");
+
+  document.title = "PASS";
+  document.getElementById("out").textContent = "PASS";
+} catch (e) {
+  fail(e && e.stack || e);
+}
+</script>
