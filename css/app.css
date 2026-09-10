@@ -1727,6 +1727,18 @@ body.theme-cyberpunk-dark button.danger {
   color: var(--orange);
 }
 
+/* Compose icon in topbar — transparent background so icon stays visible */
+body.theme-cyberpunk-dark #btn-compose {
+  background: transparent;
+  border-color: transparent;
+  text-shadow: none;
+}
+body.theme-cyberpunk-dark #btn-compose:hover {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 /* Columns — dark blue, not purple */
 body.theme-cyberpunk-dark .col {
   background: #0a0e14aa;
