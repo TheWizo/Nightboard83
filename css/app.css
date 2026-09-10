@@ -1789,16 +1789,19 @@ body.theme-cyberpunk-dark .status,
 body.theme-cyberpunk-dark .notice,
 body.theme-cyberpunk-dark .empty,
 body.theme-cyberpunk-dark .error {
-  border-bottom-color: #ff335544;
+  border-bottom: 1px solid #ff335566;
+  box-shadow: 0 1px 4px #ff335522;
 }
 body.theme-cyberpunk-dark .status:hover {
   background: #ff33550a;
+  box-shadow: 0 2px 10px #ff335544;
 }
 body.theme-cyberpunk-dark .status.is-thread-root {
   background: #ff335510;
+  box-shadow: 0 0 12px #ff335533, 0 1px 4px #ff335522;
 }
 body.theme-cyberpunk-dark .status.is-reply-target {
-  box-shadow: inset 3px 0 0 var(--cyan);
+  box-shadow: inset 3px 0 0 var(--cyan), 0 0 12px #ff335533;
   background: #ff33550c;
 }
 
@@ -2041,9 +2044,9 @@ body.theme-cyberpunk-dark .thread-reply {
 
 /* SW update overlay */
 body.theme-cyberpunk-dark #sw-update-dialog {
-  border-color: var(--cyan);
+  border: 2px solid #ff3355;
   background: #060a0e;
-  box-shadow: 0 0 40px #ff335533, inset 0 0 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 40px #ff335544, inset 0 0 40px rgba(0, 0, 0, 0.5);
 }
 body.theme-cyberpunk-dark .sw-update-head {
   color: var(--yellow);
@@ -2137,7 +2140,7 @@ body.theme-cyberpunk-dark dialog {
   box-shadow: 0 0 40px #ff335522, inset 0 0 40px rgba(0, 0, 0, 0.5), 0 0 12px #ff335533;
 }
 body.theme-cyberpunk-dark #sw-update-dialog {
-  box-shadow: 0 0 40px #ff335533, inset 0 0 40px rgba(0, 0, 0, 0.5), 0 0 12px #ff335544;
+  box-shadow: 0 0 40px #ff335544, 0 0 20px #ff335566, inset 0 0 40px rgba(0, 0, 0, 0.5);
 }
 body.theme-cyberpunk-dark .sw-update-bar {
   box-shadow: inset 0 0 8px #ff335522, 0 0 6px #ff335533;
