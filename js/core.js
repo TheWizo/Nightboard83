@@ -286,6 +286,16 @@
     return Math.floor(d / 86400) + "d";
   }
 
+  function applyLangSwitch(cfg, root) {
+    const doc = root || (typeof document !== "undefined" ? document : null);
+    if (!doc || !doc.querySelectorAll) return;
+    const raw = cfg && (cfg.lang_switch ?? cfg.langSwitch ?? cfg.language_switch ?? cfg.showLangSwitch);
+    const show = raw === undefined || raw === null ? true : Boolean(raw);
+    doc.querySelectorAll(".lang-switch").forEach((el) => {
+      el.hidden = !show;
+    });
+  }
+
   const api = {
     instanceHost,
     parseInstanceInput,
@@ -309,6 +319,7 @@
     flushPlan,
     escapeHtml,
     sanitize,
+    applyLangSwitch,
   };
 
   root.NBCore = api;

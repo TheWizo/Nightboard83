@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>pending</title>
+<pre id="out">running</pre>
+<div class="lang-switch" id="a"></div>
+<div class="lang-switch" id="b"></div>
+<div class="other" id="c"></div>
+<script src="../js/core.js"></script>
+<script>
+function fail(msg) {
+  document.title = "FAIL";
+  document.getElementById("out").textContent = String(msg);
+}
+try {
+  const s = window.NBCore.applyLangSwitch;
+  if (typeof s !== "function") throw new Error("applyLangSwitch missing");
+
+  // default (key absent) -> shown
+  s({});
+  if (document.getElementById("a").hidden) throw new Error("default should show");
+  if (document.getElementById("b").hidden) throw new Error("default should show b");
+
+  // explicit true -> shown
+  s({ lang_switch: true });
+  if (document.getElementById("a").hidden) throw new Error("true should show");
+
+  // false -> hidden
+  s({ lang_switch: false });
+  if (!document.getElementById("a").hidden) throw new Error("false should hide a");
+  if (!document.getElementById("b").hidden) throw new Error("false should hide b");
+
+  // alias langSwitch false -> hidden
+  s({ langSwitch: false });
+  if (!document.getElementById("a").hidden) throw new Error("langSwitch alias should hide");
+
+  // other element untouched
+  if (document.getElementById("c").hidden) throw new Error("other element touched");
+
+  // null -> shown (treated like absent)
+  s({ lang_switch: null });
+  if (document.getElementById("a").hidden) throw new Error("null should show");
+
+  // re-enable after hidden
+  s({ lang_switch: true });
+  if (document.getElementById("a").hidden) throw new Error("re-enable should show");
+
+  document.title = "PASS";
+  document.getElementById("out").textContent = "PASS";
+} catch (e) {
+  fail(e && e.stack || e);
+}
+</script>

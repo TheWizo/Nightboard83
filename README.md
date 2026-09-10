@@ -87,6 +87,7 @@ Edit `config.json` in the program directory. The file is fetched at startup (`ca
 | --- | --- | --- | --- |
 | `instance` | string | _(empty)_ | Hostname or URL used to **prefill** the instance field on the login screen. `https://` is added if you omit the scheme. Trailing slashes are stripped. Aliases: `url`, `host`. |
 | `poll_minutes` | number | `2` | How often to look for new posts while you are logged in and no detail window is open. Allowed range: **0.25–1440** minutes (15 seconds to 24 hours). Aliases: `pollMinutes`, `polling_minutes`, `poll`. |
+| `lang_switch` | boolean | `true` | Show the **DE | EN** language switcher on the login card and in the top bar. Set to `false` to hide it; the UI still uses the detected/locale-stored language. Aliases: `langSwitch`, `language_switch`, `showLangSwitch`. |
 
 The login form can still point at a different instance. The last successful instance is stored in `localStorage` (`nightboard83.instance`) and wins over `config.json` on later visits. Changing the instance on login registers a new OAuth app on that server.
 

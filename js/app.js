@@ -107,6 +107,7 @@
     const fromCfg = normalizeInstance(cfg.instance || cfg.url || cfg.host || "");
     setInstance(fromLs || fromCfg, Boolean(fromLs));
     POLL_MS = pollIntervalMs(cfg);
+    if (Core.applyLangSwitch) Core.applyLangSwitch(cfg);
   }
 
   function maxCharsFromInstance(data) {

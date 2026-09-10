@@ -297,19 +297,28 @@ test("translate.toggle showing state machine", () => {
   assert.equal(nextShowing(undefined), "translation");
 });
 
-const html = path.join(root, "sanitize.html");
-const chrome = spawnSync("chromium", ["--headless=new", "--disable-gpu", "--no-sandbox", "--virtual-time-budget=4000", "--dump-dom", pathToFileURL(html).href], {
-  encoding: "utf8",
-  timeout: 15000,
-});
-if (chrome.error) {
-  console.log("skip sanitize (no chromium):", chrome.error.message);
-} else {
+function runChromium(htmlFile) {
+  const html = path.join(root, htmlFile);
+  return spawnSync("chromium", ["--headless=new", "--disable-gpu", "--no-sandbox", "--virtual-time-budget=4000", "--dump-dom", pathToFileURL(html).href], {
+    encoding: "utf8",
+    timeout: 15000,
+  });
+}
+
+function chromiumTest(name, htmlFile) {
+  const chrome = runChromium(htmlFile);
+  if (chrome.error) {
+    console.log("skip " + name + " (no chromium):", chrome.error.message);
+    return;
+  }
   const out = (chrome.stdout || "") + (chrome.stderr || "");
-  test("sanitize in chromium", () => {
+  test(name + " in chromium", () => {
     assert.match(out, /<title>PASS<\/title>|id="out">PASS/);
   });
 }
+
+chromiumTest("sanitize", "sanitize.html");
+chromiumTest("lang-switch", "lang-switch.html");
 
 if (failed) {
   console.error(failed + " failed");
