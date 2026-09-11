@@ -244,15 +244,23 @@ class BergamotTranslatorWorker {
 
                 Object.assign(Module, {
                     instantiateWasm: (info, accept) => {
+                        const imports = {
+                            ...info,
+                            'wasm_gemm': this.options.useNativeIntGemm
+                                ? this.linkNativeIntGemm(info)
+                                : this.linkFallbackIntGemm(info)
+                        };
+                        const fallback = () => {
+                            response.arrayBuffer().then(buf =>
+                                WebAssembly.instantiate(buf, imports)
+                            ).then(({instance}) => accept(instance)).catch(reject);
+                        };
                         try {
-                            WebAssembly.instantiateStreaming(response, {
-                                ...info,
-                                'wasm_gemm': this.options.useNativeIntGemm
-                                    ? this.linkNativeIntGemm(info)
-                                    : this.linkFallbackIntGemm(info)
-                            }).then(({instance}) => accept(instance)).catch(reject);
+                            WebAssembly.instantiateStreaming(response.clone(), imports)
+                                .then(({instance}) => accept(instance))
+                                .catch(fallback);
                         } catch (err) {
-                            reject(err);
+                            fallback();
                         }
                         return {};
                     },

@@ -1359,12 +1359,26 @@
     btn.textContent = t("translate.loading");
     startFlipAnimation(content);
 
+    let barEl = null;
+    const actionsEl = btn.parentElement;
+    if (actionsEl) {
+      barEl = document.createElement("div");
+      barEl.className = "nb-translate-progress";
+      barEl.innerHTML = '<span class="nb-translate-progress-bar"></span>';
+      actionsEl.appendChild(barEl);
+    }
+
     try {
       const translated = await Tr.translate(originalHtml, from, to, {
         html: true,
         onProgress: (phase) => {
-          if (phase === "downloading") btn.textContent = t("translate.downloading");
-          else btn.textContent = t("translate.loading");
+          if (phase === "downloading") {
+            btn.textContent = t("translate.downloading");
+            if (barEl) barEl.classList.add("is-downloading");
+          } else {
+            btn.textContent = t("translate.loading");
+            if (barEl) barEl.classList.remove("is-downloading");
+          }
         },
       });
       const safe = sanitize(translated || "");
@@ -1394,6 +1408,8 @@
       content.appendChild(note);
       paintTranslateButton(article, null);
       btn.disabled = false;
+    } finally {
+      if (barEl) barEl.remove();
     }
   }
 

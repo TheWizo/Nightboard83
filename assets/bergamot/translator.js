@@ -166,7 +166,10 @@ export class CancelledError extends Error {}
 
         // Await initialisation. This will also nicely error out if the WASM
         // runtime fails to load.
-        await call('initialize', this.options);
+        await call('initialize', {
+            useNativeIntGemm: this.options.useNativeIntGemm,
+            cacheSize: this.options.cacheSize,
+        });
 
         /**
          * Little wrapper around the message passing api of Worker to make it

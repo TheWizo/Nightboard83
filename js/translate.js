@@ -7,7 +7,7 @@
 */
 (function (root) {
   const MODEL_CACHE = "nightboard83-bergamot-models";
-  const ENGINE_BASE = "./assets/bergamot/";
+  const ENGINE_BASE = "../assets/bergamot/";
   const REGISTRY_URL = ENGINE_BASE + "registry.json";
 
   /**
