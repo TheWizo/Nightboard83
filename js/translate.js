@@ -8,7 +8,20 @@
 (function (root) {
   const MODEL_CACHE = "nightboard83-bergamot-models";
   const ENGINE_BASE = "../assets/bergamot/";
-  const REGISTRY_URL = ENGINE_BASE + "registry.json";
+  // fetch() resolves relative to document URL, import() to script URL.
+  // Build an absolute registry URL so both resolve correctly in subdirectory deployments.
+  function resolveRegistryUrl() {
+    if (typeof document !== "undefined") {
+      var scripts = document.querySelectorAll('script[src]');
+      for (var i = 0; i < scripts.length; i++) {
+        var src = scripts[i].getAttribute('src') || '';
+        var m = src.match(/^(.*\/)js\/translate\.js$/);
+        if (m) return m[1] + 'assets/bergamot/registry.json';
+      }
+    }
+    return 'assets/bergamot/registry.json';
+  }
+  const REGISTRY_URL = resolveRegistryUrl();
 
   /**
    * Direct registry pair keys (from+to, 4 chars) shipped in registry.json.
