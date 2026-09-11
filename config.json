@@ -1,8 +1,8 @@
 {
   "instance": "fediverse2.blackneon.net",
   "poll_minutes": 2,
-  "lang_switch": true,
-  "federated": true,
-  "local": true,
+  "lang_switch": false,
+  "federated": false,
+  "local": false,
   "theme": "default"
 }
