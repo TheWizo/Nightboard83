@@ -20,6 +20,8 @@ Third-party components (not licensed under the AGPL):
   SIL Open Font License, Version 1.1; see fonts/OFL.txt.
 - PouchDB (js/pouchdb.min.js) is copyright Dale Harvey and the PouchDB
   team and is licensed under the Apache License, Version 2.0.
+- Bergamot translator (assets/bergamot/) is licensed under the
+  Mozilla Public License, Version 2.0; see assets/bergamot/NOTICE.txt.
 
 ========================================================================
 

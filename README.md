@@ -24,6 +24,7 @@ Nightboard '83 appears under the **BlackNeon** label (marketing / About only —
 - Profiles: follow / unfollow, mute, block
 - Compose posts with optional content warning, visibility, and image or video attachments
 - Configurable polling for new posts
+- Local in-browser post translation via **Bergamot** WASM engine (24 language pairs, privacy-friendly)
 - Two color themes: **default** (synthwave/CRT) and **cyberpunk-dark** (blue-black, red-orange, beveled), selectable via `config.json`
 
 ## Requirements
