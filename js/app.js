@@ -3284,6 +3284,10 @@
     return t("profile.follow");
   }
 
+  function notifyLabel(rel) {
+    return rel.notifying ? t("profile.unnotify") : t("profile.notify");
+  }
+
   function muteLabel(rel) {
     return rel.muting ? t("profile.unmute") : t("profile.mute");
   }
@@ -3294,12 +3298,18 @@
 
   function paintRelButtons(rel) {
     const followBtn = $("follow-btn");
+    const notifyBtn = $("notify-btn");
     const muteBtn = $("mute-btn");
     const blockBtn = $("block-btn");
     if (followBtn) {
       followBtn.textContent = followLabel(rel);
       followBtn.classList.toggle("is-on", Boolean(rel.following || rel.requested));
       followBtn.disabled = Boolean(rel.blocking || rel.blocked_by);
+    }
+    if (notifyBtn) {
+      notifyBtn.textContent = notifyLabel(rel);
+      notifyBtn.classList.toggle("is-on", Boolean(rel.notifying));
+      notifyBtn.disabled = Boolean(rel.blocking || rel.blocked_by);
     }
     if (muteBtn) {
       muteBtn.textContent = muteLabel(rel);
@@ -3332,6 +3342,30 @@
         paintRelButtons(rel);
       });
     });
+    const notifyBtn = $("notify-btn");
+    if (notifyBtn) {
+      notifyBtn.addEventListener("click", async () => {
+        notifyBtn.disabled = true;
+        try {
+          const targetNotify = !rel.notifying;
+          const body = { notify: targetNotify };
+          if (typeof rel.showing_reblogs === "boolean") body.reblogs = rel.showing_reblogs;
+          const next = await api("/api/v1/accounts/" + encodeURIComponent(id) + "/follow", {
+            method: "POST",
+            body,
+          });
+          if (next && typeof next === "object") {
+            Object.assign(rel, next);
+          } else {
+            rel.notifying = targetNotify;
+            rel.following = true;
+          }
+        } catch (err) {
+          alert(err.message);
+        }
+        paintRelButtons(rel);
+      });
+    }
   }
 
   async function loadProfileStatuses(reset) {
@@ -3405,6 +3439,7 @@
               <button type="button" class="danger" id="profile-logout">${escapeHtml(t("profile.logout"))}</button>
             </div>` : `<div class="profile-actions">
               <button type="button" class="primary" id="follow-btn">${escapeHtml(t("profile.follow"))}</button>
+              <button type="button" id="notify-btn">${escapeHtml(t("profile.notify"))}</button>
               <button type="button" id="mute-btn">${escapeHtml(t("profile.mute"))}</button>
               <button type="button" class="danger" id="block-btn">${escapeHtml(t("profile.block"))}</button>
             </div>`}

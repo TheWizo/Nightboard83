@@ -153,6 +153,8 @@
   "profile.follow": "Follow",
   "profile.unfollow": "Unfollow",
   "profile.requested": "Requested",
+  "profile.notify": "Notify",
+  "profile.unnotify": "Don't notify",
   "profile.mute": "Mute",
   "profile.unmute": "Unmute",
   "profile.block": "Block",

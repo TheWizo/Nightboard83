@@ -153,6 +153,8 @@
   "profile.follow": "Abonnieren",
   "profile.unfollow": "Abo beenden",
   "profile.requested": "Angefragt",
+  "profile.notify": "Benachrichtigen",
+  "profile.unnotify": "Nicht benachrichtigen",
   "profile.mute": "Muten",
   "profile.unmute": "Mute aufheben",
   "profile.block": "Blocken",
