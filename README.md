@@ -6,7 +6,7 @@ Offline is the core idea: last timelines and media stay cached, compose and repl
 
 The client talks to the instance you configure (or type in at login) using OAuth 2.0 with PKCE. After you authorize, the instance redirects back to Nightboard. A paste-the-code fallback remains for stubborn servers.
 
-**Homepage:** [https://nightboard83.de](https://nightboard83.de) · **App:** [https://blackneon.net/Nightboard83](https://blackneon.net/Nightboard83)
+**Homepage:** [https://nightboard83.de](https://nightboard83.de) · **Demo-Installation:** [https://nightboard83.de/app/](https://nightboard83.de/app/) · **Quellcode:** [git.blackneon.net/ralf/Nightboard83](https://git.blackneon.net/ralf/Nightboard83)
 
 Nightboard '83 appears under the **BlackNeon** label (marketing / About only — not a publisher). Copyright remains with Ralf Wissing; see `LICENSE`.
 
@@ -21,7 +21,7 @@ Nightboard '83 appears under the **BlackNeon** label (marketing / About only —
 - Connection status next to the instance hostname (verbunden / carrier lost / nicht verbunden)
 - PWA with chrome 3D **NB '83** icons
 - Threads with replies, boosts, favourites, and a reply composer
-- Profiles: follow / unfollow, mute, block
+- Profiles: follow / unfollow, notify / unnotify (per-account notification trigger), mute, block
 - Compose posts with optional content warning, visibility, and image or video attachments
 - Configurable polling for new posts
 - Local in-browser post translation via **Bergamot** WASM engine (24 language pairs, privacy-friendly)
