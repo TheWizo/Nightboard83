@@ -15,24 +15,25 @@
   const LS_KEY = "nightboard83.cyberpsych";
   const SCROLL_SELECTORS = ".col-body, .col-scroll, [data-col-body]";
   const POST_SELECTORS = "article.status, article[data-status-id], .status-card";
-  const TICK_MS = 2000;           // humanity engine tick
+  const TICK_MS = 4000;           // humanity engine tick (slower, less twitchy)
   const SCROLL_WINDOW_MS = 60000; // velocity rolling window
   const PAUSE_THRESHOLD_MS = 3000; // gap that ends an "active" burst
-  const RECOVERY_PAUSE_MS = 10000; // pause long enough to start recovery
-  const RECOVERY_FULL_MS = 120000; // pause that fully restores humanity
+  const RECOVERY_PAUSE_MS = 8000; // pause long enough to start recovery (faster recovery)
+  const RECOVERY_FULL_MS = 90000; // pause that fully restores humanity (faster full recovery)
   const FAST_POST_MS = 1500;      // post visible < this = "skimmed"
   const NIGHT_START = 22;         // hour
   const NIGHT_END = 5;
 
   // Decay rates (humanity points per tick) by signal contribution.
+  // Halved from original for a gentler, less aggressive response.
   const DECAY = {
-    velocity: 0.45,
-    continuous: 0.30,
-    skimRate: 0.35,
-    session: 0.15,
+    velocity: 0.22,
+    continuous: 0.15,
+    skimRate: 0.18,
+    session: 0.08,
   };
-  const RECOVER_PER_TICK = 3.2;
-  const NIGHT_MULT = 1.5;
+  const RECOVER_PER_TICK = 4.0;
+  const NIGHT_MULT = 1.3;
 
   // --- State ---
   let humanity = 100;
@@ -178,11 +179,11 @@
       const sess = sessionMs(now);
       let decay = 0;
 
-      if (vel > 2000) decay += DECAY.velocity * Math.min(3, vel / 4000);
-      if (burst > 30000) decay += DECAY.continuous * Math.min(2, burst / 60000);
-      if (skimmedCount > 5) decay += DECAY.skimRate * Math.min(3, skimmedCount / 10);
+      if (vel > 3000) decay += DECAY.velocity * Math.min(3, vel / 6000);
+      if (burst > 45000) decay += DECAY.continuous * Math.min(2, burst / 90000);
+      if (skimmedCount > 8) decay += DECAY.skimRate * Math.min(3, skimmedCount / 15);
       skimmedCount = 0;
-      if (sess > 300000) decay += DECAY.session * Math.min(2, sess / 600000);
+      if (sess > 420000) decay += DECAY.session * Math.min(2, sess / 840000);
       if (isNight()) decay *= NIGHT_MULT;
 
       humanity = Math.max(0, humanity - decay);
@@ -191,8 +192,9 @@
     save();
     const newLevel = levelFor(humanity);
     if (newLevel !== level) {
+      const worsening = newLevel > level;
       level = newLevel;
-      onLevelChange();
+      onLevelChange(worsening);
     }
     paintHUD();
   }
@@ -263,9 +265,7 @@
     hudEl.className = "cp-hud " + lv.cls;
   }
 
-  function onLevelChange() {
-    const lv = LEVELS[level];
-
+  function onLevelChange(worsening) {
     if (glitchEl) {
       glitchEl.hidden = level < 2;
       glitchEl.className = "cp-glitch cp-glitch-l" + level;
@@ -274,7 +274,7 @@
     document.body.classList.remove("cp-l0", "cp-l1", "cp-l2", "cp-l3", "cp-l4");
     document.body.classList.add("cp-l" + level);
 
-    if (level >= 2 && warnEl) {
+    if (level >= 2 && worsening && warnEl) {
       showWarn();
     } else if (warnEl) {
       warnEl.hidden = true;
@@ -393,7 +393,7 @@
     activeBurstStart = 0;
     skimmedCount = 0;
     save();
-    onLevelChange();
+    onLevelChange(false);
     paintHUD();
   }
 
