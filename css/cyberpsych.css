@@ -1,25 +1,21 @@
 /* === Cyberpsychosis Danger HUD === */
 
 .cp-hud {
-  position: fixed;
-  top: 74px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
   z-index: 9990;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  display: flex;
+  justify-content: center;
+  padding: 3px 0;
+  background: #241b2fcc;
+  border-bottom: 1px solid var(--line);
 }
-.cp-hud:not([hidden]) { opacity: 1; }
+.cp-hud[hidden] { display: none; }
 
 .cp-hud-inner {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #241b2fcc;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 6px 14px;
   backdrop-filter: blur(4px);
   font-family: "Press Start 2P", monospace;
   font-size: 10px;

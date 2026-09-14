@@ -214,7 +214,8 @@
         '</div>' +
         '<div class="cp-hud-pct" data-cp-pct>100%</div>' +
       '</div>';
-    document.body.appendChild(hudEl);
+    var mount = document.getElementById("cp-bar-mount");
+    (mount || document.body).appendChild(hudEl);
 
     warnEl = document.createElement("div");
     warnEl.className = "cp-warn-overlay";
@@ -253,7 +254,7 @@
     if (!hudEl) return;
     const lv = LEVELS[level];
     const pct = Math.round(humanity);
-    hudEl.hidden = level === 0 && humanity >= 100;
+    hudEl.hidden = false;
     barEl.style.width = pct + "%";
     barEl.style.background = lv.color;
     barEl.style.boxShadow = "0 0 12px " + lv.color;
