@@ -268,9 +268,8 @@ body.crt::before {
   height: 40px;
   padding: 4px 8px;
   background: transparent;
-  image-rendering: pixelated;
 }
-.outbox-glyph { display: block; image-rendering: pixelated; }
+.outbox-glyph { display: block; }
 .outbox-count {
   position: absolute;
   top: -4px;
@@ -345,7 +344,6 @@ button {
   padding: 10px 12px;
   border-radius: 2px;
   cursor: pointer;
-  image-rendering: pixelated;
 }
 button:hover { border-color: var(--cyan); }
 button.primary {
@@ -569,13 +567,11 @@ button:disabled { opacity: 0.5; cursor: default; }
   font-size: 7px;
   line-height: 1.3;
   text-transform: uppercase;
-  image-rendering: pixelated;
 }
 .dock-icon svg {
-  width: 36px;
-  height: 36px;
+  width: 41px;
+  height: 41px;
   display: block;
-  image-rendering: pixelated;
   filter: none;
 }
 .dock-icon.is-home { color: #ffd6f4; }
@@ -667,9 +663,8 @@ button:disabled { opacity: 0.5; cursor: default; }
   display: inline-grid;
   place-items: center;
   background: transparent;
-  image-rendering: pixelated;
 }
-.carrier-btn svg { display: block; image-rendering: pixelated; width: 32px; height: 32px; }
+.carrier-btn svg { display: block; width: 37px; height: 37px; }
 .carrier-btn .phone-up { display: none; }
 .carrier-btn .phone-down { display: block; }
 .carrier-btn.is-online .phone-up { display: block; }
@@ -1439,7 +1434,7 @@ dialog[open] { display: flex; flex-direction: column; }
   }
   .dock-icon { width: 48px; min-height: 44px; padding: 2px 0; }
   .dock-icon span { display: none; }
-  .dock-icon svg { width: 32px; height: 32px; }
+  .dock-icon svg { width: 37px; height: 37px; }
   .top-actions { gap: 4px; }
   .top-actions .outbox-btn {
     min-width: 44px;
@@ -1447,7 +1442,7 @@ dialog[open] { display: flex; flex-direction: column; }
     height: 44px;
     padding: 4px;
   }
-  .top-actions .outbox-glyph { width: 26px; height: 26px; }
+  .top-actions .outbox-glyph { width: 30px; height: 30px; }
   #compose-form footer {
     justify-content: space-evenly;
     gap: 20px;
@@ -1459,8 +1454,8 @@ dialog[open] { display: flex; flex-direction: column; }
     height: 56px;
   }
   #compose-form footer .outbox-glyph {
-    width: 32px;
-    height: 32px;
+    width: 37px;
+    height: 37px;
   }
   .login-wordmark { font-size: 32px; padding-right: 1.9em; }
   .login-year { font-size: 1.56em; }
@@ -2172,16 +2167,22 @@ body.theme-cyberpunk-dark .nb-translate-progress-bar {
 
 /* SVG icon fill overrides — maps the default palette to warm cyberpunk tones:
    cyan/mint → orange, yellow → amber, pink/red → dark red, dark bg → new bg */
-body.theme-cyberpunk-dark svg rect[fill="#03edf9"] { fill: #ff6600; }
-body.theme-cyberpunk-dark svg rect[fill="#72f1b8"] { fill: #ff8800; }
-body.theme-cyberpunk-dark svg rect[fill="#fede5d"] { fill: #ffb000; }
-body.theme-cyberpunk-dark svg rect[fill="#ff7edb"] { fill: #cc2222; }
-body.theme-cyberpunk-dark svg rect[fill="#fe4450"] { fill: #cc1111; }
-body.theme-cyberpunk-dark svg rect[fill="#191621"] { fill: #0a0e14; }
-body.theme-cyberpunk-dark svg rect[fill="#3d3158"] { fill: #1a2a44; }
-body.theme-cyberpunk-dark svg rect[fill="#d8ffe8"] { fill: #ffaa44; }
-body.theme-cyberpunk-dark svg rect[fill="#ffd0d4"] { fill: #ff6677; }
-body.theme-cyberpunk-dark svg rect[fill="#ffe6e8"] { fill: #ff8899; }
+body.theme-cyberpunk-dark svg [fill="#03edf9"] { fill: #ff6600; }
+body.theme-cyberpunk-dark svg [fill="#72f1b8"] { fill: #ff8800; }
+body.theme-cyberpunk-dark svg [fill="#fede5d"] { fill: #ffb000; }
+body.theme-cyberpunk-dark svg [fill="#ff7edb"] { fill: #cc2222; }
+body.theme-cyberpunk-dark svg [fill="#fe4450"] { fill: #cc1111; }
+body.theme-cyberpunk-dark svg [fill="#191621"] { fill: #0a0e14; }
+body.theme-cyberpunk-dark svg [fill="#3d3158"] { fill: #1a2a44; }
+body.theme-cyberpunk-dark svg [fill="#d8ffe8"] { fill: #ffaa44; }
+body.theme-cyberpunk-dark svg [fill="#ffd0d4"] { fill: #ff6677; }
+body.theme-cyberpunk-dark svg [fill="#ffe6e8"] { fill: #ff8899; }
+body.theme-cyberpunk-dark svg [fill="#fff4b8"] { fill: #ffcc44; }
+body.theme-cyberpunk-dark svg [fill="#d4b860"] { fill: #cc8800; }
+body.theme-cyberpunk-dark svg [stroke="#03edf9"] { stroke: #ff6600; }
+body.theme-cyberpunk-dark svg [stroke="#fede5d"] { stroke: #ffb000; }
+body.theme-cyberpunk-dark svg [stroke="#d4b860"] { stroke: #cc8800; }
+body.theme-cyberpunk-dark svg [stroke="#191621"] { stroke: #0a0e14; }
 
 /* Red glow on icon-bearing borders */
 body.theme-cyberpunk-dark .col-head-actions select,
