@@ -315,6 +315,7 @@ body.crt::before {
   flex-wrap: nowrap;
   flex-shrink: 0;
   align-items: center;
+  margin-left: auto;
 }
 .top-actions .outbox-btn {
   min-width: 48px;
