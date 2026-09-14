@@ -134,6 +134,7 @@ Clearing site data logs you out and deletes drafts and queued posts.
 
 ## Local post translation (Bergamot)
 
+Test
 Posts can be translated **entirely in the browser** with the [Bergamot](https://browser.mt/) WASM engine. Post text never leaves the device.
 
 - Engine and models: `assets/bergamot/` (lazy-loaded; models cached in Cache API)
