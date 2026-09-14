@@ -1,0 +1,12 @@
+name: Auto Pull on Main
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute git pull on server
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ralf@optimusprime.blackneon.net "cd /var/www/Nightboard83.de/app && git pull"
