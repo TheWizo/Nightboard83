@@ -7,6 +7,10 @@ jobs:
   deploy:
     runs-on: docker
     steps:
+      - name: Save private SSH_PRIVATE_KEY
+        run: |
+         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ssh_key
+         chmod 600 ssh_key
       - name: Execute git pull on server
         run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ralf@optimusprime.blackneon.net "cd /var/www/Nightboard83.de/app && git pull"
+          ssh -o StrictHostKeyChecking=no -i ssh_key ralf@optimusprime.blackneon.net "cd /var/www/Nightboard83.de/app && git pull"
