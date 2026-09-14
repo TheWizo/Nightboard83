@@ -69,23 +69,12 @@ Open `http://127.0.0.1:8000/`.
 
 Point any static host (nginx, Caddy, Apache, Git forge pages, object storage with a website mode) at this directory. Example nginx snippet:
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name nightboard.example;
-
-    root /var/www/nightboard83;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Keep config.json from being cached forever by the browser
-    location = /config.json {
-        add_header Cache-Control "no-store";
-    }
+```caddy
+nightboard83.de {
+        root * /var/www/Nightboard83.de
+        file_server
 }
+
 ```
 
 The app checks for a new service worker on startup, when the tab becomes visible, and about every ten minutes. HTML, CSS, and JavaScript are fetched network-first (cache only if offline). If a new version is found, a SYS.UPDATE overlay runs a short install sequence, then the PWA reloads. If a compose or reply draft is open, the overlay pauses and dismisses so you can finish writing; the update resumes once the buffer is empty.
