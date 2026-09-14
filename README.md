@@ -1,31 +1,47 @@
 # Nightboard '83
 
-Nightboard '83 is a static web client for [Mastodon](https://docs.joinmastodon.org/client/intro/)-compatible servers, written with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, CSS, and JavaScript files with no build step and no backend of its own. The interface ships with German and English UI strings (default German), in an 1980s CRT / neon style, and can be installed as a Progressive Web App.
+**ATTENTION: This project is created by making heavy use of LLM systems (mostly 
+[Mistral](https://mistral.ai)), if you don't want to use software created in 
+this way this particular app may not be for you**
 
-Offline is the core idea: last timelines and media stay cached, compose and reply go to an outbox that flushes when the connection returns, drafts stay local, and the connection status next to the hostname is honest (verbunden / carrier lost / nicht verbunden). These offline pieces are core, not an add-on.
+Nightboard '83 is a static web client for 
+[Mastodon](https://docs.joinmastodon.org/client/intro/)-compatible servers, 
+written with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, 
+CSS, and JavaScript files with no build step and no backend of its own. The 
+interface ships with German and English UI strings (default German), in an 
+retrofuturistic neon style, and can be installed as a Progressive Web App.
 
-The client talks to the instance you configure (or type in at login) using OAuth 2.0 with PKCE. After you authorize, the instance redirects back to Nightboard. A paste-the-code fallback remains for stubborn servers.
+Offline is the core idea: After an initial sync you can view your timelines, 
+compose replies, react and create posts to push them back to the net the next 
+time you have internet access. 
 
-**Homepage:** [https://nightboard83.de](https://nightboard83.de) · **Demo-Installation:** [https://nightboard83.de/app/](https://nightboard83.de/app/) · **Quellcode:** [git.blackneon.net/ralf/Nightboard83](https://git.blackneon.net/ralf/Nightboard83)
+The client talks to the instance you configure (or type in at login) using OAuth 
+2.0 with PKCE. 
+After you authorize, the instance redirects back to Nightboard. A paste-the-code 
+fallback remains for stubborn servers.
 
-Nightboard '83 appears under the **BlackNeon** label (marketing / About only — not a publisher). Copyright remains with Ralf Wissing; see `LICENSE`.
+**Homepage:** [https://nightboard83.de](https://nightboard83.de) · 
+**Demo-Installation:** 
+[https://nightboard83.de/app/](https://nightboard83.de/app/) · **Quellcode:** 
+[git.blackneon.net/ralf/Nightboard83](https://git.blackneon.net/ralf/
+Nightboard83)
+
 
 ## Features
 
 - Four independently scrollable columns: **Home**, **Local**, **Federated** (public timeline), and **Notifications**
-- Collapse columns to header icons; restore by clicking the icon
-- Search for accounts, hashtags, and posts
 - Offline cache (last timelines and media) via PouchDB / IndexedDB
 - Outbox: compose or reply while offline, send automatically when the connection returns
 - Drafts stored locally; a drafts icon appears in the header when any exist
-- Connection status next to the instance hostname (verbunden / carrier lost / nicht verbunden)
-- PWA with chrome 3D **NB '83** icons
+- Installable as PWA
 - Threads with replies, boosts, favourites, and a reply composer
-- Profiles: follow / unfollow, notify / unnotify (per-account notification trigger), mute, block
-- Compose posts with optional content warning, visibility, and image or video attachments
-- Configurable polling for new posts
-- Local in-browser post translation via **Bergamot** WASM engine (24 language pairs, privacy-friendly)
+- Local in-browser post translation via **Bergamot** WASM engine (24 language 
+pairs, privacy-friendly)
 - Two color themes: **default** (synthwave/CRT) and **cyberpunk-dark** (blue-black, red-orange, beveled), selectable via `config.json`
+- **Cyberpsychosis Danger** doomscrolling detector: Tracks scroll velocity, 
+session duration, post-consumption rate, and time of day to estimate a 
+"humanity" score. Escalating CRT-glitch warnings fire when humanity drops. 
+Configurable via `config.json` (`cyberpsych`)
 
 ## Requirements
 
@@ -85,7 +101,8 @@ Edit `config.json` in the program directory. The file is fetched at startup (`ca
   "lang_switch": true,
   "federated": true,
   "local": true,
-  "theme": "default"
+  "theme": "default",
+  "cyberpsych": true
 }
 ```
 
@@ -97,6 +114,7 @@ Edit `config.json` in the program directory. The file is fetched at startup (`ca
 | `federated` | boolean | `true` | Show the **Federated** (public timeline) column and its dock icon. Set to `false` to remove the column entirely — it is not loaded, polled, or streamed. Aliases: `federatedTimeline`, `federated_timeline`, `showFederated`. |
 | `local` | boolean | `true` | Show the **Local** column and its dock icon. Set to `false` to remove the column entirely — it is not loaded, polled, or streamed. Aliases: `localTimeline`, `local_timeline`, `showLocal`. |
 | `theme` | string | `default` | Color theme. `default` is the original synthwave/CRT palette. `cyberpunk-dark` switches to a blue-black background with red-orange accents, beveled corners, and warm-toned icons. Unknown values fall back to `default`. Alias: `skin`. |
+| `cyberpsych` | boolean | `true` | Enable the **Cyberpsychosis Danger** doomscrolling detector. When `true`, a humanity HUD appears below the top bar after login; it decays with fast/continuous scrolling and recovers during pauses, escalating through five levels (STABLE → ELEVATED → UNSTABLE → CRITICAL → CYBERPSYCHOSIS) with CRT-glitch effects and warning dialogs. Set to `false` to disable entirely. |
 
 The login form can still point at a different instance. The last successful instance is stored in `localStorage` (`nightboard83.instance`) and wins over `config.json` on later visits. Changing the instance on login registers a new OAuth app on that server.
 
@@ -134,23 +152,10 @@ Posts can be translated **entirely in the browser** with the [Bergamot](https://
 - A "Translate" control appears only when source ≠ UI language and a registry path exists
 - Falls back gracefully if WebAssembly or Workers are unavailable
 
-## UI languages (i18n)
-
-UI strings live in `i18n/de.json` and `i18n/en.json` (flat JSON, dot-separated keys). German is the content source; English is a first pass. Runtime helper: `js/i18n.js` — `t(key)`, `setLocale`, `detect` (localStorage → navigator → default `de`). Fallback chain: current → `en` → `de`. The **DE | EN** switch can be hidden via `config.json` (`lang_switch: false`).
-
-## Tests
-
-From the project root:
-
-```bash
-node test/run.mjs
-```
-
-Covers instance parsing, ID comparison, outbox flush decisions, poll logic, i18n fallback/interpolation, translation pair gating, and (if Chromium is available) HTML sanitizing, language switch, federated/local column flags, and theme switching.
 
 ## License
 
-- Application code: **GNU Affero GPL v3 or later**, Copyright 2026 Ralf Wissing — see `LICENSE`
+- Application code: **GNU Affero GPL v3 or later**
 - Fonts in `fonts/` (Press Start 2P, VT323, Caveat): **SIL Open Font License 1.1** — see `fonts/OFL.txt`
 - PouchDB (`js/pouchdb.min.js`): **Apache License 2.0**
 - Bergamot translator (`assets/bergamot/`): **Mozilla Public License 2.0**

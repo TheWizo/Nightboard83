@@ -15,14 +15,14 @@
 .cp-hud-inner {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: #241b2fcc;
   border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 5px 12px;
+  padding: 6px 14px;
   backdrop-filter: blur(4px);
   font-family: "Press Start 2P", monospace;
-  font-size: 8.4px;
+  font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -30,8 +30,8 @@
 .cp-hud-label { color: var(--muted); white-space: nowrap; }
 
 .cp-hud-bar-track {
-  width: 96px;
-  height: 10px;
+  width: 110px;
+  height: 12px;
   background: var(--bg0);
   border: 1px solid var(--line);
   border-radius: 2px;
@@ -46,8 +46,8 @@
 
 .cp-hud-pct {
   color: var(--fg);
-  font-size: 8.4px;
-  min-width: 36px;
+  font-size: 10px;
+  min-width: 42px;
   text-align: right;
 }
 

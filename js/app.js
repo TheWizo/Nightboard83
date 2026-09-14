@@ -4,6 +4,7 @@
 (() => {
   let INSTANCE = "";
   let POLL_MS = 2 * 60 * 1000;
+  let CYBERPSYCH_ENABLED = true;
   const Core = window.NBCore || {};
   const SCOPES = "read write follow";
   const OOB = "urn:ietf:wg:oauth:2.0:oob";
@@ -110,6 +111,7 @@
     const fromCfg = normalizeInstance(cfg.instance || cfg.url || cfg.host || "");
     setInstance(fromLs || fromCfg, Boolean(fromLs));
     POLL_MS = pollIntervalMs(cfg);
+    CYBERPSYCH_ENABLED = cfg.cyberpsych !== false;
     if (Core.applyLangSwitch) Core.applyLangSwitch(cfg);
     if (Core.federatedEnabled && !Core.federatedEnabled(cfg)) {
       COLS = COLS.filter((id) => id !== "federated");
@@ -921,7 +923,7 @@
       state.collapsed = readCollapsed();
       paintCollapsed();
       if (window.NBCyberpsych) {
-        NBCyberpsych.start({ persist: false, enabled: true });
+        NBCyberpsych.start({ persist: false, enabled: CYBERPSYCH_ENABLED });
       }
     } else {
       const dock = $("col-dock");
