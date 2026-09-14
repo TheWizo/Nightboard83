@@ -9,4 +9,4 @@ jobs:
     steps:
       - name: Execute git pull on server
         run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ralf@optimusprime.blackneon.net "cd /var/www/Nightboard83.de/app && git pull"
+          ssh ralf@optimusprime.blackneon.net "cd /var/www/Nightboard83.de/app && git pull"
