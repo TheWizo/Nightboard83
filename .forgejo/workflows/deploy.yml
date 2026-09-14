@@ -7,10 +7,13 @@ jobs:
   deploy:
     runs-on: docker
     steps:
-      - name: Add SSH_PRIVATE_KEY to agent
+      - name: Save SSH_PRIVATE_KEY
         run: |
-         eval $(ssh-agent -s)
-         echo "${{ secrets.SSH_PRIVATE_KEY }}" | ssh-add -
+         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ssh_key
+         chmod 600 ssh_key
       - name: Execute git pull on server
         run: |
-          ssh -o StrictHostKeyChecking=no ralf@optimusprime.blackneon.net "cd /var/www/Nightboard83.de/app && git pull"
+          ssh -o StrictHostKeyChecking=no -i ssh_key ralf@optimusprime.blackneon.net "cd /var/www/Nightboard83.de/app && git pull"
+      - name: Remove SSH_PRIVATE_KEY
+        run: |
+          rm ssh_key
