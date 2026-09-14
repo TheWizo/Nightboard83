@@ -252,5 +252,20 @@
   "translate.sameLanguage": "Bereits in deiner Sprache",
   "a11y.translate": "Beitrag übersetzen",
   "a11y.showOriginal": "Originaltext anzeigen",
-  "a11y.showTranslation": "Übersetzung anzeigen"
+  "a11y.showTranslation": "Übersetzung anzeigen",
+  "cyberpsych.level.stable": "STABIL",
+  "cyberpsych.level.elevated": "ERHÖHT",
+  "cyberpsych.level.unstable": "INSTABIL",
+  "cyberpsych.level.critical": "KRITISCH",
+  "cyberpsych.level.cyberpsych": "CYBERPSYCHOSE",
+  "cyberpsych.warn.elevated.title": "Nervensystem-Belastung erkannt",
+  "cyberpsych.warn.elevated.msg": "Dein Scroll-Verhalten zeigt Anzeichen von Doomscrolling. Kurz innehalten?",
+  "cyberpsych.warn.unstable.title": "Mentale Stabilität sinkt",
+  "cyberpsych.warn.unstable.msg": "Du scrollst seit einer Weile ohne Pause. Empfehlung: 2 Minuten Pause, dann weiter.",
+  "cyberpsych.warn.critical.title": "CYBERPSYCHOSE-RISIKO",
+  "cyberpsych.warn.critical.msg": "Humanity-Wert kritisch. Erwäge, das Gerät für einige Minuten abzulegen.",
+  "cyberpsych.warn.cyberpsych.title": "CYBERPSYCHOSE",
+  "cyberpsych.warn.cyberpsych.msg": "Humanity auf null. Kognitive Überlastung. Sofortige Disengagement-Empfehlung.",
+  "cyberpsych.dismiss": "Weiter scrollen",
+  "cyberpsych.acknowledge": "Verstanden — Pause"
 }

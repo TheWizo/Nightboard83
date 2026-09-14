@@ -252,5 +252,20 @@
   "translate.sameLanguage": "Already in your language",
   "a11y.translate": "Translate post",
   "a11y.showOriginal": "Show original text",
-  "a11y.showTranslation": "Show translation"
+  "a11y.showTranslation": "Show translation",
+  "cyberpsych.level.stable": "STABLE",
+  "cyberpsych.level.elevated": "ELEVATED",
+  "cyberpsych.level.unstable": "UNSTABLE",
+  "cyberpsych.level.critical": "CRITICAL",
+  "cyberpsych.level.cyberpsych": "CYBERPSYCHOSIS",
+  "cyberpsych.warn.elevated.title": "Nervous system stress detected",
+  "cyberpsych.warn.elevated.msg": "Your scroll pattern shows signs of doomscrolling. Consider a brief pause.",
+  "cyberpsych.warn.unstable.title": "Mental stability declining",
+  "cyberpsych.warn.unstable.msg": "You've been scrolling without pause for a while. Suggested: 2-minute break, then resume.",
+  "cyberpsych.warn.critical.title": "CYBERPSYCHOSIS RISK",
+  "cyberpsych.warn.critical.msg": "Humanity critical. Consider putting the device down for a few minutes.",
+  "cyberpsych.warn.cyberpsych.title": "CYBERPSYCHOSIS",
+  "cyberpsych.warn.cyberpsych.msg": "Humanity at zero. Cognitive overload. Immediate disengagement recommended.",
+  "cyberpsych.dismiss": "Keep scrolling",
+  "cyberpsych.acknowledge": "Acknowledged — pausing"
 }

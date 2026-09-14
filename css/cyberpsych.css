@@ -1,0 +1,206 @@
+/* === Cyberpsychosis Danger HUD === */
+
+.cp-hud {
+  position: fixed;
+  top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9990;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.cp-hud:not([hidden]) { opacity: 1; }
+
+.cp-hud-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #241b2fcc;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 12px;
+  backdrop-filter: blur(4px);
+  font-family: "Press Start 2P", monospace;
+  font-size: 8.4px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cp-hud-label { color: var(--muted); white-space: nowrap; }
+
+.cp-hud-bar-track {
+  width: 96px;
+  height: 10px;
+  background: var(--bg0);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cp-hud-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--mint);
+  transition: width 1s ease, background 0.6s ease;
+}
+
+.cp-hud-pct {
+  color: var(--fg);
+  font-size: 8.4px;
+  min-width: 36px;
+  text-align: right;
+}
+
+.cp-hud.cp-elevated .cp-hud-label { color: var(--yellow); text-shadow: 0 0 6px #fede5d66; }
+.cp-hud.cp-unstable .cp-hud-label { color: var(--orange); text-shadow: 0 0 8px #f97e7288; animation: cp-blink 1.5s infinite; }
+.cp-hud.cp-critical .cp-hud-label { color: var(--red); text-shadow: 0 0 10px #fe4450aa; animation: cp-blink 0.8s infinite; }
+.cp-hud.cp-cyberpsych .cp-hud-label { color: var(--red); animation: cp-blink 0.4s infinite; }
+
+@keyframes cp-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.3; }
+}
+
+/* === Glitch overlay === */
+.cp-glitch {
+  position: fixed;
+  inset: 0;
+  z-index: 9985;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.cp-glitch.cp-glitch-l2 {
+  background: repeating-linear-gradient(0deg, transparent 0px, rgba(249,126,114,0.04) 1px, transparent 2px, transparent 4px);
+  animation: cp-glitch-mild 3s infinite;
+}
+.cp-glitch.cp-glitch-l3 {
+  background:
+    repeating-linear-gradient(0deg, transparent 0px, rgba(254,68,80,0.06) 1px, transparent 2px, transparent 3px),
+    repeating-linear-gradient(90deg, transparent 0px, rgba(254,68,80,0.03) 1px, transparent 2px);
+  animation: cp-glitch-hard 1.5s infinite;
+}
+.cp-glitch.cp-glitch-l4 {
+  background:
+    repeating-linear-gradient(0deg, transparent 0px, rgba(254,68,80,0.10) 1px, transparent 2px),
+    repeating-linear-gradient(90deg, rgba(255,126,219,0.04) 0px, transparent 1px, rgba(3,237,249,0.04) 2px, transparent 3px);
+  animation: cp-glitch-critical 0.5s infinite;
+}
+
+@keyframes cp-glitch-mild {
+  0%, 100% { transform: translateX(0); opacity: 0.6; }
+  50% { transform: translateX(1px); opacity: 0.8; }
+}
+@keyframes cp-glitch-hard {
+  0%, 100% { transform: translate(0,0); opacity: 0.7; }
+  20% { transform: translate(-2px, 1px); opacity: 0.9; }
+  60% { transform: translate(2px, -1px); opacity: 0.8; }
+}
+@keyframes cp-glitch-critical {
+  0%, 100% { transform: translate(0,0); opacity: 0.8; }
+  10% { transform: translate(-3px, 2px); }
+  20% { transform: translate(3px, -1px); }
+  30% { transform: translate(-1px, 1px); }
+  70% { transform: translate(2px, 2px); opacity: 1; }
+}
+
+/* Body-level CRT distortion */
+body.cp-l2 { animation: cp-shake-subtle 4s infinite; }
+body.cp-l3 { animation: cp-shake-moderate 2s infinite; }
+body.cp-l4 { animation: cp-shake-hard 0.8s infinite; filter: hue-rotate(-5deg) contrast(1.05); }
+
+@keyframes cp-shake-subtle {
+  0%, 100% { transform: translate(0,0); }
+  50% { transform: translate(0.3px, 0); }
+}
+@keyframes cp-shake-moderate {
+  0%, 100% { transform: translate(0,0); }
+  25% { transform: translate(-0.6px, 0.3px); }
+  75% { transform: translate(0.6px, -0.3px); }
+}
+@keyframes cp-shake-hard {
+  0%, 100% { transform: translate(0,0); }
+  20% { transform: translate(-1px, 0.5px); }
+  40% { transform: translate(1px, -0.5px); }
+  60% { transform: translate(-0.5px, 1px); }
+  80% { transform: translate(0.5px, -1px); }
+}
+
+/* === Warning overlay === */
+.cp-warn-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9995;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #191621dd 0%, #050308ee 100%);
+  backdrop-filter: blur(3px);
+}
+.cp-warn-overlay[hidden] { display: none; }
+
+.cp-warn-box {
+  text-align: center;
+  max-width: 440px;
+  padding: 36px 32px;
+  background: #241b2fdd;
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  box-shadow: 0 0 60px #fe445033, inset 0 0 30px #fe445022;
+}
+
+.cp-warn-icon {
+  font-size: 48px;
+  color: var(--red);
+  text-shadow: 0 0 20px #fe4450aa, 2px 0 0 #03edf955, -2px 0 0 #ff7edb55;
+  animation: cp-blink 1s infinite;
+  margin-bottom: 16px;
+}
+
+.cp-warn-title {
+  font-family: "Press Start 2P", monospace;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red);
+  text-shadow: 1px 0 0 #ff7edb55, -1px 0 0 #03edf955, 0 0 12px #fe4450aa;
+  margin-bottom: 16px;
+}
+
+.cp-warn-msg {
+  font-family: "VT323", monospace;
+  font-size: 20px;
+  color: var(--muted);
+  line-height: 1.4;
+  margin-bottom: 24px;
+}
+
+.cp-warn-actions { display: flex; gap: 12px; justify-content: center; }
+
+.cp-warn-btn {
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  background: linear-gradient(180deg, #3a2150, #2a1638);
+  color: var(--fg);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: border-color 0.2s;
+}
+.cp-warn-btn:hover { border-color: var(--cyan); }
+.cp-warn-btn-ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-glitch, body.cp-l2, body.cp-l3, body.cp-l4 { animation: none !important; }
+  .cp-hud.cp-unstable .cp-hud-label,
+  .cp-hud.cp-critical .cp-hud-label,
+  .cp-hud.cp-cyberpsych .cp-hud-label,
+  .cp-warn-icon { animation: none !important; }
+}

@@ -920,6 +920,9 @@
     if (on) {
       state.collapsed = readCollapsed();
       paintCollapsed();
+      if (window.NBCyberpsych) {
+        NBCyberpsych.start({ persist: false, enabled: true });
+      }
     } else {
       const dock = $("col-dock");
       if (dock) dock.hidden = true;
@@ -1122,6 +1125,9 @@
     closeThread();
     stopStreaming();
     stopPolling();
+    if (window.NBCyberpsych) {
+      NBCyberpsych.stop();
+    }
     setLoggedIn(false);
   }
 

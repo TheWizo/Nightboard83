@@ -1,17 +1,19 @@
 /* Nightboard '83 — service worker
    Copyright (C) 2026 Ralf Wissing
    SPDX-License-Identifier: AGPL-3.0-or-later */
-const CACHE = "nightboard83-v58";
+const CACHE = "nightboard83-v59";
 const ASSETS = [
   "./",
   "./index.html",
   "./LICENSE",
   "./css/app.css",
+  "./css/cyberpsych.css",
   "./js/app.js",
   "./js/store.js",
   "./js/core.js",
   "./js/i18n.js",
   "./js/translate.js",
+  "./js/cyberpsych.js",
   "./assets/bergamot/translator.js",
   "./assets/bergamot/registry.json",
   "./assets/bergamot/worker/translator-worker.js",
