@@ -141,7 +141,6 @@ Posts can be translated **entirely in the browser** with the [Bergamot](https://
 - A "Translate" control appears only when source ≠ UI language and a registry path exists
 - Falls back gracefully if WebAssembly or Workers are unavailable
 
-Test
 ## License
 
 - Application code: **GNU Affero GPL v3 or later**
