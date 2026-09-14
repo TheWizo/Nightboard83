@@ -21,10 +21,8 @@ After you authorize, the instance redirects back to Nightboard. A paste-the-code
 fallback remains for stubborn servers.
 
 **Homepage:** [https://nightboard83.de](https://nightboard83.de) · 
-**Demo-Installation:** 
-[https://nightboard83.de/app/](https://nightboard83.de/app/) · **Quellcode:** 
-[git.blackneon.net/ralf/Nightboard83](https://git.blackneon.net/ralf/
-Nightboard83)
+**Main Instance:** 
+[https://nightboard83.de/app/](https://nightboard83.de/app/) 
 
 
 ## Features
