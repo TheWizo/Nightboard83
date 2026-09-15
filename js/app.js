@@ -231,6 +231,7 @@
     usingStream: false,
     streamRetry: null,
     authBusy: false,
+    syncActive: false,
   };
 
   function api(path, opts = {}) {
@@ -3604,15 +3605,120 @@
     paintComposeCount();
   });
 
+  function showSyncBanner(count) {
+    state.syncActive = true;
+    const banner = $("sync-banner");
+    if (!banner) return;
+    banner.hidden = false;
+    banner.classList.remove("is-done");
+    const txt = $("sync-text");
+    if (txt) txt.textContent = t("sync.inProgress", { count });
+  }
+
+  function hideSyncBanner(totalCount) {
+    state.syncActive = false;
+    const banner = $("sync-banner");
+    if (!banner) return;
+    const txt = $("sync-text");
+    if (txt && totalCount > 0) {
+      txt.textContent = t("sync.done", { count: totalCount });
+      banner.classList.add("is-done");
+      setTimeout(() => { banner.hidden = true; banner.classList.remove("is-done"); }, 3000);
+    } else {
+      banner.hidden = true;
+      banner.classList.remove("is-done");
+    }
+  }
+
+  async function bootFromCache() {
+    if (!window.NightDB || !window.NightDB.ready) return;
+    for (const name of COLS) {
+      try {
+        const cached = await NightDB.loadTimeline(name);
+        if (cached.length) {
+          const tl = state.timelines[name];
+          tl.items = cached;
+          tl.maxId = cached[cached.length - 1].id;
+          tl.done = false;
+          renderTimeline(name, $(name + "-body"));
+          syncTimelineUnread(name);
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  async function catchUpSync() {
+    if (!state.token || !state.carrierWanted) return;
+    let totalSynced = 0;
+    let anyGap = false;
+    const MAX_PAGES = 50;
+
+    for (const name of COLS) {
+      const tl = state.timelines[name];
+      if (!tl.items.length) {
+        loadTimeline(name, true);
+        continue;
+      }
+
+      const cachedNewestId = tl.items[0].id;
+      const known = new Set(tl.items.map((s) => s.id));
+      const gapPosts = [];
+      tl.loading = true;
+
+      try {
+        let batch = await api(timelinePath(name, "&since_id=" + encodeURIComponent(cachedNewestId)));
+        if (Array.isArray(batch) && batch.length) {
+          let fresh = batch.filter((s) => s.id && !known.has(s.id));
+          gapPosts.push(...fresh);
+
+          if (fresh.length) {
+            anyGap = true;
+            totalSynced += fresh.length;
+            showSyncBanner(totalSynced);
+          }
+
+          if (batch.length >= 30) {
+            let maxId = batch[batch.length - 1].id;
+            for (let page = 1; page < MAX_PAGES; page++) {
+              batch = await api(timelinePath(name, "&since_id=" + encodeURIComponent(cachedNewestId) + "&max_id=" + encodeURIComponent(maxId)));
+              if (!Array.isArray(batch) || !batch.length) break;
+              fresh = batch.filter((s) => s.id && !known.has(s.id));
+              if (!fresh.length) break;
+              gapPosts.push(...fresh);
+              totalSynced += fresh.length;
+              showSyncBanner(totalSynced);
+              if (batch.length < 30) break;
+              maxId = batch[batch.length - 1].id;
+            }
+          }
+        }
+      } catch { /* keep partial */ } finally {
+        tl.loading = false;
+      }
+
+      if (!gapPosts.length) continue;
+
+      tl.items = gapPosts.concat(tl.items);
+      tl.maxId = tl.items[tl.items.length - 1].id;
+      trimTimeline(name);
+      renderTimeline(name, $(name + "-body"));
+      syncTimelineUnread(name);
+
+      if (window.NightDB) {
+        NightDB.saveTimeline(name, tl.items);
+        cacheTimelineItems(gapPosts);
+      }
+    }
+
+    if (anyGap) hideSyncBanner(totalSynced);
+  }
+
   function bootApp() {
     loadSeenState();
     setLoggedIn(true);
     refreshInstanceConfig();
     applyMaxChars(state.maxChars);
-    loadTimeline("home", true);
-    loadTimeline("local", true);
-    loadTimeline("federated", true);
-    loadTimeline("notifications", true);
+    bootFromCache().then(() => catchUpSync());
     if (state.carrierWanted) startLiveUpdates();
     refreshOutboxBadge();
     refreshDraftsBadge();

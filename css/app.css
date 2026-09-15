@@ -673,6 +673,38 @@ button:disabled { opacity: 0.5; cursor: default; }
 .carrier-btn.is-offline { border-color: var(--red); }
 .carrier-btn.is-online { border-color: var(--mint); }
 
+.sync-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--yellow);
+  background: #241b2fd9;
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  z-index: 6;
+}
+.sync-banner[hidden] { display: none; }
+.sync-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 0 10px #fede5d;
+  flex-shrink: 0;
+  animation: sync-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes sync-pulse {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+.sync-text {
+  color: var(--yellow);
+  font-size: 21px;
+  text-shadow: 0 0 8px #fede5d66;
+}
+.sync-banner.is-done .sync-pulse { animation: none; opacity: 1; }
+
 .tos-zoom {
   position: absolute;
   inset: 0;

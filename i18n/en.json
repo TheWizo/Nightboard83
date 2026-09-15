@@ -197,6 +197,8 @@
   "status.connected": "connected",
   "status.offline": "not connected",
   "status.carrierLost": "§$%&?$ CARRIER LOST",
+  "sync.inProgress": "SYNC IN PROGRESS — {count} POSTS",
+  "sync.done": "{count} POSTS SYNCED",
   "pwa.sysUpdate": "SYS.UPDATE // NIGHTBOARD",
   "pwa.overlay.title": "Overlay",
   "confirm.deletePostTitle": "Delete post?",
