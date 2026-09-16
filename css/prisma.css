@@ -633,6 +633,11 @@ body.theme-prisma .dock-icon:focus-visible {
   border-color: rgba(63, 240, 255, 0.75);
   border-radius: 10px;
 }
+body.theme-prisma .dock-icon.is-open {
+  border: 1px solid var(--blue);
+  border-radius: 10px;
+  box-shadow: 0 0 6px var(--blue), 0 0 14px #5fd2ff55, inset 0 0 4px #5fd2ff33;
+}
 
 /* === Statusbar === */
 body.theme-prisma .statusbar {

@@ -636,6 +636,11 @@ button:disabled { opacity: 0.5; cursor: default; }
   filter: none;
   animation: none;
 }
+.dock-icon.is-open {
+  border: 1px solid var(--cyan);
+  border-radius: 8px;
+  box-shadow: 0 0 6px var(--cyan), 0 0 14px #03edf955, inset 0 0 4px #03edf933;
+}
 
 .statusbar {
   display: flex;

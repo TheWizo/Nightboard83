@@ -2125,16 +2125,19 @@
     const cols = $("columns");
     if (cols) {
       cols.classList.toggle("is-empty", logged && visible.length === 0);
-      cols.classList.toggle("has-dock", logged && visible.length < COLS.length);
+      cols.classList.toggle("has-dock", logged);
     }
     const logo = $("desktop-logo");
     if (logo) logo.hidden = !(logged && visible.length === 0);
     const dock = $("col-dock");
     if (dock) {
-      dock.hidden = !(logged && visible.length < COLS.length);
+      dock.hidden = !logged;
       COLS.forEach((id) => {
         const btn = dockBtn(id);
-        if (btn) btn.hidden = !state.collapsed[id];
+        if (btn) {
+          btn.hidden = false;
+          btn.classList.toggle("is-open", !state.collapsed[id]);
+        }
       });
     }
     paintUnread();
@@ -2223,10 +2226,7 @@
       const dock = $("col-dock");
       const btn = dockBtn(name);
       if (dock) dock.hidden = false;
-      if (btn) {
-        btn.hidden = false;
-        btn.style.visibility = "hidden";
-      }
+      if (btn) btn.style.visibility = "hidden";
       const to = btn ? btn.getBoundingClientRect() : from;
       await tosZoom(from, to);
       if (state.expandedCol) setColumnExpanded(null);
@@ -3225,7 +3225,9 @@
     }
     const restore = ev.target.closest("[data-restore]");
     if (restore) {
-      restoreCol(restore.getAttribute("data-restore"));
+      const name = restore.getAttribute("data-restore");
+      if (state.collapsed[name]) restoreCol(name);
+      else collapseCol(name);
       return;
     }
     const expand = ev.target.closest("[data-expand]");
