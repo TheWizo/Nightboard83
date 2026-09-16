@@ -853,6 +853,22 @@ body.theme-prisma .top-actions .outbox-btn.primary {
   min-width: 32px;
   padding: 4px;
 }
+
+/* Larger Compose + Profile + Search buttons */
+body.theme-prisma .top-actions .outbox-btn#btn-compose,
+body.theme-prisma .top-actions .outbox-btn#btn-profile,
+body.theme-prisma .top-actions .outbox-btn#btn-search {
+  min-width: 64px;
+  width: 64px;
+  height: 64px;
+  padding: 8px;
+}
+body.theme-prisma .top-actions .outbox-btn#btn-compose .outbox-glyph,
+body.theme-prisma .top-actions .outbox-btn#btn-profile .outbox-glyph,
+body.theme-prisma .top-actions .outbox-btn#btn-search .outbox-glyph {
+  width: 36px;
+  height: 36px;
+}
 body.theme-prisma .outbox-count {
   min-width: 14px;
   padding: 0 3px;
