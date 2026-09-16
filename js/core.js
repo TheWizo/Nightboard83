@@ -331,7 +331,7 @@
   const THEME_META_COLORS = {
     "default": "#241b2f",
     "cyberpunk-dark": "#0a0e14",
-    "prisma": "#0b0e1f",
+    "prisma": "#131a3a",
   };
 
   function normalizeTheme(cfg) {

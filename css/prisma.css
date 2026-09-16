@@ -25,33 +25,38 @@
 
 /* === Design Tokens === */
 body.theme-prisma {
-  --bg0: #0b0e1f;
-  --bg1: rgba(23, 28, 56, 0.62);
-  --bg2: rgba(30, 36, 72, 0.45);
-  --bg3: rgba(40, 48, 96, 0.5);
-  --fg: #eef1ff;
-  --muted: #9aa3d4;
-  --comment: #9aa3d4;
-  --pink: #ff5fd2;
-  --cyan: #3ff0ff;
-  --mint: #a4ff5f;
-  --yellow: #ffc857;
-  --red: #fe4450;
-  --orange: #ff8a4c;
-  --line: rgba(140, 160, 255, 0.16);
+  --bg0: #131a3a;                       /* Basis-Hintergrund, helles Indigo */
+  --bg1: rgba(38, 47, 94, 0.6);          /* --panel */
+  --bg2: rgba(46, 56, 108, 0.45);       /* --panel-soft */
+  --bg3: rgba(52, 63, 120, 0.5);
+  --fg: #f2f5ff;                        /* Haupttext */
+  --muted: #b0bae6;                     /* Sekundärtext */
+  --comment: #b0bae6;
+  --blue: #5fd2ff;                      /* Primär-Akzent – hellblau */
+  --cyan: #3ff0ff;                      /* Sekundär-Akzent */
+  --lime: #a4ff5f;                      /* Erfolg / connected */
+  --deep: #2b5cff;                      /* Tertiär-Akzent – dunkelblau */
+  --yellow: #ffc857;                    /* Warnung */
+  --red: #fe4450;                       /* Fehler / danger */
+  --orange: #ff8a4c;                    /* Cyberpsych-Eskalationsstufe */
+  --line: rgba(155, 175, 255, 0.24);    /* Borders, Divider */
   --radius: 16px;
-  --panel-border: rgba(140, 160, 255, 0.16);
+  --panel-border: rgba(155, 175, 255, 0.24);
   --font: "Outfit", "Inter", system-ui, -apple-system, sans-serif;
   --font-ui: "Outfit", "Inter", system-ui, sans-serif;
+  /* Compatibility aliases — keep old variable names working for JS/cyberpsych */
+  --mint: var(--lime);
+  --pink: var(--blue);
+  --violet: var(--deep);
 }
 
 /* === Aurora background === */
 body.theme-prisma {
-  background: #0b0e1f;
+  background: #131a3a;
   color: var(--fg);
   position: relative;
   overflow: hidden;
-  font-size: 15px;
+  font-size: 14.5px;
   line-height: 1.55;
 }
 
@@ -75,14 +80,14 @@ body.theme-prisma #aurora-bg .aurora-blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(60px);
-  opacity: 0.18;
+  opacity: 0.22;
   will-change: transform;
 }
 
 body.theme-prisma #aurora-bg .aurora-blob:nth-child(1) {
   width: 380px; height: 380px;
   top: 5%; left: 10%;
-  background: #ff5fd2;
+  background: #5fd2ff;
   animation: prisma-drift-1 18s ease-in-out infinite;
 }
 body.theme-prisma #aurora-bg .aurora-blob:nth-child(2) {
@@ -100,8 +105,20 @@ body.theme-prisma #aurora-bg .aurora-blob:nth-child(3) {
 body.theme-prisma #aurora-bg .aurora-blob:nth-child(4) {
   width: 420px; height: 420px;
   top: 20%; right: 30%;
-  background: #9b6bff;
+  background: #2b5cff;
   animation: prisma-drift-4 23s ease-in-out infinite;
+}
+body.theme-prisma #aurora-bg .aurora-blob:nth-child(5) {
+  width: 360px; height: 360px;
+  bottom: 25%; right: 15%;
+  background: #5fd2ff;
+  animation: prisma-drift-5 20s ease-in-out infinite;
+}
+body.theme-prisma #aurora-bg .aurora-blob:nth-child(6) {
+  width: 460px; height: 460px;
+  top: 50%; left: 5%;
+  background: #2b5cff;
+  animation: prisma-drift-6 14s ease-in-out infinite;
 }
 
 @keyframes prisma-drift-1 {
@@ -120,6 +137,14 @@ body.theme-prisma #aurora-bg .aurora-blob:nth-child(4) {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(-40px, -20px) scale(1.12); }
 }
+@keyframes prisma-drift-5 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(35px, -40px) scale(1.18); }
+}
+@keyframes prisma-drift-6 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-25px, 30px) scale(1.1); }
+}
 
 /* === CRT neutralisation === */
 body.theme-prisma.crt::after,
@@ -128,17 +153,34 @@ body.theme-prisma.crt::before {
   animation: none !important;
 }
 
-body.theme-prisma #app::before {
-  content: none;
-}
+/* CRT glass reflection deactivated; #app::before now used for neon edge above */
 
 body.theme-prisma #app {
   background: transparent;
-  border: 2px solid rgba(63, 240, 255, 0.7);
+  border: 1px solid rgba(95, 210, 255, 0.5);
   border-radius: 0;
-  box-shadow: 0 0 16px rgba(63, 240, 255, 0.5), 0 0 32px rgba(63, 240, 255, 0.3), 0 0 64px rgba(63, 240, 255, 0.15), inset 0 0 16px rgba(63, 240, 255, 0.3), inset 0 0 32px rgba(63, 240, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.26), 0 0 0 1px rgba(95, 210, 255, 0.3), 0 0 24px rgba(95, 210, 255, 0.25), 0 0 60px rgba(95, 210, 255, 0.12);
   position: relative;
   z-index: 1;
+}
+
+/* Obere Neon-Kante — fixe 3px-Linie am oberen App-Rand */
+body.theme-prisma #app::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #5fd2ff, #3ff0ff, #2b5cff, #3ff0ff, #5fd2ff);
+  background-size: 200% 100%;
+  animation: prisma-edgeflow 8s linear infinite;
+  box-shadow: 0 0 16px #5fd2ff99, 0 0 44px #3ff0ff55;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes prisma-edgeflow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
 }
 
 body.theme-prisma {
@@ -151,27 +193,34 @@ body.theme-prisma {
   100% { background-position: 200% 50%; }
 }
 
+/* === Breathe animation for logo === */
+@keyframes prisma-breathe {
+  0%, 100% { box-shadow: 0 0 16px #5fd2ff55; }
+  50% { box-shadow: 0 0 38px #5fd2ff99; }
+}
+
 /* === Puls for connection LED === */
 @keyframes prisma-pulse {
-  0%, 100% { opacity: 1; text-shadow: 0 0 8px #a4ff5f; }
+  0%, 100% { opacity: 1; text-shadow: 0 0 12px #a4ff5f; }
   50% { opacity: 0.7; text-shadow: 0 0 16px #a4ff5f, 0 0 24px #a4ff5f80; }
 }
 
-/* === Topbar === */
+/* === Panel-Grundglow — permanenter hellblauer Saum === */
 body.theme-prisma .topbar {
-  background: rgba(11, 14, 31, 0.72);
+  background: rgba(19, 26, 58, 0.72);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
+  box-shadow: 0 0 26px rgba(95, 210, 255, 0.14);
 }
 
-/* === Logo === */
+/* === Logo — atmet === */
 body.theme-prisma .logo {
-  border-color: var(--pink);
-  color: var(--pink);
-  text-shadow: 0 0 14px #ff5fd255;
-  box-shadow: 0 0 14px #ff5fd244, inset 0 0 8px #ff5fd222;
+  border-color: var(--blue);
+  color: var(--blue);
+  text-shadow: 0 0 14px #5fd2ff55;
   border-radius: 10px;
+  animation: prisma-breathe 3.6s ease-in-out infinite;
 }
 
 /* === Brand title === */
@@ -179,7 +228,7 @@ body.theme-prisma .brand h1 {
   font-family: var(--font-ui);
   font-weight: 800;
   letter-spacing: -0.02em;
-  text-shadow: 0 0 14px #ff5fd233;
+  text-shadow: 0 0 14px #5fd2ff33;
 }
 body.theme-prisma .brand h1 em {
   color: var(--cyan);
@@ -188,8 +237,8 @@ body.theme-prisma .brand h1 em {
 
 /* === Connection status === */
 body.theme-prisma .conn-status.is-connected {
-  color: var(--mint);
-  text-shadow: 0 0 8px #a4ff5f;
+  color: var(--lime);
+  text-shadow: 0 0 12px #a4ff5f;
   animation: prisma-pulse 2.4s infinite;
 }
 body.theme-prisma .conn-status.is-carrier-lost {
@@ -203,7 +252,7 @@ body.theme-prisma .conn-status.is-offline {
 
 /* === Outbox badge === */
 body.theme-prisma .outbox-count {
-  background: linear-gradient(135deg, #ff5fd2, #9b6bff);
+  background: linear-gradient(135deg, #5fd2ff, #2b5cff);
   color: #0b0e1f;
   border-radius: 999px;
 }
@@ -220,18 +269,18 @@ body.theme-prisma button {
 }
 body.theme-prisma button:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: var(--cyan);
-  box-shadow: 0 0 14px #3ff0ff44;
+  border-color: rgba(63, 240, 255, 0.75);
+  box-shadow: 0 0 18px rgba(63, 240, 255, 0.45);
   filter: brightness(1.1);
 }
 body.theme-prisma button:active {
-  border-color: var(--pink);
-  box-shadow: 0 0 14px #ff5fd244;
+  border-color: var(--blue);
+  box-shadow: 0 0 14px #5fd2ff44;
 }
 
 /* === Primary CTA — shimmer gradient === */
 body.theme-prisma button.primary {
-  background: linear-gradient(90deg, #ff5fd2, #9b6bff, #3ff0ff);
+  background: linear-gradient(90deg, #5fd2ff, #2b5cff, #3ff0ff);
   background-size: 200% 100%;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -241,7 +290,7 @@ body.theme-prisma button.primary {
   text-shadow: none;
 }
 body.theme-prisma button.primary:hover {
-  box-shadow: 0 0 20px #ff5fd266, 0 0 30px #3ff0ff44;
+  box-shadow: 0 0 20px #5fd2ff66, 0 0 30px #3ff0ff44;
   filter: brightness(1.08);
 }
 
@@ -253,7 +302,7 @@ body.theme-prisma button.ghost {
   border-radius: 999px;
 }
 body.theme-prisma button.ghost:hover {
-  border-color: var(--cyan);
+  border-color: rgba(63, 240, 255, 0.75);
   color: var(--fg);
 }
 
@@ -270,7 +319,7 @@ body.theme-prisma #btn-compose {
 body.theme-prisma #btn-compose:hover {
   background: transparent;
   border-color: transparent;
-  box-shadow: 0 0 14px #ff5fd233;
+  box-shadow: 0 0 14px #5fd2ff33;
   filter: brightness(1.1);
 }
 
@@ -279,14 +328,13 @@ body.theme-prisma .col {
   background: var(--bg1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(63, 240, 255, 0.4);
-  border-right: 1px solid rgba(63, 240, 255, 0.4);
-  box-shadow: 0 0 12px rgba(63, 240, 255, 0.2), inset 0 0 8px rgba(63, 240, 255, 0.04);
+  border: 1px solid var(--line);
+  box-shadow: 0 0 26px rgba(95, 210, 255, 0.14);
 }
 
 /* === Column headers === */
 body.theme-prisma .col-head {
-  background: rgba(11, 14, 31, 0.5);
+  background: rgba(19, 26, 58, 0.5);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
@@ -299,8 +347,8 @@ body.theme-prisma .col-head h2 {
   text-shadow: 0 0 14px currentColor;
 }
 body.theme-prisma .col-head.home h2 {
-  color: var(--pink);
-  text-shadow: 0 0 14px #ff5fd255;
+  color: var(--blue);
+  text-shadow: 0 0 14px #5fd2ff55;
 }
 body.theme-prisma .col-head.local h2 {
   color: var(--cyan);
@@ -311,7 +359,7 @@ body.theme-prisma .col-head.federated h2 {
   text-shadow: 0 0 14px #ffc85755;
 }
 body.theme-prisma .col-head.notes h2 {
-  color: var(--mint);
+  color: var(--lime);
   text-shadow: 0 0 14px #a4ff5f55;
 }
 
@@ -329,7 +377,7 @@ body.theme-prisma .icon-btn:hover {
 }
 
 body.theme-prisma .col-head-actions select {
-  background: rgba(11, 14, 31, 0.7);
+  background: rgba(19, 26, 58, 0.7);
   border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--fg);
@@ -343,13 +391,14 @@ body.theme-prisma .empty,
 body.theme-prisma .error {
   border-bottom: 1px solid var(--line);
   box-shadow: none;
-  font-size: 15px;
+  font-size: 14.5px;
   line-height: 1.55;
 }
 body.theme-prisma .status:hover {
-  background: rgba(255, 95, 210, 0.06);
-  box-shadow: 0 0 14px rgba(255, 95, 210, 0.1);
+  background: rgba(95, 210, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(95, 210, 255, 0.45), 0 0 30px rgba(95, 210, 255, 0.25);
   transform: translateY(-2px);
+  transition: box-shadow 300ms, transform 300ms, background 300ms;
 }
 body.theme-prisma .status.is-thread-root {
   background: rgba(63, 240, 255, 0.06);
@@ -362,7 +411,7 @@ body.theme-prisma .status.is-reply-target {
 body.theme-prisma .empty,
 body.theme-prisma .error {
   color: var(--muted);
-  font-size: 15px;
+  font-size: 14.5px;
 }
 body.theme-prisma .error {
   color: var(--orange);
@@ -378,7 +427,7 @@ body.theme-prisma .hint { font-size: 14px; }
 body.theme-prisma .thread-replies-empty { font-size: 14px; }
 body.theme-prisma .thread-reply-to { font-size: 13px; }
 body.theme-prisma .display { font-size: 14px; font-weight: 600; }
-body.theme-prisma .content { font-size: 15px; line-height: 1.55; }
+body.theme-prisma .content { font-size: 14.5px; line-height: 1.55; }
 body.theme-prisma .cw { font-size: 14px; }
 body.theme-prisma .status-meta { font-size: 12px; }
 body.theme-prisma .actions { font-size: 12px; gap: 6px; }
@@ -390,15 +439,15 @@ body.theme-prisma .poll-option-title { font-size: 14px; }
 body.theme-prisma .poll-option-pct { font-size: 13px; }
 body.theme-prisma .poll-meta { font-size: 12px; }
 body.theme-prisma .login-card input,
-body.theme-prisma .login-card textarea { font-size: 15px; }
+body.theme-prisma .login-card textarea { font-size: 14.5px; }
 body.theme-prisma #compose-form > input,
-body.theme-prisma #compose-form > textarea { font-size: 15px; }
-body.theme-prisma #thread-reply-text { font-size: 15px; }
+body.theme-prisma #compose-form > textarea { font-size: 14.5px; }
+body.theme-prisma #thread-reply-text { font-size: 14.5px; }
 body.theme-prisma .attach-alt textarea,
-body.theme-prisma .outbox-edit { font-size: 15px; }
+body.theme-prisma .outbox-edit { font-size: 14.5px; }
 body.theme-prisma .login-card h2 { font-size: 18px; }
 body.theme-prisma #compose-form header h2,
-body.theme-prisma .overlay-head h2 { font-size: 15px; }
+body.theme-prisma .overlay-head h2 { font-size: 13px; }
 body.theme-prisma .sw-update-log { font-size: 14px; }
 body.theme-prisma .sw-update-head { font-size: 13px; }
 body.theme-prisma .login-wordmark { font-size: 36px; }
@@ -410,12 +459,12 @@ body.theme-prisma .profile-note { font-size: 14px; }
 body.theme-prisma .avatar {
   border-radius: 12px;
   border: 2px solid var(--line);
-  box-shadow: 0 0 10px rgba(140, 160, 255, 0.15);
+  box-shadow: 0 0 26px rgba(95, 210, 255, 0.37), 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
 /* === Login panel === */
 body.theme-prisma .login-panel {
-  background: #0b0e1f;
+  background: #131a3a;
 }
 body.theme-prisma .login-card {
   background: var(--bg1);
@@ -429,7 +478,7 @@ body.theme-prisma .login-card h2 {
   font-family: var(--font-ui);
   font-weight: 800;
   color: var(--fg);
-  text-shadow: 0 0 14px #ff5fd233;
+  text-shadow: 0 0 14px #5fd2ff33;
 }
 body.theme-prisma .login-card p {
   color: var(--muted);
@@ -440,12 +489,12 @@ body.theme-prisma .login-name {
   font-family: var(--font-ui);
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #ff5fd2, #9b6bff, #3ff0ff);
+  background: linear-gradient(135deg, #5fd2ff, #2b5cff, #3ff0ff);
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 14px #ff5fd244);
+  filter: drop-shadow(0 0 14px #5fd2ff44);
   animation: prisma-shimmer 4s linear infinite;
 }
 body.theme-prisma .login-year {
@@ -454,7 +503,7 @@ body.theme-prisma .login-year {
 }
 
 body.theme-prisma .login-wordmark .login-name {
-  text-shadow: 0 0 14px #ff5fd233;
+  text-shadow: 0 0 14px #5fd2ff33;
 }
 
 /* === Inputs === */
@@ -471,8 +520,8 @@ body.theme-prisma #overlay-body input {
 body.theme-prisma .login-card input:focus,
 body.theme-prisma .login-card textarea:focus,
 body.theme-prisma #overlay-body input:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 14px #3ff0ff44;
+  border-color: rgba(63, 240, 255, 0.75);
+  box-shadow: 0 0 18px rgba(63, 240, 255, 0.45);
   outline: none;
 }
 
@@ -486,8 +535,8 @@ body.theme-prisma #compose-form > textarea {
 }
 body.theme-prisma #compose-form > input:focus,
 body.theme-prisma #compose-form > textarea:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 14px #3ff0ff44;
+  border-color: rgba(63, 240, 255, 0.75);
+  box-shadow: 0 0 18px rgba(63, 240, 255, 0.45);
   outline: none;
 }
 body.theme-prisma .attach-alt textarea,
@@ -500,13 +549,17 @@ body.theme-prisma #thread-reply-text {
   font-family: var(--font);
 }
 
-/* === Language switch === */
+/* === Language switch / Tab-Pills === */
 body.theme-prisma .lang-btn.is-active,
 body.theme-prisma .lang-btn[aria-pressed="true"] {
   background: linear-gradient(135deg, #3ff0ff, #5f8bff);
   color: #0b0e1f;
   border-radius: 999px;
   font-weight: 600;
+  box-shadow: 0 0 22px #5fd2ff88;
+}
+body.theme-prisma .lang-btn:hover {
+  box-shadow: 0 0 16px rgba(95, 210, 255, 0.55);
 }
 body.theme-prisma .lang-switch {
   border: 1px solid var(--line);
@@ -526,13 +579,13 @@ body.theme-prisma .dock-icon svg {
   width: 29px;
   height: 29px;
 }
-body.theme-prisma .dock-icon.is-home { color: var(--pink); }
+body.theme-prisma .dock-icon.is-home { color: var(--blue); }
 body.theme-prisma .dock-icon.is-local { color: var(--cyan); }
 body.theme-prisma .dock-icon.is-federated { color: var(--yellow); }
-body.theme-prisma .dock-icon.is-notes { color: var(--mint); }
+body.theme-prisma .dock-icon.is-notes { color: var(--lime); }
 
 body.theme-prisma .dock-icon.has-unread.is-home {
-  text-shadow: 0 0 4px #fff, 0 0 8px #ff5fd2, 0 0 16px #ff5fd2, 0 0 28px #ff5fd2ee;
+  text-shadow: 0 0 4px #fff, 0 0 8px #5fd2ff, 0 0 16px #5fd2ff, 0 0 28px #5fd2ffee;
 }
 body.theme-prisma .dock-icon.has-unread.is-local {
   text-shadow: 0 0 4px #fff, 0 0 8px #3ff0ff, 0 0 16px #3ff0ff, 0 0 28px #3ff0ffee;
@@ -548,8 +601,8 @@ body.theme-prisma .dock-icon.has-unread.is-home svg {
   filter:
     drop-shadow(0 0 2px #fff)
     drop-shadow(0 0 5px #ff8ae6)
-    drop-shadow(0 0 12px #ff5fd2)
-    drop-shadow(0 0 22px #ff5fd2);
+    drop-shadow(0 0 12px #5fd2ff)
+    drop-shadow(0 0 22px #5fd2ff);
 }
 body.theme-prisma .dock-icon.has-unread.is-local svg {
   filter:
@@ -577,13 +630,13 @@ body.theme-prisma .dock-icon:hover,
 body.theme-prisma .dock-icon:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   color: var(--fg);
-  border-color: var(--cyan);
+  border-color: rgba(63, 240, 255, 0.75);
   border-radius: 10px;
 }
 
 /* === Statusbar === */
 body.theme-prisma .statusbar {
-  background: rgba(11, 14, 31, 0.72);
+  background: rgba(19, 26, 58, 0.72);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
@@ -607,7 +660,7 @@ body.theme-prisma .carrier-btn .prisma-wifi {
   filter: drop-shadow(0 0 6px #fe445088);
 }
 body.theme-prisma .carrier-btn.is-online .prisma-wifi {
-  color: var(--mint);
+  color: var(--lime);
   filter: drop-shadow(0 0 6px #a4ff5f88);
 }
 
@@ -615,7 +668,7 @@ body.theme-prisma .carrier-btn.is-offline {
   border-color: var(--red);
 }
 body.theme-prisma .carrier-btn.is-online {
-  border-color: var(--mint);
+  border-color: var(--lime);
   box-shadow: 0 0 14px #a4ff5f44;
 }
 
@@ -631,36 +684,38 @@ body.theme-prisma .poll-option {
   border-radius: 10px;
 }
 body.theme-prisma .poll-option:hover {
-  border-color: var(--cyan);
+  border-color: rgba(63, 240, 255, 0.75);
   box-shadow: 0 0 10px #3ff0ff33;
 }
 body.theme-prisma .poll-option.is-selected {
-  border-color: var(--pink);
-  box-shadow: inset 0 0 0 1px var(--pink), 0 0 14px #ff5fd233;
+  border-color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue), 0 0 14px #5fd2ff33;
 }
 body.theme-prisma .poll-option.is-own {
-  border-color: var(--cyan);
+  border-color: rgba(63, 240, 255, 0.75);
 }
 body.theme-prisma .poll-bar {
-  background: linear-gradient(90deg, rgba(255, 95, 210, 0.2), rgba(155, 107, 255, 0.15));
+  background: linear-gradient(90deg, rgba(95, 210, 255, 0.2), rgba(43, 92, 255, 0.15));
   border-radius: 999px;
+  opacity: 0.3;
+  box-shadow: 0 0 14px rgba(95, 210, 255, 0.4);
 }
 body.theme-prisma .poll-option.is-own .poll-bar {
   background: linear-gradient(90deg, rgba(63, 240, 255, 0.3), rgba(164, 255, 95, 0.2));
 }
 body.theme-prisma .poll-submit {
-  border-color: var(--pink);
-  color: var(--pink);
+  border-color: var(--blue);
+  color: var(--blue);
   border-radius: 999px;
 }
 body.theme-prisma .poll-submit:hover {
-  background: rgba(255, 95, 210, 0.12);
-  box-shadow: 0 0 14px #ff5fd233;
+  background: rgba(95, 210, 255, 0.12);
+  box-shadow: 0 0 14px #5fd2ff33;
 }
 
 /* === Media play button === */
 body.theme-prisma .media-play {
-  background: rgba(11, 14, 31, 0.7);
+  background: rgba(19, 26, 58, 0.7);
   border: 1px solid var(--cyan);
   border-radius: 999px;
   color: var(--cyan);
@@ -670,13 +725,13 @@ body.theme-prisma .media-play {
 
 /* === Media stage === */
 body.theme-prisma .media-stage {
-  background: rgba(11, 14, 31, 0.8);
+  background: rgba(19, 26, 58, 0.8);
   border-radius: 12px;
 }
 
 /* === Dialogs === */
 body.theme-prisma dialog {
-  background: rgba(15, 19, 42, 0.85);
+  background: rgba(19, 26, 58, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--line);
@@ -685,8 +740,35 @@ body.theme-prisma dialog {
   color: var(--fg);
   font-family: var(--font);
 }
+
+/* === Compose-Box als Glow-Zentrum === */
+body.theme-prisma #compose-dialog {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 44px rgba(43, 92, 255, 0.32), 0 0 12px rgba(95, 210, 255, 0.28);
+}
+body.theme-prisma #compose-form {
+  position: relative;
+}
+body.theme-prisma #compose-form::before,
+body.theme-prisma #compose-form::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(30px);
+  pointer-events: none;
+  z-index: 0;
+}
+body.theme-prisma #compose-form::before {
+  width: 120px; height: 120px;
+  top: 0; right: 0;
+  background: rgba(95, 210, 255, 0.12);
+}
+body.theme-prisma #compose-form::after {
+  width: 100px; height: 100px;
+  bottom: 0; left: 0;
+  background: rgba(63, 240, 255, 0.1);
+}
 body.theme-prisma dialog::backdrop {
-  background: rgba(11, 14, 31, 0.7);
+  background: rgba(19, 26, 58, 0.7);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -702,7 +784,7 @@ body.theme-prisma .overlay-head h2 {
   font-family: var(--font-ui);
   font-weight: 800;
   color: var(--fg);
-  text-shadow: 0 0 14px #ff5fd233;
+  text-shadow: 0 0 14px #5fd2ff33;
 }
 body.theme-prisma #compose-form footer .outbox-btn.primary {
   border-color: transparent;
@@ -717,7 +799,7 @@ body.theme-prisma .thread-reply {
 /* === SW update overlay === */
 body.theme-prisma #sw-update-dialog {
   border: 1px solid var(--cyan);
-  background: rgba(11, 14, 31, 0.9);
+  background: rgba(19, 26, 58, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 40px #3ff0ff22;
@@ -748,12 +830,12 @@ body.theme-prisma .sw-update-cursor {
 }
 body.theme-prisma .sw-update-bar {
   border: 1px solid var(--line);
-  background: rgba(11, 14, 31, 0.6);
+  background: rgba(19, 26, 58, 0.6);
   box-shadow: none;
   border-radius: 999px;
 }
 body.theme-prisma .sw-update-bar i {
-  background: linear-gradient(90deg, #ff5fd2, #9b6bff, #3ff0ff);
+  background: linear-gradient(90deg, #5fd2ff, #2b5cff, #3ff0ff);
   background-size: 200% 100%;
   animation: prisma-shimmer 4s linear infinite;
   box-shadow: 0 0 10px #3ff0ff66;
@@ -774,14 +856,14 @@ body.theme-prisma .desktop-logo .login-name {
   font-family: var(--font-ui);
   letter-spacing: -0.02em;
   transform: none;
-  background: linear-gradient(135deg, #ff5fd2, #9b6bff, #3ff0ff);
+  background: linear-gradient(135deg, #5fd2ff, #2b5cff, #3ff0ff);
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   -webkit-text-stroke: 0;
   paint-order: normal;
-  filter: drop-shadow(0 0 14px #ff5fd244);
+  filter: drop-shadow(0 0 14px #5fd2ff44);
   animation: prisma-shimmer 4s linear infinite;
 }
 body.theme-prisma .desktop-logo .login-year {
@@ -794,8 +876,8 @@ body.theme-prisma .desktop-logo .login-year {
 
 /* === Ticker === */
 body.theme-prisma .ticker {
-  background: linear-gradient(90deg, rgba(255, 95, 210, 0.1), rgba(155, 107, 255, 0.06));
-  text-shadow: 0 0 8px #ff5fd244;
+  background: linear-gradient(90deg, rgba(95, 210, 255, 0.1), rgba(43, 92, 255, 0.06));
+  text-shadow: 0 0 8px #5fd2ff44;
 }
 
 /* === Profile === */
@@ -805,20 +887,20 @@ body.theme-prisma .profile-actions button.is-block {
 
 /* === Translate === */
 body.theme-prisma .translate-toggle {
-  text-shadow: 0 0 8px #ff5fd233;
+  text-shadow: 0 0 8px #5fd2ff33;
 }
 body.theme-prisma .nb-translate-panel {
-  box-shadow: inset 2px 0 12px rgba(155, 107, 255, 0.1);
+  box-shadow: inset 2px 0 12px rgba(43, 92, 255, 0.1);
 }
 body.theme-prisma .content.nb-translate-error {
   text-shadow: 0 0 6px #fe445055;
 }
 body.theme-prisma .nb-translate-progress {
-  background: var(--violet, #9b6bff);
+  background: var(--deep, #2b5cff);
 }
 body.theme-prisma .nb-translate-progress-bar {
-  background: #9b6bff;
-  box-shadow: 0 0 6px #9b6bff;
+  background: #2b5cff;
+  box-shadow: 0 0 6px #2b5cff;
 }
 
 /* === SVG icon fill overrides ===
@@ -826,11 +908,11 @@ body.theme-prisma .nb-translate-progress-bar {
 body.theme-prisma svg [fill="#03edf9"] { fill: #3ff0ff; }
 body.theme-prisma svg [fill="#72f1b8"] { fill: #a4ff5f; }
 body.theme-prisma svg [fill="#fede5d"] { fill: #ffc857; }
-body.theme-prisma svg [fill="#ff7edb"] { fill: #ff5fd2; }
+body.theme-prisma svg [fill="#ff7edb"] { fill: #5fd2ff; }
 body.theme-prisma svg [fill="#fe4450"] { fill: #fe4450; }
-body.theme-prisma svg [fill="#191621"] { fill: #0b0e1f; }
-body.theme-prisma svg [fill="#3d3158"] { fill: #9b6bff; }
-body.theme-prisma svg [fill="#d8ffe8"] { fill: #eef1ff; }
+body.theme-prisma svg [fill="#191621"] { fill: #131a3a; }
+body.theme-prisma svg [fill="#3d3158"] { fill: #2b5cff; }
+body.theme-prisma svg [fill="#d8ffe8"] { fill: #f2f5ff; }
 body.theme-prisma svg [fill="#ffd0d4"] { fill: #ffe6e8; }
 body.theme-prisma svg [fill="#ffe6e8"] { fill: #ffe6e8; }
 body.theme-prisma svg [fill="#fff4b8"] { fill: #fff4cc; }
@@ -838,7 +920,7 @@ body.theme-prisma svg [fill="#d4b860"] { fill: #ffc857; }
 body.theme-prisma svg [stroke="#03edf9"] { stroke: #3ff0ff; }
 body.theme-prisma svg [stroke="#fede5d"] { stroke: #ffc857; }
 body.theme-prisma svg [stroke="#d4b860"] { stroke: #ffc857; }
-body.theme-prisma svg [stroke="#191621"] { stroke: #0b0e1f; }
+body.theme-prisma svg [stroke="#191621"] { stroke: #131a3a; }
 
 /* === Glow on hover for icon-bearing elements === */
 body.theme-prisma .col-head-actions select:hover,
@@ -947,7 +1029,7 @@ body.theme-prisma svg {
 /* === Boost/Fav/Reply buttons — active state glow === */
 body.theme-prisma .status-actions button.is-active,
 body.theme-prisma .status-actions .act-btn.is-active {
-  filter: drop-shadow(0 0 6px currentColor);
+  filter: drop-shadow(0 0 18px currentColor);
   transform: scale(1.15);
   transition: transform 0.2s, filter 0.2s;
 }
@@ -955,7 +1037,7 @@ body.theme-prisma .status-actions .act-btn.is-active {
 /* === CW button / warn chips === */
 body.theme-prisma .cw-btn,
 body.theme-prisma .status-cw {
-  background: linear-gradient(135deg, #ffc857, #ff5fd2);
+  background: linear-gradient(135deg, #ffc857, #5fd2ff);
   color: #0b0e1f;
   border-radius: 999px;
   font-weight: 600;
@@ -964,7 +1046,7 @@ body.theme-prisma .status-cw {
 
 /* === Cyberpsychosis HUD — Prisma glow escalation === */
 body.theme-prisma .cp-hud {
-  background: rgba(11, 14, 31, 0.72);
+  background: rgba(19, 26, 58, 0.72);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
@@ -983,7 +1065,7 @@ body.theme-prisma .cp-hud-bar-fill {
   box-shadow: 0 0 8px currentColor;
 }
 body.theme-prisma .cp-hud.cp-stable .cp-hud-bar-fill {
-  background: var(--mint);
+  background: var(--lime);
   box-shadow: 0 0 8px #a4ff5f;
 }
 body.theme-prisma .cp-hud.cp-elevated .cp-hud-label {
@@ -1056,7 +1138,7 @@ body.theme-prisma.cp-l4 {
 
 /* Warning overlay — Prisma panel style */
 body.theme-prisma .cp-warn-overlay {
-  background: radial-gradient(ellipse at center, rgba(11, 14, 31, 0.85) 0%, rgba(5, 8, 16, 0.95) 100%);
+  background: radial-gradient(ellipse at center, rgba(19, 26, 58, 0.85) 0%, rgba(5, 8, 16, 0.95) 100%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -1087,7 +1169,7 @@ body.theme-prisma .cp-warn-title {
 }
 body.theme-prisma .cp-warn-msg {
   font-family: var(--font);
-  font-size: 15px;
+  font-size: 14.5px;
   color: var(--muted);
   line-height: 1.55;
   margin-bottom: 24px;
@@ -1099,7 +1181,7 @@ body.theme-prisma .cp-warn-btn {
   padding: 10px 20px;
   border: 1px solid var(--red);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(254, 68, 80, 0.2), rgba(255, 95, 210, 0.1));
+  background: linear-gradient(135deg, rgba(254, 68, 80, 0.2), rgba(95, 210, 255, 0.1));
   color: var(--fg);
   cursor: pointer;
   text-transform: uppercase;
@@ -1107,8 +1189,8 @@ body.theme-prisma .cp-warn-btn {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 body.theme-prisma .cp-warn-btn:hover {
-  border-color: var(--cyan);
-  box-shadow: 0 0 14px #3ff0ff44;
+  border-color: rgba(63, 240, 255, 0.75);
+  box-shadow: 0 0 18px rgba(63, 240, 255, 0.45);
 }
 body.theme-prisma .cp-warn-btn-ghost {
   background: transparent;
@@ -1127,4 +1209,6 @@ body.theme-prisma .cp-warn-btn-ghost {
   body.theme-prisma .cp-glitch { animation: none !important; }
   body.theme-prisma.cp-l4 { filter: none; }
   body.theme-prisma .status:hover { transform: none; }
+  body.theme-prisma .logo { animation: none; }
+  body.theme-prisma #app::before { animation: none; }
 }
