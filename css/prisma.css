@@ -134,10 +134,15 @@ body.theme-prisma #app::before {
 
 body.theme-prisma #app {
   background: transparent;
-  box-shadow: none;
+  border: 2px solid rgba(63, 240, 255, 0.7);
   border-radius: 0;
+  box-shadow: 0 0 16px rgba(63, 240, 255, 0.5), 0 0 32px rgba(63, 240, 255, 0.3), 0 0 64px rgba(63, 240, 255, 0.15), inset 0 0 16px rgba(63, 240, 255, 0.3), inset 0 0 32px rgba(63, 240, 255, 0.1);
   position: relative;
   z-index: 1;
+}
+
+body.theme-prisma {
+  padding: 4px;
 }
 
 /* === Shimmer animation for primary CTAs === */
@@ -274,7 +279,9 @@ body.theme-prisma .col {
   background: var(--bg1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border-right: 1px solid var(--line);
+  border: 1px solid rgba(63, 240, 255, 0.4);
+  border-right: 1px solid rgba(63, 240, 255, 0.4);
+  box-shadow: 0 0 12px rgba(63, 240, 255, 0.2), inset 0 0 8px rgba(63, 240, 255, 0.04);
 }
 
 /* === Column headers === */
@@ -374,7 +381,11 @@ body.theme-prisma .display { font-size: 14px; font-weight: 600; }
 body.theme-prisma .content { font-size: 15px; line-height: 1.55; }
 body.theme-prisma .cw { font-size: 14px; }
 body.theme-prisma .status-meta { font-size: 12px; }
-body.theme-prisma .actions { font-size: 12px; }
+body.theme-prisma .actions { font-size: 12px; gap: 6px; }
+body.theme-prisma .actions button {
+  font-size: 14px;
+  padding: 2px 6px;
+}
 body.theme-prisma .poll-option-title { font-size: 14px; }
 body.theme-prisma .poll-option-pct { font-size: 13px; }
 body.theme-prisma .poll-meta { font-size: 12px; }
@@ -504,6 +515,17 @@ body.theme-prisma .lang-switch {
 }
 
 /* === Dock icons === */
+body.theme-prisma .dock-icon {
+  width: 51px;
+  min-height: 51px;
+  padding: 6px;
+  gap: 3px;
+  font-size: 8px;
+}
+body.theme-prisma .dock-icon svg {
+  width: 29px;
+  height: 29px;
+}
 body.theme-prisma .dock-icon.is-home { color: var(--pink); }
 body.theme-prisma .dock-icon.is-local { color: var(--cyan); }
 body.theme-prisma .dock-icon.is-federated { color: var(--yellow); }
@@ -839,35 +861,20 @@ body.theme-prisma .logo {
 body.theme-prisma .brand { gap: 8px; }
 body.theme-prisma .brand h1 { font-size: 13px; }
 body.theme-prisma .top-actions { gap: 4px; }
+/* All topbar action buttons at uniform large size */
 body.theme-prisma .top-actions .outbox-btn {
-  min-width: 32px;
-  width: 32px;
-  height: 32px;
-  padding: 4px;
+  min-width: 51px;
+  width: 51px;
+  height: 51px;
+  padding: 6px;
 }
 body.theme-prisma .top-actions .outbox-glyph {
-  width: 18px;
-  height: 18px;
+  width: 29px;
+  height: 29px;
 }
 body.theme-prisma .top-actions .outbox-btn.primary {
-  min-width: 32px;
-  padding: 4px;
-}
-
-/* Larger Compose + Profile + Search buttons */
-body.theme-prisma .top-actions .outbox-btn#btn-compose,
-body.theme-prisma .top-actions .outbox-btn#btn-profile,
-body.theme-prisma .top-actions .outbox-btn#btn-search {
-  min-width: 64px;
-  width: 64px;
-  height: 64px;
-  padding: 8px;
-}
-body.theme-prisma .top-actions .outbox-btn#btn-compose .outbox-glyph,
-body.theme-prisma .top-actions .outbox-btn#btn-profile .outbox-glyph,
-body.theme-prisma .top-actions .outbox-btn#btn-search .outbox-glyph {
-  width: 36px;
-  height: 36px;
+  min-width: 51px;
+  padding: 6px;
 }
 body.theme-prisma .outbox-count {
   min-width: 14px;
@@ -894,12 +901,12 @@ body.theme-prisma .col-head-actions select {
   max-width: 7em;
 }
 body.theme-prisma button.icon-btn {
-  width: 32px; height: 32px;
-  font-size: 20px;
+  width: 26px; height: 26px;
+  font-size: 16px;
 }
 body.theme-prisma button.icon-btn .collapse-glyph {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
 }
 
 /* === Compact statusbar === */
