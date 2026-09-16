@@ -35,7 +35,7 @@ fallback remains for stubborn servers.
 - Threads with replies, boosts, favourites, and a reply composer
 - Local in-browser post translation via **Bergamot** WASM engine (24 language 
 pairs, privacy-friendly)
-- Two color themes: **default** (synthwave/CRT) and **cyberpunk-dark** (blue-black, red-orange, beveled), selectable via `config.json`
+- Three color themes: **default** (synthwave/CRT), **cyberpunk-dark** (blue-black, red-orange, beveled), and **prisma** (positiv futurist, freundlich-neon, Solarpunk with Aurora background), selectable via `config.json`
 - **Cyberpsychosis Danger** doomscrolling detector: Tracks scroll velocity, 
 session duration, post-consumption rate, and time of day to estimate a 
 "humanity" score. Escalating CRT-glitch warnings fire when humanity drops. 
@@ -100,7 +100,7 @@ Edit `config.json` in the program directory. The file is fetched at startup (`ca
 | `lang_switch` | boolean | `true` | Show the **DE | EN** language switcher on the login card and in the top bar. Set to `false` to hide it; the UI still uses the detected/locale-stored language. Aliases: `langSwitch`, `language_switch`, `showLangSwitch`. |
 | `federated` | boolean | `true` | Show the **Federated** (public timeline) column and its dock icon. Set to `false` to remove the column entirely — it is not loaded, polled, or streamed. Aliases: `federatedTimeline`, `federated_timeline`, `showFederated`. |
 | `local` | boolean | `true` | Show the **Local** column and its dock icon. Set to `false` to remove the column entirely — it is not loaded, polled, or streamed. Aliases: `localTimeline`, `local_timeline`, `showLocal`. |
-| `theme` | string | `default` | Color theme. `default` is the original synthwave/CRT palette. `cyberpunk-dark` switches to a blue-black background with red-orange accents, beveled corners, and warm-toned icons. Unknown values fall back to `default`. Alias: `skin`. |
+| `theme` | string | `default` | Color theme. `default` is the original synthwave/CRT palette. `cyberpunk-dark` switches to a blue-black background with red-orange accents, beveled corners, and warm-toned icons. `prisma` replaces the CRT aesthetic with a positiv futurist, freundlich-neon Solarpunk design: Aurora-gradient background, translucent panels with backdrop-blur, Outfit sans-serif typography, weiche Glows statt Scanlines. Unknown values fall back to `default`. Alias: `skin`. |
 | `cyberpsych` | boolean | `true` | Enable the **Cyberpsychosis Danger** doomscrolling detector. When `true`, a humanity HUD appears below the top bar after login; it decays with fast/continuous scrolling and recovers during pauses, escalating through five levels (STABLE → ELEVATED → UNSTABLE → CRITICAL → CYBERPSYCHOSIS) with CRT-glitch effects and warning dialogs. Set to `false` to disable entirely. |
 
 The login form can still point at a different instance. The last successful instance is stored in `localStorage` (`nightboard83.instance`) and wins over `config.json` on later visits. Changing the instance on login registers a new OAuth app on that server.

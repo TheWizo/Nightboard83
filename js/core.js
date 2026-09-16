@@ -326,7 +326,13 @@
     dock.forEach((el) => { el.hidden = !show; });
   }
 
-  const THEMES = ["default", "cyberpunk-dark"];
+  const THEMES = ["default", "cyberpunk-dark", "prisma"];
+
+  const THEME_META_COLORS = {
+    "default": "#241b2f",
+    "cyberpunk-dark": "#0a0e14",
+    "prisma": "#0b0e1f",
+  };
 
   function normalizeTheme(cfg) {
     const raw = String((cfg && (cfg.theme ?? cfg.skin)) || "").trim().toLowerCase();
@@ -341,6 +347,8 @@
       if (t !== "default") doc.body.classList.remove("theme-" + t);
     });
     if (theme !== "default") doc.body.classList.add("theme-" + theme);
+    const meta = doc.querySelector('meta[name="theme-color"]');
+    if (meta && THEME_META_COLORS[theme]) meta.setAttribute("content", THEME_META_COLORS[theme]);
   }
 
   const api = {

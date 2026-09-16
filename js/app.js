@@ -2201,7 +2201,7 @@
         i += 1;
         const step = i / steps;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = "#d8ffe8";
+        ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue("--fg").trim() || "#d8ffe8";
         ctx.lineWidth = Math.max(2, Math.round(2 * dpr));
         for (let k = 2; k >= 0; k -= 1) {
           drawBox(lerpRect(a, b, Math.max(0, step - k / steps)));

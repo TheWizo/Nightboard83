@@ -1,9 +1,9 @@
 {
-  "instance": "fediverse2.blackneon.net",
+  "instance": "fediverse1.blackneon.net",
   "poll_minutes": 2,
   "lang_switch": false,
   "federated": false,
   "local": false,
-  "theme": "default",
+  "theme": "prisma",
   "cyberpsych": true
 }
