@@ -653,7 +653,8 @@ body.theme-prisma .carrier-btn {
 }
 
 /* Prisma icon: wifi — mint (online) / red (offline) — replaces phone icons */
-.prisma-wifi { display: none; }
+/* scoped to .carrier-btn so specificity beats app.css `.carrier-btn svg { display:block }` */
+.carrier-btn .prisma-wifi { display: none; }
 
 body.theme-prisma .carrier-btn .phone-up,
 body.theme-prisma .carrier-btn .phone-down { display: none; }
