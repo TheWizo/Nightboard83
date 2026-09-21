@@ -8,7 +8,6 @@ const ASSETS = [
   "./LICENSE",
   "./css/app.css",
   "./css/cyberpsych.css",
-  "./css/prisma.css",
   "./js/app.js",
   "./js/store.js",
   "./js/core.js",

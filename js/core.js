@@ -326,12 +326,10 @@
     dock.forEach((el) => { el.hidden = !show; });
   }
 
-  const THEMES = ["default", "cyberpunk-dark", "prisma"];
+  const THEMES = ["default"];
 
   const THEME_META_COLORS = {
     "default": "#241b2f",
-    "cyberpunk-dark": "#0a0e14",
-    "prisma": "#131a3a",
   };
 
   function normalizeTheme(cfg) {

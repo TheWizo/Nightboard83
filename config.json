@@ -4,6 +4,6 @@
   "lang_switch": false,
   "federated": false,
   "local": false,
-  "theme": "prisma",
+  "theme": "default",
   "cyberpsych": true
 }
