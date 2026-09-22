@@ -1,15 +1,16 @@
 # Nightboard '83
 
-**ATTENTION: This project is created by making heavy use of LLM systems (mostly 
-[Mistral](https://mistral.ai)), if you don't want to use software created in 
+**ATTENTION: This project is created by making heavy use of LLM systems, 
+if you don't want to use software created in 
 this way this particular app may not be for you**
 
 Nightboard '83 is a static web client for 
 [Mastodon](https://docs.joinmastodon.org/client/intro/)-compatible servers, 
-written with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, 
+written especially with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, 
 CSS, and JavaScript files with no build step and no backend of its own. The 
-interface ships with German and English UI strings (default German), in the 
-monochrome Grid Protocol design, and can be installed as a Progressive Web App.
+interface ships with German and English UI strings (default German), in an design trying to 
+emulate the look of old FASA Pen-and-Paper rulebooks, and can be installed as a 
+Progressive Web App.
 
 Offline is the core idea: After an initial sync you can view your timelines, 
 compose replies, react and create posts to push them back to the net the next 
@@ -35,8 +36,7 @@ fallback remains for stubborn servers.
 - Threads with replies, boosts, favourites, and a reply composer
 - Local in-browser post translation via **Bergamot** WASM engine (24 language 
 pairs, privacy-friendly)
-- One color theme: **default** (Grid Protocol), selectable via `config.json`
-- **Cyberpsychosis Danger** doomscrolling detector: Tracks scroll velocity, 
+- Doomscrolling detector: Tracks scroll velocity, 
 session duration, post-consumption rate, and time of day to estimate a 
 "humanity" score. Escalating edge-glow warnings fire when humanity drops. 
 Configurable via `config.json` (`cyberpsych`)
@@ -65,7 +65,7 @@ Open `http://127.0.0.1:8000/`.
 
 ### Production
 
-Point any static host (nginx, Caddy, Apache, Git forge pages, object storage with a website mode) at this directory. Example nginx snippet:
+Point any static host (nginx, Caddy, Apache, Git forge pages, object storage with a website mode) at the directory where the files reside. Example with Caddy:
 
 ```caddy
 nightboard83.de {
@@ -107,19 +107,6 @@ The login form can still point at a different instance. The last successful inst
 
 Polling is paused while a thread, profile, compose, media, drafts, or outbox dialog is open, and while the tab is hidden.
 
-## First login
-
-1. Open the app and, if needed, set the instance hostname.
-2. Click **Autorisieren**. The instance’s OAuth consent page opens in the same window.
-3. Approve access. You are redirected back to Nightboard and signed in.
-
-Scopes requested: `read write follow`. If redirect login fails, use **Fallback: Code einfügen**.
-
-Tokens and the registered app credentials stay in `localStorage` on that browser. Logout only drops the token and profile cache, not drafts or the outbox.
-
-## Progressive Web App
-
-`manifest.webmanifest` and `sw.js` enable install-to-homescreen. Install from the browser's install prompt, or on iOS Safari: Share → Add to Home Screen.
 
 ## Local data
 
