@@ -15,10 +15,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Third-party components (not licensed under the AGPL):
 
-- Fonts in fonts/ are licensed under the SIL Open Font License,
-  Version 1.1; see fonts/OFL.txt. The directory contains Syne,
-  IBM Plex Sans, Outfit, Press Start 2P, VT323, and Caveat, each with
-  its copyright notice in that file.
+- Syne, IBM Plex Sans, Outfit, Press Start 2P, VT323, and Caveat in
+  fonts/ are licensed under the SIL Open Font License, Version 1.1;
+  see fonts/OFL.txt.
+- Astro (fonts/Astro.woff2) is copyright ManaDesigns 2019 and is marked
+  in the font as FontStruct Non-Commercial License. It is not covered
+  by the AGPL or the OFL.
+- Sephora and Sephora Bold (fonts/Sephora.woff2, fonts/Sephora-Bold.woff2)
+  are copyright 2020 Vladimir Nikolic, all rights reserved. They are
+  not covered by the AGPL or the OFL.
 - PouchDB 8.0.1 (js/pouchdb.min.js) is copyright 2012-2023 Dale Harvey
   and the PouchDB team and is licensed under the Apache License,
   Version 2.0; see js/pouchdb.Apache-2.0.txt.

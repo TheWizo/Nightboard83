@@ -98,6 +98,28 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+@font-face {
+  font-family: "Astro";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/Astro.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Sephora";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/Sephora.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Sephora";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/Sephora-Bold.woff2") format("woff2");
+}
+
 :root {
   --bg: #050506;
   --bg-elevated: #0c0c0e;
@@ -125,6 +147,8 @@
     drop-shadow(0 0 0.6px rgb(255 255 255 / 0.72))
     drop-shadow(0 0 22px rgb(255 255 255 / 0.14));
   --font-display: "Syne", "IBM Plex Sans", sans-serif;
+  --font-mark: "Astro", "Syne", sans-serif;
+  --font-heading: "Sephora", "Syne", sans-serif;
   --font: "IBM Plex Sans", sans-serif;
 }
 
@@ -422,18 +446,18 @@ button:disabled { opacity: 0.5; cursor: default; }
   gap: 0.4rem;
   margin: 0 0 28px;
   padding: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-mark);
   font-size: clamp(40px, 7vw, 68px);
-  font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -0.03em;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   color: var(--fg);
 }
 .login-name {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-family: var(--font-mark);
+  font-weight: 400;
+  letter-spacing: 0.04em;
   color: var(--fg);
 }
 .login-year {
@@ -471,7 +495,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 .login-card h2 {
   margin: 0 0 12px;
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -732,7 +756,7 @@ dialog,
 .oauth-fallback label { display: block; margin-top: 8px; }
 .col-head h2 {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1078,7 +1102,7 @@ dialog[open] { display: flex; flex-direction: column; }
 }
 #compose-form header h2, .overlay-head h2 {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -1304,7 +1328,7 @@ dialog[open] { display: flex; flex-direction: column; }
   background: var(--bg-elevated);
 }
 .sw-update-head {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.08em;

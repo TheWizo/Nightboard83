@@ -1,7 +1,7 @@
 /* Nightboard '83 — service worker
    Copyright (C) 2026 Ralf Wissing
    SPDX-License-Identifier: AGPL-3.0-or-later */
-const CACHE = "nightboard83-v68";
+const CACHE = "nightboard83-v69";
 const ASSETS = [
   "./",
   "./index.html",
@@ -39,6 +39,9 @@ const ASSETS = [
   "./fonts/IBMPlexSans-latin-ext-400.woff2",
   "./fonts/IBMPlexSans-latin-ext-500.woff2",
   "./fonts/IBMPlexSans-latin-ext-600.woff2",
+  "./fonts/Astro.woff2",
+  "./fonts/Sephora.woff2",
+  "./fonts/Sephora-Bold.woff2",
   "./icons/icon-32.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
