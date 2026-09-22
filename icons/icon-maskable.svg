@@ -1,48 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Same mark as icon.svg; corners stay transparent. -->
-  <defs>
-    <linearGradient id="chrome" x1="0.12" y1="0" x2="0.82" y2="1">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="8%" stop-color="#f4f8ff"/>
-      <stop offset="16%" stop-color="#c5d0e0"/>
-      <stop offset="24%" stop-color="#7e8ea3"/>
-      <stop offset="32%" stop-color="#eef3fa"/>
-      <stop offset="42%" stop-color="#9aa8ba"/>
-      <stop offset="52%" stop-color="#ffffff"/>
-      <stop offset="62%" stop-color="#d9e0ea"/>
-      <stop offset="72%" stop-color="#ffd4f2"/>
-      <stop offset="82%" stop-color="#ff7edb"/>
-      <stop offset="100%" stop-color="#c22e86"/>
-    </linearGradient>
-    <linearGradient id="sheen" x1="0.2" y1="0" x2="0.55" y2="0.6">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-      <stop offset="35%" stop-color="#ffffff" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="nbstroke">
-      <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="d"/>
-      <feFlood flood-color="#160c22" result="c"/>
-      <feComposite in="c" in2="d" operator="in" result="s"/>
-      <feMerge>
-        <feMergeNode in="s"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
-  <g filter="url(#nbstroke)" transform="translate(210 268) scale(0.78) translate(-276 -256)">
-    <g fill="url(#chrome)">
-      <rect x="128" y="172" width="40" height="168"/>
-      <rect x="212" y="172" width="40" height="168"/>
-      <polygon points="168,172 212,172 252,340 212,340"/>
-      <rect x="274" y="172" width="40" height="168"/>
-      <path fill-rule="evenodd" d="M314 172h56c32 0 54 18 54 44 0 20-12 34-32 40 24 6 40 24 40 46 0 28-24 42-58 42h-60zM314 204h42c14 0 24-8 24-18s-10-18-24-18h-42zM314 292h48c16 0 28-8 28-22s-12-22-28-22h-48z"/>
-    </g>
-    <g fill="url(#sheen)">
-      <rect x="128" y="172" width="40" height="168"/>
-      <rect x="212" y="172" width="40" height="168"/>
-      <polygon points="168,172 212,172 252,340 212,340"/>
-      <rect x="274" y="172" width="40" height="168"/>
-      <path fill-rule="evenodd" d="M314 172h56c32 0 54 18 54 44 0 20-12 34-32 40 24 6 40 24 40 46 0 28-24 42-58 42h-60zM314 204h42c14 0 24-8 24-18s-10-18-24-18h-42zM314 292h48c16 0 28-8 28-22s-12-22-28-22h-48z"/>
-    </g>
+  <!-- Fediverse logo proposal, Eukombos, CC0. Silver on #050506. -->
+  <rect width="512" height="512" fill="#050506"/>
+  <g transform="translate(112.640 112.640) scale(1.45899)">
+<path fill="#c8c8ce"  d="M47.9242 72.7966a18.2278 18.2278 0 0 1-7.7959 7.7597l42.7984 42.9653 10.3182-5.2291zm56.4524 56.6704-10.3182 5.2291 21.686 21.7708a18.2278 18.2278 0 0 1 7.7975-7.7608z"/>
+	<path fill="#c8c8ce"  d="M129.6645 102.0765l1.7865 11.4272 27.4149-13.8942a18.2278 18.2278 0 0 1-4.9719-9.8124zm-14.0658 7.1282-57.2891 29.0339a18.2278 18.2278 0 0 1 4.9728 9.8133l54.1027-27.4194z"/>
+	<path fill="#c8c8ce"  d="M69.5312 91.6539l8.1618 8.1933 29.269-57.1387a18.2278 18.2278 0 0 1-9.787-5.0219zm-7.1897 14.0363-14.0022 27.3353a18.2278 18.2278 0 0 1 9.786 5.0214l12.3775-24.1639z"/>
+	<path fill="#c8c8ce"  d="M39.8906 80.6763a18.2278 18.2278 0 0 1-10.8655 1.7198l8.1762 52.2981a18.2278 18.2278 0 0 1 10.8645-1.7198z"/>
+	<path fill="#c8c8ce"  d="M63.3259 148.3109a18.2278 18.2278 0 0 1-1.7322 10.8629l52.2893 8.3907a18.2278 18.2278 0 0 1 1.7322-10.8629z"/>
+	<path fill="#c8c8ce"  d="M134.9148 146.9182a18.2278 18.2278 0 0 1 9.788 5.0224l24.1345-47.117a18.2278 18.2278 0 0 1-9.7875-5.0229z"/>
+	<path fill="#c8c8ce"  d="M126.1329 33.1603a18.2278 18.2278 0 0 1-7.7975 7.7608l37.3765 37.5207a18.2278 18.2278 0 0 1 7.7969-7.7608z"/>
+	<path fill="#c8c8ce"  d="M44.7704 51.6279a18.2278 18.2278 0 0 1 4.9723 9.8123l47.2478-23.9453a18.2278 18.2278 0 0 1-4.9718-9.8113z"/>
+	<path fill="#c8c8ce"  d="M118.2491 40.9645a18.2278 18.2278 0 0 1-10.8511 1.8123l4.1853 26.8 11.42 1.8324zm-4.2333 44.1927 9.8955 63.3631a18.2278 18.2278 0 0 1 10.88-1.6278l-9.355-59.9035z"/>
+	<path fill="#c8c8ce"  d="M49.7763 61.6412a18.2278 18.2278 0 0 1-1.694 10.8686l26.8206 4.3077 5.2715-10.2945zm45.9677 7.382-5.272 10.2955 63.3713 10.1777a18.2278 18.2278 0 0 1 1.7606-10.8593z"/>
+	<path fill="#f4f4f6"  d="M93.4385 23.8419a1 1 0 1 0 33.0924 1.8025 1 1 0 1 0-33.0924-1.8025"/>
+	<path fill="#f4f4f6"  d="M155.314 85.957a1 1 0 1 0 33.0923 1.8025 1 1 0 1 0-33.0923-1.8025"/>
+	<path fill="#f4f4f6"  d="M115.3466 163.9824a1 1 0 1 0 33.0923 1.8025 1 1 0 1 0-33.0923-1.8025"/>
+	<path fill="#f4f4f6"  d="M28.7698 150.0898a1 1 0 1 0 33.0923 1.8025 1 1 0 1 0-33.0923-1.8025"/>
+	<path fill="#f4f4f6"  d="M15.2298 63.4781a1 1 0 1 0 33.0923 1.8025 1 1 0 1 0-33.0923-1.8025"/>
   </g>
 </svg>
