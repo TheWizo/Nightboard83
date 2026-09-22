@@ -522,12 +522,19 @@ input:focus, textarea:focus, select:focus {
   background: var(--surface);
   position: relative;
   z-index: 2;
+  clip-path: none;
+  filter: none;
+  border: 1px solid rgb(255 255 255 / 0.72);
+  border-radius: 0;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.28),
+    0 0 14px rgb(255 255 255 / 0.32),
+    0 0 26px rgb(255 255 255 / 0.14);
 }
 .col.is-collapsed {
   display: none !important;
 }
 .columns.is-expanded .col:not(.is-expanded) { display: none !important; }
-.col,
 dialog,
 .cp-warn-box {
   border: 0;
@@ -1200,9 +1207,24 @@ dialog[open] { display: flex; flex-direction: column; }
 #thread-dialog {
   width: 80vw;
   max-width: 80vw;
-  height: min(860px, calc(100vh - 24px));
-  max-height: calc(100vh - 24px);
+  height: min(860px, calc(100vh - 56px));
+  max-height: calc(100vh - 56px);
   min-height: 0;
+}
+#thread-dialog,
+#overlay-dialog {
+  clip-path: none;
+  filter: none;
+  border: 1px solid #fff;
+  border-radius: 0;
+  box-shadow:
+    0 0 0 1px #fff,
+    0 0 18px rgb(255 255 255 / 0.7),
+    0 0 36px rgb(255 255 255 / 0.35);
+}
+#overlay-dialog {
+  width: min(640px, calc(100vw - 56px));
+  max-height: calc(100vh - 56px);
 }
 .thread-body {
   flex: 1;
