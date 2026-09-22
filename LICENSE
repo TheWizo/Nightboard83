@@ -15,12 +15,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Third-party components (not licensed under the AGPL):
 
-- Fonts in fonts/ (Press Start 2P, VT323, Caveat) are licensed under the
-  SIL Open Font License, Version 1.1; see fonts/OFL.txt.
-- PouchDB (js/pouchdb.min.js) is copyright Dale Harvey and the PouchDB
-  team and is licensed under the Apache License, Version 2.0.
-- Bergamot translator (assets/bergamot/) is licensed under the
-  Mozilla Public License, Version 2.0; see assets/bergamot/NOTICE.txt.
+- Fonts in fonts/ are licensed under the SIL Open Font License,
+  Version 1.1; see fonts/OFL.txt. The directory contains Syne,
+  IBM Plex Sans, Outfit, Press Start 2P, VT323, and Caveat, each with
+  its copyright notice in that file.
+- PouchDB 8.0.1 (js/pouchdb.min.js) is copyright 2012-2023 Dale Harvey
+  and the PouchDB team and is licensed under the Apache License,
+  Version 2.0; see js/pouchdb.Apache-2.0.txt.
+- The Bergamot translator (assets/bergamot/, from
+  @browsermt/bergamot-translator 0.4.9) is licensed under the Mozilla
+  Public License, Version 2.0; see assets/bergamot/LICENSE and
+  assets/bergamot/NOTICE.txt.
 
 ========================================================================
 

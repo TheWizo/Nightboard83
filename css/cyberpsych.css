@@ -10,13 +10,10 @@
   background: rgb(12 12 14 / 0.92);
   border-bottom: 1px solid var(--line);
 }
-.cp-hud[hidden] { display: none; }
-
 .cp-hud-inner {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: var(--font);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -83,19 +80,12 @@
   background: rgb(5 5 6 / 0.78);
   backdrop-filter: blur(6px);
 }
-.cp-warn-overlay[hidden] { display: none; }
-
 .cp-warn-box {
   position: relative;
   text-align: center;
   max-width: 440px;
   padding: 32px 28px;
   background: var(--bg-elevated);
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  clip-path: var(--win-clip);
-  filter: var(--win-glow);
 }
 
 .cp-warn-icon {
@@ -117,9 +107,7 @@
 }
 
 .cp-warn-msg {
-  font-family: var(--font);
   font-size: 16px;
-  font-weight: 400;
   color: var(--fg-muted);
   line-height: 1.5;
   margin-bottom: 24px;
@@ -128,7 +116,6 @@
 .cp-warn-actions { display: flex; gap: 12px; justify-content: center; }
 
 .cp-warn-btn {
-  font-family: var(--font);
   font-size: 14px;
   font-weight: 600;
   padding: 8px 14px;

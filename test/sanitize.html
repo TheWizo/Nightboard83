@@ -20,6 +20,15 @@ try {
   const wrap = s('<' + 'script>alert(1)</' + 'script><p>ok</p>');
   if (/<script/i.test(wrap)) throw new Error("script " + wrap);
   if (!wrap.includes("<p>ok</p>")) throw new Error("p dropped " + wrap);
+  const wrappedImg = s('<div><img src="https://ex.example/e.png" onerror="alert(1)"></div>');
+  if (/onerror/i.test(wrappedImg)) throw new Error("wrapped handler " + wrappedImg);
+  if (!wrappedImg.includes('src="https://ex.example/e.png"')) throw new Error("wrapped src " + wrappedImg);
+  const noscript = s('<noscript><img src="x" onerror="alert(1)"></noscript>');
+  if (/onerror|<img/i.test(noscript)) throw new Error("noscript " + noscript);
+  const wrappedLink = s('<foo><a href="javascript:alert(1)">x</a></foo>');
+  if (/javascript:/i.test(wrappedLink)) throw new Error("wrapped javascript href " + wrappedLink);
+  const nested = s('<div><span><strong>ok</strong></span></div>');
+  if (!nested.includes("<strong>ok</strong>")) throw new Error("nested markup " + nested);
   document.title = "PASS";
   document.getElementById("out").textContent = "PASS " + emoji;
 } catch (e) {

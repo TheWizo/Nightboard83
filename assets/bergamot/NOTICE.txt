@@ -1,6 +1,10 @@
-Bergamot WASM translator (MPL-2.0)
+Bergamot WASM translator
+Mozilla Public License, Version 2.0
 
-Vendored from @browsermt/bergamot-translator 0.4.9
+The source files in this directory, including the worker script and the
+WASM build, are Covered Software under the Mozilla Public License 2.0.
+The license text is LICENSE in this directory.
+Source: @browsermt/bergamot-translator 0.4.9
 https://github.com/browsermt/bergamot-translator
 
 Models are fetched on demand from the Bergamot model registry

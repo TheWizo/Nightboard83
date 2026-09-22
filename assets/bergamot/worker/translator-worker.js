@@ -1,3 +1,4 @@
+/* Bergamot translator worker — Mozilla Public License 2.0. See ../LICENSE and ../NOTICE.txt. */
 /**
  * Wrapper around the dirty bits of Bergamot's WASM bindings.
  */

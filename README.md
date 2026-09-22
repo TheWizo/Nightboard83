@@ -141,7 +141,7 @@ Posts can be translated **entirely in the browser** with the [Bergamot](https://
 
 ## License
 
-- Application code: **GNU Affero GPL v3 or later**
-- Fonts in `fonts/` (Press Start 2P, VT323, Caveat): **SIL Open Font License 1.1** — see `fonts/OFL.txt`
-- PouchDB (`js/pouchdb.min.js`): **Apache License 2.0**
-- Bergamot translator (`assets/bergamot/`): **Mozilla Public License 2.0**
+- Application code: **GNU Affero GPL v3 or later** — see `LICENSE`
+- Fonts in `fonts/` (Syne, IBM Plex Sans, Outfit, Press Start 2P, VT323, Caveat): **SIL Open Font License 1.1** — see `fonts/OFL.txt`
+- PouchDB 8.0.1 (`js/pouchdb.min.js`): **Apache License 2.0** — see `js/pouchdb.Apache-2.0.txt`
+- Bergamot translator (`assets/bergamot/`): **Mozilla Public License 2.0** — see `assets/bergamot/LICENSE` and `assets/bergamot/NOTICE.txt`

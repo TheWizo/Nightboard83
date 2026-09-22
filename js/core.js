@@ -183,49 +183,56 @@
     const doc = new DOMParser().parseFromString("<div>" + (html || "") + "</div>", "text/html");
     const allowed = new Set(["P", "A", "BR", "SPAN", "DEL", "PRE", "CODE", "BLOCKQUOTE", "UL", "OL", "LI", "EM", "STRONG", "B", "I", "IMG"]);
     const walk = (node) => {
-      [...node.childNodes].forEach((child) => {
-        if (child.nodeType === 1) {
-          if (!allowed.has(child.tagName)) {
-            const parent = child.parentNode;
-            while (child.firstChild) parent.insertBefore(child.firstChild, child);
-            parent.removeChild(child);
+      let child = node.firstChild;
+      while (child) {
+        const next = child.nextSibling;
+        if (child.nodeType !== 1) {
+          if (child.nodeType !== 3) child.remove();
+          child = next;
+          continue;
+        }
+        if (!allowed.has(child.tagName)) {
+          const promoted = child.firstChild;
+          while (child.firstChild) node.insertBefore(child.firstChild, child);
+          child.remove();
+          // The lifted nodes were not in this sibling list yet.
+          child = promoted || next;
+          continue;
+        }
+        [...child.attributes].forEach((attr) => {
+          const n = attr.name.toLowerCase();
+          if (child.tagName === "IMG") {
+            if (n === "src") {
+              if (!/^(https?:)/i.test(String(attr.value || "").trim())) child.removeAttribute(attr.name);
+              return;
+            }
+            if (n === "alt" || n === "class" || n === "title" || n === "width" || n === "height") return;
+            child.removeAttribute(attr.name);
             return;
           }
-          [...child.attributes].forEach((attr) => {
-            const n = attr.name.toLowerCase();
-            if (child.tagName === "IMG") {
-              if (n === "src") {
-                if (!/^(https?:)/i.test(String(attr.value || "").trim())) child.removeAttribute(attr.name);
-                return;
-              }
-              if (n === "alt" || n === "class" || n === "title" || n === "width" || n === "height") return;
-              child.removeAttribute(attr.name);
-              return;
-            }
-            if (child.tagName === "A" && (n === "href" || n === "rel" || n === "class" || n === "target")) {
-              if (n === "href" && !/^(https?:|mailto:|#)/i.test(attr.value)) child.removeAttribute(attr.name);
-              return;
-            }
-            if (n === "class") return;
-            child.removeAttribute(attr.name);
-          });
-          if (child.tagName === "IMG") {
-            if (!child.getAttribute("src")) {
-              child.remove();
-              return;
-            }
-            child.setAttribute("loading", "lazy");
-            child.setAttribute("draggable", "false");
+          if (child.tagName === "A" && (n === "href" || n === "rel" || n === "class" || n === "target")) {
+            if (n === "href" && !/^(https?:|mailto:|#)/i.test(String(attr.value || "").trim())) child.removeAttribute(attr.name);
+            return;
           }
-          if (child.tagName === "A") {
-            child.setAttribute("target", "_blank");
-            child.setAttribute("rel", "noopener noreferrer");
+          if (n === "class") return;
+          child.removeAttribute(attr.name);
+        });
+        if (child.tagName === "IMG") {
+          if (!child.getAttribute("src")) {
+            child.remove();
+            child = next;
+            continue;
           }
-          walk(child);
-        } else if (child.nodeType !== 3) {
-          child.remove();
+          child.setAttribute("loading", "lazy");
+          child.setAttribute("draggable", "false");
         }
-      });
+        if (child.tagName === "A") {
+          child.setAttribute("target", "_blank");
+          child.setAttribute("rel", "noopener noreferrer");
+        }
+        walk(child);
+        child = next;
+      }
     };
     walk(doc.body.firstChild);
     return doc.body.firstChild.innerHTML;

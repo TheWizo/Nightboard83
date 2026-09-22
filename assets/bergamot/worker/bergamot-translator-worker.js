@@ -1,3 +1,4 @@
+/* Bergamot translator WASM build — Mozilla Public License 2.0. See ../LICENSE and ../NOTICE.txt. */
 var BERGAMOT_VERSION_FULL = "v0.4.5+4917c11";
 null;
 
