@@ -1,6 +1,15 @@
 This directory contains Font Software licensed under the SIL Open Font
 License, Version 1.1.
 
+Syne
+----
+Copyright 2017 The Syne Project Authors (https://github.com/bonjour-monde/syne-typeface),
+with Reserved Font Name "Syne".
+
+IBM Plex Sans
+-------------
+Copyright 2017 IBM Corp., with Reserved Font Name "Plex".
+
 Press Start 2P
 --------------
 Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net),

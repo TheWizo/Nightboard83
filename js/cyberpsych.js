@@ -4,7 +4,7 @@
 
    Tracks scroll velocity, session duration, post-consumption rate,
    and time of day to estimate a "humanity" score. When it drops,
-   escalating CRT-glitch warnings fire — themed as cyberpsychosis risk.
+   escalating edge-glow warnings fire — themed as cyberpsychosis risk.
 
    Self-contained: no deps, hooks into existing .col-body scroll containers
    via MutationObserver. Exposes window.NBCyberpsych.
@@ -88,11 +88,11 @@
   }
 
   const LEVELS = [
-    { min: 80, name: "stable",     color: "var(--mint)",   cls: "cp-stable" },
-    { min: 60, name: "elevated",   color: "var(--yellow)", cls: "cp-elevated" },
-    { min: 40, name: "unstable",   color: "var(--orange)", cls: "cp-unstable" },
-    { min: 20, name: "critical",   color: "var(--red)",    cls: "cp-critical" },
-    { min: 0,  name: "cyberpsych", color: "var(--red)",    cls: "cp-cyberpsych" },
+    { min: 80, name: "stable",     color: "rgb(255 255 255 / 0.45)", cls: "cp-stable" },
+    { min: 60, name: "elevated",   color: "rgb(255 255 255 / 0.62)", cls: "cp-elevated" },
+    { min: 40, name: "unstable",   color: "rgb(255 255 255 / 0.78)", cls: "cp-unstable" },
+    { min: 20, name: "critical",   color: "rgb(255 255 255 / 0.92)", cls: "cp-critical" },
+    { min: 0,  name: "cyberpsych", color: "#f2f2f3",                 cls: "cp-cyberpsych" },
   ];
 
   function levelFor(h) {
@@ -259,7 +259,7 @@
     hudEl.hidden = false;
     barEl.style.width = pct + "%";
     barEl.style.background = lv.color;
-    barEl.style.boxShadow = "0 0 12px " + lv.color;
+    barEl.style.boxShadow = "none";
     labelEl.textContent = t("cyberpsych.level." + lv.name);
     pctEl.textContent = pct + "%";
     hudEl.className = "cp-hud " + lv.cls;

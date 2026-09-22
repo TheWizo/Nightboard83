@@ -2,13 +2,13 @@
   "id": "./",
   "name": "Nightboard '83",
   "short_name": "Nightboard",
-  "description": "Retro-CRT Client für GoToSocial",
+  "description": "Grid-Protocol-Client für GoToSocial",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#050308",
-  "theme_color": "#241b2f",
+  "background_color": "#050506",
+  "theme_color": "#050506",
   "lang": "de",
   "icons": [
     {

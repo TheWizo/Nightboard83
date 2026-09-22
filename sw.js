@@ -1,7 +1,7 @@
 /* Nightboard '83 — service worker
    Copyright (C) 2026 Ralf Wissing
    SPDX-License-Identifier: AGPL-3.0-or-later */
-const CACHE = "nightboard83-v66";
+const CACHE = "nightboard83-v67";
 const ASSETS = [
   "./",
   "./index.html",
@@ -23,13 +23,18 @@ const ASSETS = [
   "./i18n/de.json",
   "./i18n/en.json",
   "./manifest.webmanifest",
-  "./fonts/PressStart2P.woff2",
-  "./fonts/PressStart2P-latin-ext.woff2",
-  "./fonts/VT323.woff2",
-  "./fonts/VT323-latin-ext.woff2",
-  "./fonts/Caveat.woff2",
-  "./fonts/Outfit.woff2",
-  "./fonts/Outfit-latin-ext.woff2",
+  "./fonts/Syne-latin-600.woff2",
+  "./fonts/Syne-latin-700.woff2",
+  "./fonts/Syne-latin-800.woff2",
+  "./fonts/Syne-latin-ext-600.woff2",
+  "./fonts/Syne-latin-ext-700.woff2",
+  "./fonts/Syne-latin-ext-800.woff2",
+  "./fonts/IBMPlexSans-latin-400.woff2",
+  "./fonts/IBMPlexSans-latin-500.woff2",
+  "./fonts/IBMPlexSans-latin-600.woff2",
+  "./fonts/IBMPlexSans-latin-ext-400.woff2",
+  "./fonts/IBMPlexSans-latin-ext-500.woff2",
+  "./fonts/IBMPlexSans-latin-ext-600.woff2",
   "./icons/icon-32.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

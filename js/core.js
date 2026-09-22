@@ -329,7 +329,7 @@
   const THEMES = ["default"];
 
   const THEME_META_COLORS = {
-    "default": "#241b2f",
+    "default": "#050506",
   };
 
   function normalizeTheme(cfg) {

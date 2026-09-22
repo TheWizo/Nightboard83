@@ -296,7 +296,7 @@
     const on = state.conn === "online";
     btn.classList.toggle("is-online", on);
     btn.classList.toggle("is-offline", !on);
-    btn.setAttribute("aria-pressed", String(on));
+    btn.setAttribute("aria-checked", String(on));
     btn.title = on ? t("status.disconnect") : t("status.connect");
     btn.setAttribute("aria-label", on ? t("status.disconnect") : t("status.connectAria"));
   }

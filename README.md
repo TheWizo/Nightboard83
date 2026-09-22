@@ -8,8 +8,8 @@ Nightboard '83 is a static web client for
 [Mastodon](https://docs.joinmastodon.org/client/intro/)-compatible servers, 
 written with [GoToSocial](https://gotosocial.org/) in mind. It is a set of HTML, 
 CSS, and JavaScript files with no build step and no backend of its own. The 
-interface ships with German and English UI strings (default German), in an 
-retrofuturistic neon style, and can be installed as a Progressive Web App.
+interface ships with German and English UI strings (default German), in the 
+monochrome Grid Protocol design, and can be installed as a Progressive Web App.
 
 Offline is the core idea: After an initial sync you can view your timelines, 
 compose replies, react and create posts to push them back to the net the next 
@@ -35,10 +35,10 @@ fallback remains for stubborn servers.
 - Threads with replies, boosts, favourites, and a reply composer
 - Local in-browser post translation via **Bergamot** WASM engine (24 language 
 pairs, privacy-friendly)
-- One color theme: **default** (synthwave/CRT), selectable via `config.json`
+- One color theme: **default** (Grid Protocol), selectable via `config.json`
 - **Cyberpsychosis Danger** doomscrolling detector: Tracks scroll velocity, 
 session duration, post-consumption rate, and time of day to estimate a 
-"humanity" score. Escalating CRT-glitch warnings fire when humanity drops. 
+"humanity" score. Escalating edge-glow warnings fire when humanity drops. 
 Configurable via `config.json` (`cyberpsych`)
 
 ## Requirements
@@ -100,8 +100,8 @@ Edit `config.json` in the program directory. The file is fetched at startup (`ca
 | `lang_switch` | boolean | `true` | Show the **DE | EN** language switcher on the login card and in the top bar. Set to `false` to hide it; the UI still uses the detected/locale-stored language. Aliases: `langSwitch`, `language_switch`, `showLangSwitch`. |
 | `federated` | boolean | `true` | Show the **Federated** (public timeline) column and its dock icon. Set to `false` to remove the column entirely — it is not loaded, polled, or streamed. Aliases: `federatedTimeline`, `federated_timeline`, `showFederated`. |
 | `local` | boolean | `true` | Show the **Local** column and its dock icon. Set to `false` to remove the column entirely — it is not loaded, polled, or streamed. Aliases: `localTimeline`, `local_timeline`, `showLocal`. |
-| `theme` | string | `default` | Color theme. Only `default` (synthwave/CRT palette) is available. Unknown values fall back to `default`. Alias: `skin`. |
-| `cyberpsych` | boolean | `true` | Enable the **Cyberpsychosis Danger** doomscrolling detector. When `true`, a humanity HUD appears below the top bar after login; it decays with fast/continuous scrolling and recovers during pauses, escalating through five levels (STABLE → ELEVATED → UNSTABLE → CRITICAL → CYBERPSYCHOSIS) with CRT-glitch effects and warning dialogs. Set to `false` to disable entirely. |
+| `theme` | string | `default` | Color theme. Only `default` (Grid Protocol) is available. Unknown values fall back to `default`. Alias: `skin`. |
+| `cyberpsych` | boolean | `true` | Enable the **Cyberpsychosis Danger** doomscrolling detector. When `true`, a humanity HUD appears below the top bar after login; it decays with fast/continuous scrolling and recovers during pauses, escalating through five levels (STABLE → ELEVATED → UNSTABLE → CRITICAL → CYBERPSYCHOSIS) with edge-glow warnings and dialogs. Set to `false` to disable entirely. |
 
 The login form can still point at a different instance. The last successful instance is stored in `localStorage` (`nightboard83.instance`) and wins over `config.json` on later visits. Changing the instance on login registers a new OAuth app on that server.
 
