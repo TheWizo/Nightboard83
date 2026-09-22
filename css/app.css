@@ -230,6 +230,7 @@ body::after {
   .sw-update-bar i { transition: none; }
   .nb-translate-progress-bar { animation: none; }
   .toggle-thumb { transition: none; }
+  .mark-coin img { animation: none; }
 }
 
 .is-ticker {
@@ -439,6 +440,27 @@ button:disabled { opacity: 0.5; cursor: default; }
   align-items: center;
   width: min(640px, 100%);
 }
+.mark-coin {
+  width: clamp(72px, 14vw, 96px);
+  height: clamp(72px, 14vw, 96px);
+  margin: 0 0 18px;
+  perspective: 520px;
+  display: grid;
+  place-items: center;
+}
+.mark-coin img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative;
+  animation: coin-spin 12s linear infinite;
+  transform-origin: center center;
+  filter: drop-shadow(0 0 8px rgb(255 255 255 / 0.22));
+}
+@keyframes coin-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
 .login-wordmark {
   display: flex;
   align-items: baseline;
@@ -572,8 +594,10 @@ dialog,
   position: absolute;
   inset: 0;
   z-index: 1;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
 }
 .desktop-logo .login-wordmark { margin: 0; }
@@ -1236,7 +1260,8 @@ dialog[open] { display: flex; flex-direction: column; }
   min-height: 0;
 }
 #thread-dialog,
-#overlay-dialog {
+#overlay-dialog,
+#compose-dialog {
   clip-path: none;
   filter: none;
   border: 1px solid #fff;
@@ -1246,7 +1271,8 @@ dialog[open] { display: flex; flex-direction: column; }
     0 0 18px rgb(255 255 255 / 0.7),
     0 0 36px rgb(255 255 255 / 0.35);
 }
-#overlay-dialog {
+#overlay-dialog,
+#compose-dialog {
   width: min(640px, calc(100vw - 56px));
   max-height: calc(100vh - 56px);
 }
