@@ -174,10 +174,10 @@ body::before {
   inset: -64px;
   z-index: 0;
   background-image:
-    linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px),
     linear-gradient(rgb(255 255 255 / 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.08) 1px, transparent 1px);
+    linear-gradient(90deg, rgb(255 255 255 / 0.08) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.16) 1px, transparent 1px);
   background-size: 12px 12px, 12px 12px, 56px 56px, 56px 56px;
   animation: grid-drift 80s linear infinite;
 }
@@ -193,8 +193,8 @@ body::after {
   height: 46vh;
   z-index: 0;
   background-image:
-    linear-gradient(rgb(255 255 255 / 0.28) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.28) 1px, transparent 1px);
+    linear-gradient(rgb(255 255 255 / 0.42) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.42) 1px, transparent 1px);
   background-size: 100% 36px, 72px 100%;
   transform: perspective(560px) rotateX(69deg);
   transform-origin: center bottom;
